@@ -1,8 +1,8 @@
 <?php
 /**
- * goridge
+ * Dead simple, high performance, drop-in bridge to Golang RPC with zero dependencies
  *
- * @author    Wolfy-J
+ * @author Wolfy-J
  */
 
 namespace Spiral\Tests\Prototypes;

@@ -1,8 +1,8 @@
 <?php
 /**
- * goridge
+ * Dead simple, high performance, drop-in bridge to Golang RPC with zero dependencies
  *
- * @author    Wolfy-J
+ * @author Wolfy-J
  */
 
 namespace Spiral\Tests\Prototypes;
@@ -150,7 +150,8 @@ abstract class RPCTest extends ProcessTest
 
     /**
      * @expectedException \Spiral\Goridge\Exceptions\ServiceException
-     * @expectedExceptionMessageRegExp #error '.*cannot unmarshal number into Go struct field Payload.keys.*#
+     * @expectedExceptionMessageRegExp #error '.*cannot unmarshal number into Go struct field
+     *                                 Payload.keys.*#
      */
     public function testBrokenPayloadMap()
     {
