@@ -1,7 +1,7 @@
 {
   "name": "spiral/goridge",
   "type": "goridge",
-  "description": "Dead simple, high performance, drop-in bridge to Golang RPC with zero dependencies",
+  "description": "Goridge, high performance PHP-to-GO net/rpc Codec",
   "license": "MIT",
   "authors": [
     {
