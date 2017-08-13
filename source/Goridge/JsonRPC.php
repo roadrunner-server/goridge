@@ -44,7 +44,7 @@ class JsonRPC
         } else {
             $body = json_encode($argument);
             if ($body === false) {
-                throws new ServiceException(sprintf(
+                throw new ServiceException(sprintf(
                     "json encode: %s",
                     json_last_error_msg()
                 ));
