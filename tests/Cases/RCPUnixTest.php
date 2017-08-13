@@ -10,7 +10,7 @@ namespace Spiral\Tests;
 use Spiral\Goridge\Connection;
 use Spiral\Tests\Prototypes\RPCTest;
 
-class RCPTCPTest extends RPCTest
+class RCPUnixTest extends RPCTest
 {
     const SOCK_ADDR = "server.sock";
     const SOCK_TYPE = Connection::SOCK_UNIX;
