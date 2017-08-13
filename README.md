@@ -14,7 +14,7 @@ Features
  - low message footprint (9 bytes over binary payload)
  - sockets over TPC or Unix
  - high performance
- - native net/rpc integration, ability to connect to existed application
+ - native net/rpc integration, ability to connect to existed application(s)
  - structured data transer using json
  - raw binary data transfer, including big payloads
  - hackable
