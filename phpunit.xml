@@ -19,8 +19,8 @@
     </testsuites>
 
     <filter>
-        <whitelist processUncoveredFilesFromWhitelist="true">
-            <directory suffix=".php">source/Goridge</directory>
+        <whitelist>
+            <directory>source/Goridge</directory>
         </whitelist>
     </filter>
 </phpunit>
