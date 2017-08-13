@@ -275,7 +275,7 @@ class Connection implements ConnectionInterface
      * @return resource
      * @throws \Error
      */
-    private function createSocket(): resource
+    private function createSocket()
     {
         if ($this->type === self::SOCK_UNIX) {
             if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
