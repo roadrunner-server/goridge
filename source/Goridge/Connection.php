@@ -204,10 +204,10 @@ class Connection implements ConnectionInterface
             return true;
         }
 
+        $this->socket = $this->createSocket();
         try {
-            $this->socket = $this->createSocket();
             if (socket_connect($this->socket, $this->address, $this->port) === false) {
-                throw new \Exception(socket_strerror(socket_last_error($this->socket)));
+                throw new TransportException(socket_strerror(socket_last_error($this->socket)));
             }
         } catch (\Exception $e) {
             throw new TransportException("unable to establish connection {$this}", 0, $e);
