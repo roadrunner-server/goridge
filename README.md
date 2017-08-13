@@ -1,4 +1,4 @@
-Goridge, high performance PHP-to-GO net/rpc codec
+Goridge, high performance PHP-to-Go net/rpc codec
 =================================================
 [![Latest Stable Version](https://poser.pugx.org/spiral/goridge/v/stable)](https://packagist.org/packages/spiral/goridge) 
 [![GoDoc](https://godoc.org/github.com/spiral/goridge?status.svg)](https://godoc.org/github.com/spiral/goridge)
