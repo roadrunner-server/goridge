@@ -30,9 +30,9 @@ import (
 	"net/rpc"
 )
 
-type Service struct{}
+type App struct{}
 
-func (s *Service) Hi(name string, r *string) error {
+func (s *App) Hi(name string, r *string) error {
 	*r = fmt.Sprintf("Hello, %s!", name)
 	return nil
 }
@@ -43,7 +43,7 @@ func main() {
 		panic(err)
 	}
 
-	rpc.RegisterName("App", new(Service))
+	rpc.Register(new(App))
 
 	for {
 		conn, err := ln.Accept()
