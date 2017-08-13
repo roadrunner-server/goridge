@@ -14,7 +14,7 @@ func main() {
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
-			log.Panic(err)
+			log.Println(err)
 		}
 
 		log.Printf("open %+v", conn)
@@ -38,7 +38,7 @@ func handleConn2(conn net.Conn) {
 
 		n, err = conn.Write(payload)
 		if err != nil {
-			panic(err)
+			log.Println(err)
 		}
 
 		log.Printf("sent %v bytes of %v", n, payload)

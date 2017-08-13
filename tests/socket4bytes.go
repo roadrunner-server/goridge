@@ -14,7 +14,7 @@ func main() {
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
-			log.Panic(err)
+			log.Println(err)
 		}
 
 		log.Printf("open %+v", conn)
@@ -38,7 +38,7 @@ func handleConn(conn net.Conn) {
 		case "ping":
 			_, err := conn.Write([]byte("pong"))
 			if err != nil {
-				panic(err)
+				log.Println(err)
 			}
 
 			log.Println("pong")
