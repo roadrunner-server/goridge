@@ -67,3 +67,5 @@ func main() {
 	}
 }
 ```
+
+> See `tests` folder for more examples.
