@@ -34,7 +34,7 @@ func NewJSONCodec(conn io.ReadWriteCloser) *JSONCodec {
 	}
 }
 
-// ReadRequestHeader expects to read prefixed method name to be called.
+// ReadRequestHeader request metadata.
 func (c *JSONCodec) ReadRequestHeader(r *rpc.Request) error {
 	if _, err := c.rwc.Read(c.prefix); err != nil {
 		return err
