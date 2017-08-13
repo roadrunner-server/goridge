@@ -151,7 +151,7 @@ abstract class RPCTest extends TestCase
 
     /**
      * @expectedException \Spiral\Goridge\Exceptions\ServiceException
-     * @expectedExceptionMessageRegExp #error '.*cannot unmarshal number into Go struct field Payload.keys.*#
+     * @expectedExceptionMessageRegExp #error '.*cannot unmarshal number*#
      */
     public function testBrokenPayloadMap()
     {
