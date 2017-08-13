@@ -1,0 +1,16 @@
+language: php
+
+php:
+  - 7.1
+
+go:
+  - 1.8
+
+before_install:
+  - composer self-update
+
+install:
+  - composer install --no-interaction --prefer-source
+
+script:
+  - vendor/bin/phpunit
