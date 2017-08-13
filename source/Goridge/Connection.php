@@ -205,19 +205,7 @@ class Connection implements ConnectionInterface
         }
 
         try {
-            switch ($this->type) {
-                case self::SOCK_TPC:
-                    $this->socket = socket_create(AF_INET, SOCK_STREAM, 0);
-                    break;
-                case self::SOCK_UNIX:
-                    if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-                        throw new \Error("socket {$this} unavailable in windows");
-                    }
-
-                    $this->socket = socket_create(1, SOCK_STREAM, 0);
-                    break;
-            }
-
+            $this->socket = $this->createSocket();
             if (socket_connect($this->socket, $this->address, $this->port) === false) {
                 throw new \Exception(socket_strerror(socket_last_error($this->socket)));
             }
@@ -281,5 +269,23 @@ class Connection implements ConnectionInterface
         }
 
         return unpack("Cflags/Psize", $prefixBody);
+    }
+
+    /**
+     * @return resource
+     * @throws \Error
+     */
+    private function createSocket(): resource
+    {
+        if ($this->type === self::SOCK_UNIX) {
+            if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+                throw new \Error("socket {$this} unavailable in windows");
+            }
+
+            return socket_create(1, SOCK_STREAM, 0);
+
+        }
+
+        return socket_create(AF_INET, SOCK_STREAM, 0);
     }
 }
