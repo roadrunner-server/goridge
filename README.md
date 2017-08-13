@@ -9,12 +9,14 @@ Goridge, high performance PHP-to-GO net/rpc Codec
 Goridge is high-performance golang/php codec library which works over native PHP sockets and Golang net/rpc package.
 
 Features:
- - low footprint (9 bytes per message)
+ - no external depencies or services, drop-in
+ - low message footprint (9 bytes over binary payload)
  - high performance
  - native net/rpc integration
  - work over TPC or Unix sockets
  - structured data transer using json
  - raw binary data transfer
+ - works on Windows
 
 Examples
 ========
