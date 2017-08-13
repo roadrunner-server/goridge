@@ -33,7 +33,12 @@ abstract class ProcessTest extends TestCase
             //enable in firewall
             $this->process = new Process("{$file}.exe " . static::GO_ARGS, $dir);
         } else {
-            $this->process = new Process("go run {$file}.go " . static::GO_ARGS, $dir);
+            if (self::FORCE_BUILD || !file_exists($dir . "/{$file}")) {
+                $build = new Process("go build {$file}", $dir);
+                $build->mustRun();
+            }
+
+            $this->process = new Process("go run {$file} " . static::GO_ARGS, $dir);
         }
 
         $this->process->start();
