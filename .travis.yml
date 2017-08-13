@@ -11,6 +11,7 @@ before_install:
 
 install:
   - composer install --no-interaction --prefer-source
+  - go get "github.com/spiral/goridge"
 
 script:
   - vendor/bin/phpunit --coverage-clover=clover.xml tests/
