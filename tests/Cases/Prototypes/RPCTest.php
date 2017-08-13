@@ -157,7 +157,7 @@ abstract class RPCTest extends TestCase
     {
         $conn = $this->makeRPC();
 
-        $resp = $conn->call('Service.Process', [
+        $conn->call('Service.Process', [
             'name'  => "wolfy-j",
             'value' => 18,
             'keys'  => 1111
