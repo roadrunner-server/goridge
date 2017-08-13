@@ -62,11 +62,11 @@ class JsonRPC
      */
     protected function handleBody($body, int $flags)
     {
-        if (($flags & ConnectionInterface::ERROR_BODY) === ConnectionInterface::ERROR_BODY) {
+        if ($flags & ConnectionInterface::ERROR_BODY) {
             throw new ServiceException("error '$body' on '{$this->conn}'");
         }
 
-        if (($flags & ConnectionInterface::RAW_BODY) === ConnectionInterface::RAW_BODY) {
+        if ($flags & ConnectionInterface::RAW_BODY) {
             return $body;
         }
 
