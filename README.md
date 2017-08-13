@@ -12,11 +12,12 @@ Features
 --------
  - no external depencies or services, drop-in
  - low message footprint (9 bytes over binary payload)
+ - sockets over TPC or Unix sockets
  - high performance
  - native net/rpc integration, ability to connect to existed application
- - work over TPC or Unix sockets
  - structured data transer using json
- - raw binary data transfer
+ - raw binary data transfer, including big payloads
+ - hackable
  - works on Windows
 
 Examples
