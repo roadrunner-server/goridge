@@ -16,8 +16,8 @@ const (
 	ChunkSize = 655336
 )
 
-// A JSONCodec implemented ServeCodec interface using 9 bytes data prefixes
-// and data marshaling via json. This is buffering like codec.
+// A JSONCodec implements ServeCodec using 9 bytes data prefixes and body marshaling via
+// json. This is buffering like codec.
 type JSONCodec struct {
 	mu     sync.Mutex // concurrent write
 	rwc    io.ReadWriteCloser
