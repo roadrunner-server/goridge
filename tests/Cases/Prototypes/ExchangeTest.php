@@ -46,6 +46,17 @@ abstract class ExchangeTest extends TestCase
     }
 
     /**
+     * @expectedException \Spiral\Goridge\Exceptions\MessageException
+     * @expectedExceptionMessage unable to set body with NO_BODY flag
+     */
+    public function testSendDataWhenNoBody()
+    {
+        $conn = $this->makeConnection();
+
+        $conn->send("payload", Connection::NO_BODY);
+    }
+
+    /**
      * @return \Spiral\Goridge\Connection
      */
     protected function makeConnection(): Connection
