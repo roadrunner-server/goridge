@@ -61,7 +61,7 @@ class Connection implements ConnectionInterface
     {
         switch ($type) {
             case self::SOCK_TPC:
-                if ($port == null) {
+                if ($port === null) {
                     throw new InvalidArgumentException(sprintf(
                         "no port given for TPC socket on '%s'",
                         $address
