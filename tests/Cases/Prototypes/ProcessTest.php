@@ -38,7 +38,7 @@ abstract class ProcessTest extends TestCase
                 $build->mustRun();
             }
 
-            $this->process = new Process("go run {$file} " . static::GO_ARGS, $dir);
+            $this->process = new Process("{$file} " . static::GO_ARGS, $dir);
         }
 
         $this->process->start();
