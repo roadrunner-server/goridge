@@ -14,6 +14,7 @@ install:
   - go get "github.com/spiral/goridge"
 
 script:
+  - go build tests/server.go
   - vendor/bin/phpunit --coverage-clover=clover.xml tests/
 
 after_script:
