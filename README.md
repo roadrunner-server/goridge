@@ -12,7 +12,7 @@ Features:
  - no external depencies or services, drop-in
  - low message footprint (9 bytes over binary payload)
  - high performance
- - native net/rpc integration
+ - native net/rpc integration, ability to connect to existed application
  - work over TPC or Unix sockets
  - structured data transer using json
  - raw binary data transfer
