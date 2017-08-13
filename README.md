@@ -10,7 +10,6 @@ status: fixing travis.ci configs, docs in progress
 
 Examples
 ========
-client.php
 ```php
 <?php
 use Spiral\Goridge;
