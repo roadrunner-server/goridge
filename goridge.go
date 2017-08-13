@@ -53,7 +53,8 @@ func (c *JSONCodec) ReadRequestHeader(r *rpc.Request) error {
 	return nil
 }
 
-// ReadRequestBody fetches prefixed body payload and automatically unmarshal it as json is no RawBody flag are set.
+// ReadRequestBody fetches prefixed body payload and automatically unmarshal it as json. RawBody flag will populate
+// []byte lice argument for rpc method.
 func (c *JSONCodec) ReadRequestBody(out interface{}) error {
 	if _, err := c.rwc.Read(c.prefix); err != nil {
 		return err
