@@ -12,7 +12,7 @@ Goridge is high-performance golang/php codec library which works over native PHP
 Features
 --------
  - no external dependencies or services, drop-in
- - low message footprint (9 bytes over binary payload)
+ - low message footprint (9 bytes over any binary payload)
  - sockets over TPC or Unix
  - high performance
  - native net/rpc integration, ability to connect to existed application(s)
