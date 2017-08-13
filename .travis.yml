@@ -1,5 +1,7 @@
 language: php
 
+sudo: required
+
 php:
   - 7.1
 
