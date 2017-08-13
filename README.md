@@ -6,7 +6,7 @@ Goridge, high performance PHP-to-GO net/rpc Codec
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/spiral/goridge/badges/quality-score.png)](https://scrutinizer-ci.com/g/spiral/goridge/?branch=master)
 [![Coverage Status](https://coveralls.io/repos/github/spiral/goridge/badge.svg?branch=master)](https://coveralls.io/github/spiral/goridge?branch=master)
 
-status: fixing travis.ci configs, docs in progress
+status: docs in progress
 
 Examples
 ========
