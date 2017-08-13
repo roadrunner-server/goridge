@@ -10,9 +10,9 @@ namespace Spiral\Tests;
 use Spiral\Goridge\Connection;
 use Spiral\Tests\Prototypes\ExchangeTest;
 
-abstract class ExchangeUnixTest extends ExchangeTest
+class ExchangeUnixTest extends ExchangeTest
 {
-    const SOCK_ADDR = "../socket10echo.sock";
+    const SOCK_ADDR = "socket10echo.sock";
     const SOCK_TYPE = Connection::SOCK_UNIX;
 
     public function setUp()

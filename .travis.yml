@@ -22,7 +22,9 @@ before_script:
   - ./server &
   - ./socket4bytes &
   - ./socket10echo &
-  - ./socket10echo socket4bytes.sock &
+  - ./socket4bytes socket4bytes.sock &
+  - ./socket10echo socket10echo.sock &
+  - ./server server.sock &
 
 script:
   - vendor/bin/phpunit --coverage-clover=clover.xml
