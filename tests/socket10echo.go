@@ -30,7 +30,6 @@ func handleConn2(conn net.Conn) {
 		if err != nil {
 			log.Printf("%+v errored %s", conn, err)
 			conn.Close()
-			break
 		}
 
 		payload = payload[:n]
