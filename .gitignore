@@ -1,0 +1,6 @@
+.idea/
+composer.lock
+vendor/
+clover.xml
+coveralls.json
+tests/*.exe
