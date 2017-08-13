@@ -282,10 +282,10 @@ class Connection implements ConnectionInterface
                 throw new \Error("socket {$this} unavailable in windows");
             }
 
-            return socket_create(1, SOCK_STREAM, 0);
+            return socket_create(1, SOCK_STREAM, SOL_SOCKET);
 
         }
 
-        return socket_create(AF_INET, SOCK_STREAM, 0);
+        return socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
     }
 }
