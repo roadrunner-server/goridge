@@ -42,6 +42,14 @@ class JsonRPC
         if ($flags & ConnectionInterface::RAW_BODY) {
             $this->conn->send($argument, $flags);
         } else {
+            $body = json_encode($argument);
+            if ($body === false) {
+                throws new ServiceException(sprintf(
+                    "json error: %s",
+                    json_last_error_msg()
+                ));
+            }
+            
             $this->conn->send(json_encode($argument));
         }
 
