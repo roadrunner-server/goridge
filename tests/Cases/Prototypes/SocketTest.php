@@ -7,9 +7,10 @@
 
 namespace Spiral\Tests\Prototypes;
 
+use PHPUnit\Framework\TestCase;
 use Spiral\Goridge\Connection;
 
-abstract class SocketTest extends ProcessTest
+abstract class SocketTest extends TestCase
 {
     const GO_APP    = "socket4bytes";
     const SOCK_ADDR = "";
@@ -22,8 +23,8 @@ abstract class SocketTest extends ProcessTest
      */
     public function testFailToConnect()
     {
-        $this->process->signal(0);
-        $this->makeConnection();
+        $conn = new Connection("127.0.0.1", 666);
+        $conn->connect();
     }
 
     public function testPingSocket()

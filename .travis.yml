@@ -14,9 +14,9 @@ install:
   - go get "github.com/spiral/goridge"
 
 script:
-  - go build tests/server.go  -o tests/server
-  - go build tests/socket4bytes.go -o tests/socket4bytes
-  - go build tests/socket10echo.go -o tests/socket10echo
+  - go run tests/server.go &
+  - go run tests/socket4bytes.go &
+  - go run tests/socket10echo.go &
   - vendor/bin/phpunit --coverage-clover=clover.xml tests/
 
 after_script:

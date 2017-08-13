@@ -7,11 +7,12 @@
 
 namespace Spiral\Tests\Prototypes;
 
+use PHPUnit\Framework\TestCase;
 use Spiral\Goridge\Connection;
 use Spiral\Goridge\ConnectionInterface;
 use Spiral\Goridge\JsonRPC;
 
-abstract class RPCTest extends ProcessTest
+abstract class RPCTest extends TestCase
 {
     const GO_APP    = "server";
     const SOCK_ADDR = "";
@@ -150,8 +151,7 @@ abstract class RPCTest extends ProcessTest
 
     /**
      * @expectedException \Spiral\Goridge\Exceptions\ServiceException
-     * @expectedExceptionMessageRegExp #error '.*cannot unmarshal number into Go struct field
-     *                                 Payload.keys.*#
+     * @expectedExceptionMessageRegExp #error '.*cannot unmarshal number into Go struct field Payload.keys.*#
      */
     public function testBrokenPayloadMap()
     {

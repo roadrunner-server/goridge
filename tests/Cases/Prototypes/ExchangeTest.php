@@ -7,9 +7,10 @@
 
 namespace Spiral\Tests\Prototypes;
 
+use PHPUnit\Framework\TestCase;
 use Spiral\Goridge\Connection;
 
-abstract class ExchangeTest extends ProcessTest
+abstract class ExchangeTest extends TestCase
 {
     const GO_APP    = "socket10echo";
     const SOCK_ADDR = "";

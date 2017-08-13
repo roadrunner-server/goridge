@@ -10,7 +10,7 @@ namespace Spiral\Tests;
 use Spiral\Goridge\Connection;
 use Spiral\Tests\Prototypes\SocketTest;
 
-class SocketUnixTest extends SocketTest
+abstract class SocketUnixTest extends SocketTest
 {
     const SOCK_ADDR = "../socket4bytes.sock";
     const SOCK_TYPE = Connection::SOCK_UNIX;
