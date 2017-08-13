@@ -283,7 +283,6 @@ class Connection implements ConnectionInterface
             }
 
             return socket_create(1, SOCK_STREAM, SOL_SOCKET);
-
         }
 
         return socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
