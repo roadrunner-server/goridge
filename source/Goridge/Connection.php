@@ -95,7 +95,7 @@ class Connection implements ConnectionInterface
     /**
      * @return int|null
      */
-    public function getPort(): ?int
+    public function getPort(): ? int
     {
         return $this->port;
     }
@@ -156,7 +156,7 @@ class Connection implements ConnectionInterface
      *                                                         socket.
      * @throws \Spiral\Goridge\Exceptions\MessageException When messages can not be retrieved.
      */
-    public function receiveSync(int &$flags = null): ?string
+    public function receiveSync(int & $flags = null): ? string
     {
         $this->connect();
 

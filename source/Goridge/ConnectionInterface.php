@@ -39,5 +39,5 @@ interface ConnectionInterface
      * @throws \Spiral\Goridge\Exceptions\MessageException When messages can not be retrieved.
      * @throws \Spiral\Goridge\Exceptions\TransportException
      */
-    public function receiveSync(int &$flags = 0): ?string;
+    public function receiveSync(int & $flags = 0): ? string;
 }
