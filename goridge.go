@@ -3,13 +3,13 @@
 package goridge
 
 import (
-	"net/rpc"
-	"io"
 	"encoding/json"
-	"sync"
-	"log"
 	"errors"
+	"io"
+	"log"
+	"net/rpc"
 	"reflect"
+	"sync"
 )
 
 const (
