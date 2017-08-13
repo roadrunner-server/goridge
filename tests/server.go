@@ -1,9 +1,9 @@
 package main
 
 import (
+	"github.com/spiral/goridge"
 	"net"
 	"net/rpc"
-	"github.com/spiral/goridge"
 	"strings"
 )
 
@@ -11,7 +11,7 @@ type Service struct{}
 
 type Payload struct {
 	Name  string            `json:"name"`
-	Value int                `json:"value"`
+	Value int               `json:"value"`
 	Keys  map[string]string `json:"keys,omitempty"`
 }
 

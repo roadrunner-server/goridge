@@ -1,10 +1,10 @@
 package main
 
 import (
+	"fmt"
+	"github.com/spiral/goridge"
 	"net"
 	"net/rpc"
-	"github.com/spiral/goridge"
-	"fmt"
 )
 
 type Service struct{}

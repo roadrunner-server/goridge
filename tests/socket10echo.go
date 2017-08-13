@@ -1,8 +1,8 @@
 package main
 
 import (
-	"net"
 	"log"
+	"net"
 )
 
 func main() {
