@@ -14,7 +14,7 @@ Features
  - no external dependencies or services, drop-in
  - low message footprint (9 bytes over any binary payload)
  - sockets over TPC or Unix
- - high performance
+ - very fast
  - native net/rpc integration, ability to connect to existed application(s)
  - structured data transer using json
  - binary data transfer, including big payloads
