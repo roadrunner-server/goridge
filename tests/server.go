@@ -5,6 +5,7 @@ import (
 	"net"
 	"net/rpc"
 	"strings"
+	"os"
 )
 
 type Service struct{}
@@ -53,7 +54,14 @@ func (s *Service) EchoBinary(msg []byte, out *[]byte) error {
 }
 
 func main() {
-	ln, err := net.Listen("tcp", ":7079")
+	var ln net.Listener
+	var err error
+	if len(os.Args) == 2 {
+		ln, err = net.Listen("unix", os.Args[1])
+	} else {
+		ln, err = net.Listen("tcp", ":7079")
+	}
+
 	if err != nil {
 		panic(err)
 	}

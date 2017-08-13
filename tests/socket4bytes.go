@@ -3,10 +3,18 @@ package main
 import (
 	"log"
 	"net"
+	"os"
 )
 
 func main() {
-	ln, err := net.Listen("tcp", ":7077")
+	var ln net.Listener
+	var err error
+	if len(os.Args) == 2 {
+		ln, err = net.Listen("unix", os.Args[1])
+	} else {
+		ln, err = net.Listen("tcp", ":7077")
+	}
+
 	if err != nil {
 		panic(err)
 	}
