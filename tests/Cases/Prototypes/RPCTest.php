@@ -165,6 +165,17 @@ abstract class RPCTest extends TestCase
     }
 
     /**
+     * @expectedException \Spiral\Goridge\Exceptions\MessageException
+     * @expectedExceptionMessageRegExp #error '.*json encode*#
+     */
+    public function testJsonException()
+    {
+        $conn = $this->makeRPC();
+
+        $conn->call('Service.Process', random_bytes(256));
+    }
+
+    /**
      * @return \Spiral\Goridge\JsonRPC
      */
     protected function makeRPC(): JsonRPC
