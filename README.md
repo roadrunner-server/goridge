@@ -1,4 +1,4 @@
-Goridge, high performance PHP-to-Go net/rpc codec
+Goridge, high performance PHP-to-Golang net/rpc codec
 =================================================
 [![Latest Stable Version](https://poser.pugx.org/spiral/goridge/v/stable)](https://packagist.org/packages/spiral/goridge) 
 [![GoDoc](https://godoc.org/github.com/spiral/goridge?status.svg)](https://godoc.org/github.com/spiral/goridge)
@@ -7,18 +7,18 @@ Goridge, high performance PHP-to-Go net/rpc codec
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/spiral/goridge/badges/quality-score.png)](https://scrutinizer-ci.com/g/spiral/goridge/?branch=master)
 [![Coverage Status](https://coveralls.io/repos/github/spiral/goridge/badge.svg?branch=master)](https://coveralls.io/github/spiral/goridge?branch=master)
 
-Goridge is high-performance golang/php codec library which works over native PHP sockets and Golang net/rpc package. The library allows you to call Go service methods from PHP with minimal footprint, structures and binary data support.
+Goridge is high performance PHP-to-Golang codec library which works over native PHP sockets and Golang net/rpc package. The library allows you to call Go service methods from PHP with minimal footprint, structures and `[]byte` support.
 
 Features
 --------
  - no external dependencies or services, drop-in
  - low message footprint (9 bytes over any binary payload)
- - sockets over TPC or Unix
- - very fast
- - native net/rpc integration, ability to connect to existed application(s)
+ - sockets over TCP or Unix
+ - very fast (260k calls per second on Ryzen 1700X over 25 threads)
+ - native `net/rpc` integration, ability to connect to existed application(s)
  - structured data transfer using json
- - binary data transfer, including big payloads
- - transport and message level error handling
+ - `[]byte` transfer, including big payloads
+ - service, message and transport level error handling
  - hackable
  - works on Windows
 
@@ -67,6 +67,10 @@ func main() {
 		go rpc.ServeCodec(goridge.NewJSONCodec(conn))
 	}
 }
+```
+
+```
+$ go get "github.com/spiral/goridge"
 ```
 
 > See `tests` folder for more examples.

@@ -136,7 +136,7 @@ class Connection implements ConnectionInterface
             throw new MessageException("unable to set body with NO_BODY flag");
         }
 
-        socket_send($this->socket, pack('CP', $flags, $size), 10, 0);
+        socket_send($this->socket, pack('CP', $flags, $size), 9, 0);
 
         if (!($flags & self::NO_BODY)) {
             socket_send($this->socket, $payload, $size, 0);
