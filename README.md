@@ -34,6 +34,10 @@ $rpc = new Goridge\JsonRPC(new Goridge\Connection("127.0.0.1", 6001));
 echo $rpc->call("App.Hi", "Antony");
 ```
 
+```
+$ go get "github.com/spiral/goridge"
+```
+
 ```go
 package main
 
