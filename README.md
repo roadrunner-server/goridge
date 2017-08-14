@@ -13,7 +13,7 @@ Features
 --------
  - no external dependencies or services, drop-in
  - low message footprint (9 bytes over any binary payload)
- - sockets over TPC or Unix
+ - sockets over TCP or Unix
  - very fast (260k calls per second on Ryzen 1700X over 25 threads)
  - native `net/rpc` integration, ability to connect to existed application(s)
  - structured data transfer using json
