@@ -16,7 +16,7 @@ Features
  - sockets over TPC or Unix
  - very fast
  - native net/rpc integration, ability to connect to existed application(s)
- - structured data transer using json
+ - structured data transfer using json
  - binary data transfer, including big payloads
  - transport and message level error handling
  - hackable
