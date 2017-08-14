@@ -50,7 +50,7 @@ class JsonRPC
                 ));
             }
             
-            $this->conn->send(json_encode($argument));
+            $this->conn->send($body);
         }
 
         $body = $this->conn->receiveSync($flags);
