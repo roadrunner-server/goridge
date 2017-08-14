@@ -18,7 +18,7 @@ Features
  - native net/rpc integration, ability to connect to existed application(s)
  - structured data transfer using json
  - binary data transfer, including big payloads
- - transport and message level error handling
+ - service, message and transport level error handling
  - hackable
  - works on Windows
 
