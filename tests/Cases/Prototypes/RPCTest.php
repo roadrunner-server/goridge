@@ -165,7 +165,7 @@ abstract class RPCTest extends TestCase
     }
 
     /**
-     * @expectedException \Spiral\Goridge\Exceptions\MessageException
+     * @expectedException \Spiral\Goridge\Exceptions\ServiceException
      * @expectedExceptionMessageRegExp #error '.*json encode*#
      */
     public function testJsonException()
