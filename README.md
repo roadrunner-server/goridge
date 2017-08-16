@@ -74,3 +74,7 @@ $ go get "github.com/spiral/goridge"
 ```
 
 > See `tests` folder for more examples.
+
+Check of this libraries in order to find suitable socket manager:
+ * https://github.com/fatih/pool
+ * https://github.com/hashicorp/yamux
