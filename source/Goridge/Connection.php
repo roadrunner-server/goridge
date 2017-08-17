@@ -55,7 +55,7 @@ class Connection implements ConnectionInterface
      * @param int|null $port    Ignored for UNIX sockets.
      * @param int      $type    Default: TPC_SOCKET
      *
-     * @throws \Spiral\Goridge\Exceptions\InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     public function __construct(string $address, int $port = null, int $type = self::SOCK_TPC)
     {
@@ -95,7 +95,7 @@ class Connection implements ConnectionInterface
     /**
      * @return int|null
      */
-    public function getPort(): ? int
+    public function getPort()
     {
         return $this->port;
     }
@@ -117,14 +117,7 @@ class Connection implements ConnectionInterface
     }
 
     /**
-     * Send payload message to another party.
-     *
-     * @param string|binary $payload
-     * @param int           $flags
-     *
-     * @return self
-     *
-     * @throws \Spiral\Goridge\Exceptions\MessageException When message can not be send.
+     * {@inheritdoc}
      */
     public function send($payload, int $flags = self::KEEP_CONNECTION): self
     {
@@ -146,17 +139,9 @@ class Connection implements ConnectionInterface
     }
 
     /**
-     * Receive message from another party in sync/blocked mode. Message can be null.
-     *
-     * @param int $flags Response flags.
-     *
-     * @return null|string
-     *
-     * @throws \Spiral\Goridge\Exceptions\TransportException When unable to connect or maintain
-     *                                                         socket.
-     * @throws \Spiral\Goridge\Exceptions\MessageException When messages can not be retrieved.
+     * {@inheritdoc}
      */
-    public function receiveSync(int & $flags = null): ? string
+    public function receiveSync(int &$flags = null)
     {
         $this->connect();
 
@@ -195,7 +180,7 @@ class Connection implements ConnectionInterface
      *
      * @return bool
      *
-     * @throws \Spiral\Goridge\Exceptions\TransportException
+     * @throws TransportException
      * @throws \Error When sockets are used in unsupported environment.
      */
     public function connect(): bool
@@ -219,7 +204,7 @@ class Connection implements ConnectionInterface
     /**
      * Close connection.
      *
-     * @throws \Spiral\Goridge\Exceptions\TransportException
+     * @throws TransportException
      */
     public function close()
     {
@@ -256,7 +241,7 @@ class Connection implements ConnectionInterface
     /**
      * @return array Prefix [flag, length]
      *
-     * @throws \Spiral\Goridge\Exceptions\PrefixException
+     * @throws PrefixException
      */
     private function fetchPrefixSync(): array
     {

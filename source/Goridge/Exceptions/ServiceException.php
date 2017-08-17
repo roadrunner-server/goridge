@@ -9,5 +9,4 @@ namespace Spiral\Goridge\Exceptions;
 
 class ServiceException extends RPCException
 {
-
 }
