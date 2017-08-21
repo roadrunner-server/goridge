@@ -7,6 +7,9 @@
 
 namespace Spiral\Goridge;
 
+use Spiral\Goridge\Exceptions\MessageException;
+use Spiral\Goridge\Exceptions\TransportException;
+
 interface ConnectionInterface
 {
     /** Message delivery flags. */
@@ -24,10 +27,10 @@ interface ConnectionInterface
      * @param string|binary $payload
      * @param int           $flags Protocol control flags.
      *
-     * @throws \Spiral\Goridge\Exceptions\MessageException When message can not be send.
-     * @throws \Spiral\Goridge\Exceptions\TransportException
+     * @throws MessageException When message can not be send.
+     * @throws TransportException
      */
-    public function send($payload, int $flags = 0);
+    public function send($payload, int $flags = self::KEEP_CONNECTION);
 
     /**
      * Receive message from another party in sync/blocked mode. Message can be null.
@@ -36,8 +39,8 @@ interface ConnectionInterface
      *
      * @return null|string
      *
-     * @throws \Spiral\Goridge\Exceptions\MessageException When messages can not be retrieved.
-     * @throws \Spiral\Goridge\Exceptions\TransportException
+     * @throws MessageException When messages can not be retrieved.
+     * @throws TransportException
      */
-    public function receiveSync(int & $flags = 0): ? string;
+    public function receiveSync(int &$flags = null);
 }
