@@ -9,8 +9,7 @@ High-performance PHP-to-Golang RPC bridge
 
 <img src="https://www.phpclasses.org/award/innovation/logo.gif" height="170px" alt="Spiral Framework" align="left"/> Goridge is high performance PHP-to-Golang codec library which works over native PHP sockets and Golang net/rpc package. The library allows you to call Go service methods from PHP with minimal footprint, structures and `[]byte` support.
 
-
-<br/><br/><br/>
+<br/><br/>
 Features
 --------
  - no external dependencies or services, drop-in
