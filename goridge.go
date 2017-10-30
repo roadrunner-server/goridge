@@ -93,8 +93,6 @@ func (c *JSONCodec) ReadRequestBody(out interface{}) error {
 		} else {
 			return errors.New("{rawData} request for " + reflect.ValueOf(out).Elem().Kind().String())
 		}
-
-		return nil
 	}
 
 	return json.Unmarshal(body, out)
