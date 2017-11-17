@@ -8,8 +8,8 @@ import (
 	"strings"
 )
 
-// App
-type App struct{}
+// Service
+type Service struct{}
 
 // Payload
 type Payload struct {
@@ -19,13 +19,13 @@ type Payload struct {
 }
 
 // Negate number
-func (s *App) Negate(i int64, r *int64) error {
+func (s *Service) Negate(i int64, r *int64) error {
 	*r = -i
 	return nil
 }
 
 // Ping pong
-func (s *App) Ping(msg string, r *string) error {
+func (s *Service) Ping(msg string, r *string) error {
 	if msg == "ping" {
 		*r = "pong"
 	}
@@ -33,13 +33,13 @@ func (s *App) Ping(msg string, r *string) error {
 }
 
 // Echo returns incoming message
-func (s *App) Echo(msg string, r *string) error {
+func (s *Service) Echo(msg string, r *string) error {
 	*r = msg
 	return nil
 }
 
 // Process performs payload conversion
-func (s *App) Process(msg Payload, r *Payload) error {
+func (s *Service) Process(msg Payload, r *Payload) error {
 	r.Name = strings.ToUpper(msg.Name)
 	r.Value = -msg.Value
 
@@ -54,7 +54,7 @@ func (s *App) Process(msg Payload, r *Payload) error {
 }
 
 // EchoBinary work over binary data
-func (s *App) EchoBinary(msg []byte, out *[]byte) error {
+func (s *Service) EchoBinary(msg []byte, out *[]byte) error {
 	*out = append(*out, msg...)
 
 	return nil
@@ -73,7 +73,7 @@ func main() {
 		panic(err)
 	}
 
-	rpc.Register(new(App))
+	rpc.Register(new(Service))
 
 	for {
 		conn, err := ln.Accept()
