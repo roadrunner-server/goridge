@@ -3,4 +3,5 @@ composer.lock
 vendor/
 clover.xml
 coveralls.json
-tests/*.exe
+tests/server.exe
+tests/server

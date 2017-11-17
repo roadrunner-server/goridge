@@ -7,30 +7,29 @@
 
 namespace Spiral\Goridge;
 
-use Spiral\Goridge\Exceptions\MessageException;
+use Spiral\Goridge\Exceptions\RelayException;
 use Spiral\Goridge\Exceptions\TransportException;
 
-interface ConnectionInterface
+interface RelayInterface
 {
-    /** Message delivery flags. */
-    const KEEP_CONNECTION  = 0;
-    const CLOSE_CONNECTION = 1;
+    /** Maximum payload size to read at once. */
+    const BUFFER_SIZE = 65536;
 
-    /** Payload flasg.*/
-    const NO_BODY    = 16;
-    const RAW_BODY   = 32;
-    const ERROR_BODY = 64;
+    /** Payload flags.*/
+    const PAYLOAD_NONE = 2;
+    const PAYLOAD_RAW = 4;
+    const PAYLOAD_ERROR = 8;
+    const PAYLOAD_CONTROL = 16;
 
     /**
      * Send payload message to another party.
      *
-     * @param string|binary $payload
-     * @param int           $flags Protocol control flags.
+     * @param string $payload
+     * @param int    $flags Protocol control flags.
      *
-     * @throws MessageException When message can not be send.
      * @throws TransportException
      */
-    public function send($payload, int $flags = self::KEEP_CONNECTION);
+    public function send($payload, int $flags = null);
 
     /**
      * Receive message from another party in sync/blocked mode. Message can be null.
@@ -39,7 +38,6 @@ interface ConnectionInterface
      *
      * @return null|string
      *
-     * @throws MessageException When messages can not be retrieved.
      * @throws TransportException
      */
     public function receiveSync(int &$flags = null);

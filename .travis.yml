@@ -5,6 +5,7 @@ sudo: required
 php:
   - 7.0
   - 7.1
+  - 7.2
 
 go:
   - 1.8
@@ -16,16 +17,10 @@ install:
   - composer install --no-interaction --prefer-source
   - go get "github.com/spiral/goridge"
   - go build tests/server.go
-  - go build tests/socket4bytes.go
-  - go build tests/socket10echo.go
 
 before_script:
   - ./server &
-  - ./socket4bytes &
-  - ./socket10echo &
-  - ./socket4bytes socket4bytes.sock &
-  - ./socket10echo socket10echo.sock &
-  - ./server server.sock &
+  - ./server unix.sock &
 
 script:
   - vendor/bin/phpunit --coverage-clover=clover.xml

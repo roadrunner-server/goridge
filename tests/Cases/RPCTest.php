@@ -5,19 +5,19 @@
  * @author Wolfy-J
  */
 
-namespace Spiral\Tests\Prototypes;
+namespace Spiral\Tests;
 
 use PHPUnit\Framework\TestCase;
-use Spiral\Goridge\Connection;
-use Spiral\Goridge\ConnectionInterface;
-use Spiral\Goridge\JsonRPC;
+use Spiral\Goridge\SocketRelay;
+use Spiral\Goridge\RelayInterface;
+use Spiral\Goridge\RPC;
 
 abstract class RPCTest extends TestCase
 {
-    const GO_APP    = "server";
+    const GO_APP = "server";
     const SOCK_ADDR = "";
     const SOCK_PORT = 7079;
-    const SOCK_TYPE = Connection::SOCK_TPC;
+    const SOCK_TYPE = SocketRelay::SOCK_TPC;
 
     public function testPingPong()
     {
@@ -46,7 +46,7 @@ abstract class RPCTest extends TestCase
     public function testLongEcho()
     {
         $conn = $this->makeRPC();
-        $payload = base64_encode(random_bytes(Connection::CHUNK_SIZE * 5));
+        $payload = base64_encode(random_bytes(SocketRelay::BUFFER_SIZE * 5));
 
         $resp = $conn->call('Service.Echo', $payload);
 
@@ -61,12 +61,12 @@ abstract class RPCTest extends TestCase
     public function testConvertException()
     {
         $conn = $this->makeRPC();
-        $payload = base64_encode(random_bytes(Connection::CHUNK_SIZE * 5));
+        $payload = base64_encode(random_bytes(SocketRelay::BUFFER_SIZE * 5));
 
         $resp = $conn->call(
             'Service.Echo',
             $payload,
-            ConnectionInterface::RAW_BODY
+            RelayInterface::PAYLOAD_RAW
         );
 
         $this->assertSame(strlen($payload), strlen($resp));
@@ -76,12 +76,12 @@ abstract class RPCTest extends TestCase
     public function testRawBody()
     {
         $conn = $this->makeRPC();
-        $payload = random_bytes(Connection::CHUNK_SIZE * 100);
+        $payload = random_bytes(SocketRelay::BUFFER_SIZE * 100);
 
         $resp = $conn->call(
             'Service.EchoBinary',
             $payload,
-            ConnectionInterface::RAW_BODY
+            RelayInterface::PAYLOAD_RAW
         );
 
         $this->assertSame(strlen($payload), strlen($resp));
@@ -91,12 +91,12 @@ abstract class RPCTest extends TestCase
     public function testLongRawBody()
     {
         $conn = $this->makeRPC();
-        $payload = random_bytes(Connection::CHUNK_SIZE * 1000);
+        $payload = random_bytes(SocketRelay::BUFFER_SIZE * 1000);
 
         $resp = $conn->call(
             'Service.EchoBinary',
             $payload,
-            ConnectionInterface::RAW_BODY
+            RelayInterface::PAYLOAD_RAW
         );
 
         $this->assertSame(strlen($payload), strlen($resp));
@@ -125,7 +125,7 @@ abstract class RPCTest extends TestCase
     public function testBadPayload()
     {
         $conn = $this->makeRPC();
-        $conn->call('Service.Process', 'raw', ConnectionInterface::RAW_BODY);
+        $conn->call('Service.Process', 'raw', RelayInterface::PAYLOAD_RAW);
     }
 
     public function testPayloadWithMap()
@@ -176,14 +176,10 @@ abstract class RPCTest extends TestCase
     }
 
     /**
-     * @return \Spiral\Goridge\JsonRPC
+     * @return \Spiral\Goridge\RPC
      */
-    protected function makeRPC(): JsonRPC
+    protected function makeRPC(): RPC
     {
-        return new JsonRPC(new Connection(
-            static::SOCK_ADDR,
-            static::SOCK_PORT,
-            static::SOCK_TYPE
-        ));
+        return new RPC(new SocketRelay(static::SOCK_ADDR, static::SOCK_PORT, static::SOCK_TYPE));
     }
 }

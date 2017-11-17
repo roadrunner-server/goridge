@@ -16,7 +16,7 @@ func (a *App) Hi(name string, r *string) error {
 }
 
 func main() {
-	ln, err := net.Listen("tcp", "127.0.0.1:6001")
+	ln, err := net.Listen("tcp", ":6001")
 	if err != nil {
 		panic(err)
 	}
@@ -31,6 +31,6 @@ func main() {
 		}
 
 		log.Printf("new connection %+v", conn)
-		go rpc.ServeCodec(goridge.NewJSONCodec(conn))
+		go rpc.ServeCodec(goridge.NewCodec(conn))
 	}
 }

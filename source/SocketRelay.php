@@ -7,30 +7,23 @@
 
 namespace Spiral\Goridge;
 
-use Spiral\Goridge\Exceptions\InvalidArgumentException;
-use Spiral\Goridge\Exceptions\MessageException;
-use Spiral\Goridge\Exceptions\PrefixException;
 use Spiral\Goridge\Exceptions\TransportException;
+use Spiral\Goridge\Exceptions\PrefixException;
+use Spiral\Goridge\Exceptions\RelayException;
 
 /**
- * Sends byte payload to RCP server using protocol:
+ * Communicates with remote server/client over be-directional socket using byte payload:
  *
  * [ prefix     ][ payload        ]
  * [ 1+8 bytes  ][ message length ]
  *
  * prefix:
  * [ flag       ][ message length, unsigned int 64bits, LittleEndian ]
- *
- * flag options:
- * KEEP_CONNECTION  - keep socket connection.
- * CLOSE_CONNECTION - end socket connection.
  */
-class Connection implements ConnectionInterface
+class SocketRelay implements RelayInterface
 {
-    const CHUNK_SIZE = 65536;
-
     /** Supported socket types. */
-    const SOCK_TPC  = 0;
+    const SOCK_TPC = 0;
     const SOCK_UNIX = 1;
 
     /** @var string */
@@ -47,22 +40,21 @@ class Connection implements ConnectionInterface
 
     /**
      * Example:
-     * $conn = new Connection("localhost", 7000);
-     *
-     * $conn = new Connection("/tmp/rpc.sock", null, Socket::UNIX_SOCKET);
+     * $relay = new SocketRelay("localhost", 7000);
+     * $relay = new SocketRelay("/tmp/rpc.sock", null, Socket::UNIX_SOCKET);
      *
      * @param string   $address Localhost, ip address or hostname.
      * @param int|null $port    Ignored for UNIX sockets.
      * @param int      $type    Default: TPC_SOCKET
      *
-     * @throws InvalidArgumentException
+     * @throws Exceptions\InvalidArgumentException
      */
     public function __construct(string $address, int $port = null, int $type = self::SOCK_TPC)
     {
         switch ($type) {
             case self::SOCK_TPC:
                 if ($port === null) {
-                    throw new InvalidArgumentException(sprintf(
+                    throw new Exceptions\InvalidArgumentException(sprintf(
                         "no port given for TPC socket on '%s'",
                         $address
                     ));
@@ -72,7 +64,7 @@ class Connection implements ConnectionInterface
                 $port = null;
                 break;
             default:
-                throw new InvalidArgumentException(sprintf(
+                throw new Exceptions\InvalidArgumentException(sprintf(
                     "undefined connection type %s on '%s'",
                     $type,
                     $address
@@ -82,6 +74,59 @@ class Connection implements ConnectionInterface
         $this->address = $address;
         $this->port = $port;
         $this->type = $type;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function send($payload, int $flags = null): self
+    {
+        $this->connect();
+
+        $size = strlen($payload);
+        if ($flags & self::PAYLOAD_NONE && $size != 0) {
+            throw new TransportException("unable to send payload with PAYLOAD_NONE flag");
+        }
+
+        socket_send($this->socket, pack('CP', $flags, $size), 9, 0);
+
+        if (!($flags & self::PAYLOAD_NONE)) {
+            socket_send($this->socket, $payload, $size, 0);
+        }
+
+        return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
+    public function receiveSync(int &$flags = null)
+    {
+        $this->connect();
+
+        $prefix = $this->fetchPrefix();
+        $flags = $prefix['flags'];
+        $result = null;
+
+        if ($prefix['size'] !== 0) {
+            $readBytes = $prefix['size'];
+            $buffer = null;
+
+            //Add ability to write to stream in a future
+            while ($readBytes > 0) {
+                $bufferLength = socket_recv(
+                    $this->socket,
+                    $buffer,
+                    min(self::BUFFER_SIZE, $readBytes),
+                    MSG_WAITALL
+                );
+
+                $result .= $buffer;
+                $readBytes -= $bufferLength;
+            }
+        }
+
+        return $result;
     }
 
     /**
@@ -117,70 +162,12 @@ class Connection implements ConnectionInterface
     }
 
     /**
-     * {@inheritdoc}
-     */
-    public function send($payload, int $flags = self::KEEP_CONNECTION): self
-    {
-        $this->connect();
-
-        $size = strlen($payload);
-
-        if ($flags & self::NO_BODY && $size != 0) {
-            throw new MessageException("unable to set body with NO_BODY flag");
-        }
-
-        socket_send($this->socket, pack('CP', $flags, $size), 9, 0);
-
-        if (!($flags & self::NO_BODY)) {
-            socket_send($this->socket, $payload, $size, 0);
-        }
-
-        return $this;
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function receiveSync(int &$flags = null)
-    {
-        $this->connect();
-
-        $prefix = $this->fetchPrefixSync();
-        $flags = $prefix['flags'];
-        $result = null;
-
-        if ($prefix['size'] !== 0) {
-            $readBytes = $prefix['size'];
-            $buffer = null;
-
-            //Add ability to write to stream in a future
-            while ($readBytes > 0) {
-                $bufferLength = socket_recv(
-                    $this->socket,
-                    $buffer,
-                    min(self::CHUNK_SIZE, $readBytes),
-                    MSG_WAITALL
-                );
-
-                $result .= $buffer;
-                $readBytes -= $bufferLength;
-            }
-        }
-
-        if ($flags & self::CLOSE_CONNECTION) {
-            $this->close();
-        }
-
-        return $result;
-    }
-
-    /**
      * Ensure socket connection. Returns true if socket successfully connected
      * or have already been connected.
      *
      * @return bool
      *
-     * @throws TransportException
+     * @throws RelayException
      * @throws \Error When sockets are used in unsupported environment.
      */
     public function connect(): bool
@@ -192,10 +179,10 @@ class Connection implements ConnectionInterface
         $this->socket = $this->createSocket();
         try {
             if (socket_connect($this->socket, $this->address, $this->port) === false) {
-                throw new TransportException(socket_strerror(socket_last_error($this->socket)));
+                throw new RelayException(socket_strerror(socket_last_error($this->socket)));
             }
         } catch (\Exception $e) {
-            throw new TransportException("unable to establish connection {$this}", 0, $e);
+            throw new RelayException("unable to establish connection {$this}", 0, $e);
         }
 
         return true;
@@ -204,12 +191,12 @@ class Connection implements ConnectionInterface
     /**
      * Close connection.
      *
-     * @throws TransportException
+     * @throws RelayException
      */
     public function close()
     {
         if (!$this->isConnected()) {
-            throw new TransportException("unable to close socket '{$this}', socket already closed");
+            throw new RelayException("unable to close socket '{$this}', socket already closed");
         }
 
         socket_close($this->socket);
@@ -243,7 +230,7 @@ class Connection implements ConnectionInterface
      *
      * @throws PrefixException
      */
-    private function fetchPrefixSync(): array
+    private function fetchPrefix(): array
     {
         $prefixLength = socket_recv($this->socket, $prefixBody, 9, MSG_WAITALL);
         if ($prefixBody === false || $prefixLength !== 9) {
@@ -253,7 +240,12 @@ class Connection implements ConnectionInterface
             ));
         }
 
-        return unpack("Cflags/Psize", $prefixBody);
+        $result = unpack("Cflags/Psize", $prefixBody);
+        if (!is_array($result)) {
+            throw new Exceptions\PrefixException("invalid prefix");
+        }
+
+        return $result;
     }
 
     /**
@@ -264,7 +256,7 @@ class Connection implements ConnectionInterface
     {
         if ($this->type === self::SOCK_UNIX) {
             if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-                throw new \Error("socket {$this} unavailable in windows");
+                throw new \Error("socket {$this} unavailable on Windows");
             }
 
             return socket_create(1, SOCK_STREAM, SOL_SOCKET);
