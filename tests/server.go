@@ -8,10 +8,10 @@ import (
 	"strings"
 )
 
-// Service
+// Service sample
 type Service struct{}
 
-// Payload
+// Payload sample
 type Payload struct {
 	Name  string            `json:"name"`
 	Value int               `json:"value"`

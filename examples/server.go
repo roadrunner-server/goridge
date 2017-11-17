@@ -8,7 +8,7 @@ import (
 	"net/rpc"
 )
 
-// App
+// App sample
 type App struct{}
 
 // Hi returns greeting message.
