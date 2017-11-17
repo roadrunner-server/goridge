@@ -8,32 +8,32 @@ import (
 	"strings"
 )
 
-type Service struct{}
+type app struct{}
 
-type Payload struct {
+type payload struct {
 	Name  string            `json:"name"`
 	Value int               `json:"value"`
 	Keys  map[string]string `json:"keys,omitempty"`
 }
 
-func (s *Service) Negate(i int64, r *int64) error {
+func (s *app) Negate(i int64, r *int64) error {
 	*r = -i
 	return nil
 }
 
-func (s *Service) Ping(msg string, r *string) error {
+func (s *app) Ping(msg string, r *string) error {
 	if msg == "ping" {
 		*r = "pong"
 	}
 	return nil
 }
 
-func (s *Service) Echo(msg string, r *string) error {
+func (s *app) Echo(msg string, r *string) error {
 	*r = msg
 	return nil
 }
 
-func (s *Service) Process(msg Payload, r *Payload) error {
+func (s *app) Process(msg payload, r *payload) error {
 	r.Name = strings.ToUpper(msg.Name)
 	r.Value = -msg.Value
 
@@ -47,7 +47,7 @@ func (s *Service) Process(msg Payload, r *Payload) error {
 	return nil
 }
 
-func (s *Service) EchoBinary(msg []byte, out *[]byte) error {
+func (s *app) EchoBinary(msg []byte, out *[]byte) error {
 	*out = append(*out, msg...)
 
 	return nil
@@ -66,7 +66,7 @@ func main() {
 		panic(err)
 	}
 
-	rpc.Register(new(Service))
+	rpc.Register(new(app))
 
 	for {
 		conn, err := ln.Accept()
