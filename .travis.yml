@@ -20,7 +20,7 @@ install:
 
 before_script:
   - ./server &
-  - ./server unix.sock &
+  - ./server server.sock &
 
 script:
   - vendor/bin/phpunit --coverage-clover=clover.xml
