@@ -7,6 +7,7 @@
 
 namespace Spiral\Goridge;
 
+use Spiral\Goridge\Exceptions\GoridgeException;
 use Spiral\Goridge\Exceptions\TransportException;
 use Spiral\Goridge\Exceptions\PrefixException;
 use Spiral\Goridge\Exceptions\RelayException;
@@ -250,13 +251,13 @@ class SocketRelay implements RelayInterface
 
     /**
      * @return resource
-     * @throws \Error
+     * @throws GoridgeException
      */
     private function createSocket()
     {
         if ($this->type === self::SOCK_UNIX) {
             if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-                throw new \Error("socket {$this} unavailable on Windows");
+                throw new GoridgeException("socket {$this} unavailable on Windows");
             }
 
             return socket_create(1, SOCK_STREAM, SOL_SOCKET);

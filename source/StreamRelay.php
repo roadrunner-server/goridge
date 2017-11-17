@@ -79,7 +79,6 @@ class StreamRelay implements RelayInterface
         $result = null;
         if ($prefix['size'] !== 0) {
             $leftBytes = $prefix['size'];
-            $buffer = null;
 
             //Add ability to write to stream in a future
             while ($leftBytes > 0) {
