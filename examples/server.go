@@ -8,9 +8,11 @@ import (
 	"net/rpc"
 )
 
-type app struct{}
+// App
+type App struct{}
 
-func (a *app) Hi(name string, r *string) error {
+// Hi returns greeting message.
+func (a *App) Hi(name string, r *string) error {
 	*r = fmt.Sprintf("Hello, %s!", name)
 	return nil
 }
@@ -21,7 +23,7 @@ func main() {
 		panic(err)
 	}
 
-	rpc.Register(new(app))
+	rpc.Register(new(App))
 	log.Printf("started")
 
 	for {

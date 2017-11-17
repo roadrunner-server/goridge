@@ -8,32 +8,38 @@ import (
 	"strings"
 )
 
-type app struct{}
+// App
+type App struct{}
 
-type payload struct {
+// Payload
+type Payload struct {
 	Name  string            `json:"name"`
 	Value int               `json:"value"`
 	Keys  map[string]string `json:"keys,omitempty"`
 }
 
-func (s *app) Negate(i int64, r *int64) error {
+// Negate number
+func (s *App) Negate(i int64, r *int64) error {
 	*r = -i
 	return nil
 }
 
-func (s *app) Ping(msg string, r *string) error {
+// Ping pong
+func (s *App) Ping(msg string, r *string) error {
 	if msg == "ping" {
 		*r = "pong"
 	}
 	return nil
 }
 
-func (s *app) Echo(msg string, r *string) error {
+// Echo returns incoming message
+func (s *App) Echo(msg string, r *string) error {
 	*r = msg
 	return nil
 }
 
-func (s *app) Process(msg payload, r *payload) error {
+// Process performs payload conversion
+func (s *App) Process(msg Payload, r *Payload) error {
 	r.Name = strings.ToUpper(msg.Name)
 	r.Value = -msg.Value
 
@@ -47,7 +53,8 @@ func (s *app) Process(msg payload, r *payload) error {
 	return nil
 }
 
-func (s *app) EchoBinary(msg []byte, out *[]byte) error {
+// EchoBinary work over binary data
+func (s *App) EchoBinary(msg []byte, out *[]byte) error {
 	*out = append(*out, msg...)
 
 	return nil
@@ -66,7 +73,7 @@ func main() {
 		panic(err)
 	}
 
-	rpc.Register(new(app))
+	rpc.Register(new(App))
 
 	for {
 		conn, err := ln.Accept()
