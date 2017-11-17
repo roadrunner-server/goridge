@@ -7,6 +7,6 @@
 
 namespace Spiral\Goridge\Exceptions;
 
-class PrefixException extends MessageException
+class TransportException extends RelayException
 {
 }

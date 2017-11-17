@@ -7,12 +7,11 @@
 
 namespace Spiral\Tests;
 
-use Spiral\Goridge\Connection;
-use Spiral\Tests\Prototypes\SocketTest;
+use Spiral\Goridge\SocketRelay;
 
-class SocketTCPTest extends SocketTest
+class TPCSocketTest extends RPCTest
 {
     const SOCK_ADDR = "127.0.0.1";
-    const SOCK_PORT = 7077;
-    const SOCK_TYPE = Connection::SOCK_TPC;
+    const SOCK_PORT = 7079;
+    const SOCK_TYPE = SocketRelay::SOCK_TPC;
 }

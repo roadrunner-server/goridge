@@ -1,20 +1,26 @@
-Goridge, high performance PHP-to-Golang net/rpc codec
+High-performance PHP-to-Golang RPC bridge
 =================================================
 [![Latest Stable Version](https://poser.pugx.org/spiral/goridge/v/stable)](https://packagist.org/packages/spiral/goridge) 
 [![GoDoc](https://godoc.org/github.com/spiral/goridge?status.svg)](https://godoc.org/github.com/spiral/goridge)
-[![License](https://poser.pugx.org/spiral/goridge/license)](https://packagist.org/packages/spiral/goridge) 
 [![Build Status](https://travis-ci.org/spiral/goridge.svg?branch=master)](https://travis-ci.org/spiral/goridge)
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/spiral/goridge/badges/quality-score.png)](https://scrutinizer-ci.com/g/spiral/goridge/?branch=master)
-[![Coverage Status](https://coveralls.io/repos/github/spiral/goridge/badge.svg?branch=master)](https://coveralls.io/github/spiral/goridge?branch=master)
+[![Go Report Card](https://goreportcard.com/badge/github.com/spiral/goridge)](https://goreportcard.com/report/github.com/spiral/goridge)
 
-Goridge is high performance PHP-to-Golang codec library which works over native PHP sockets and Golang net/rpc package. The library allows you to call Go service methods from PHP with minimal footprint, structures and `[]byte` support.
+<img src="https://files.phpclasses.org/graphics/phpclasses/innovation-award-logo.png" height="90px" alt="PHPClasses Innovation Award" align="left"/>
+
+Goridge is high performance PHP-to-Golang codec library which works over native PHP sockets and Golang net/rpc package.
+ The library allows you to call Go service methods from PHP with minimal footprint, structures and `[]byte` support.
+
+Goridge relays can be used independently to ensure fast IPC connection between PHP and Go processes.
+
+<br/>
 
 Features
 --------
  - no external dependencies or services, drop-in
  - low message footprint (9 bytes over any binary payload)
- - sockets over TCP or Unix
- - very fast (260k calls per second on Ryzen 1700X over 25 threads)
+ - sockets over TCP or Unix (ext-sockets is required), standard pipes
+ - very fast (300k calls per second on Ryzen 1700X over 20 threads)
  - native `net/rpc` integration, ability to connect to existed application(s)
  - structured data transfer using json
  - `[]byte` transfer, including big payloads
@@ -22,14 +28,23 @@ Features
  - hackable
  - works on Windows
 
-Examples
+Installation
+------------
+```
+$ go get "github.com/spiral/goridge"
+```
+```
+$ composer require spiral/goridge
+```
+
+Example
 --------
 ```php
 <?php
 use Spiral\Goridge;
 require "vendor/autoload.php";
 
-$rpc = new Goridge\JsonRPC(new Goridge\Connection("127.0.0.1", 6001));
+$rpc = new Goridge\RPC(new Goridge\SocketRelay("127.0.0.1", 6001));
 
 echo $rpc->call("App.Hi", "Antony");
 ```
@@ -64,17 +79,16 @@ func main() {
 		if err != nil {
 			continue
 		}
-		go rpc.ServeCodec(goridge.NewJSONCodec(conn))
+		go rpc.ServeCodec(goridge.NewCodec(conn))
 	}
 }
 ```
 
-```
-$ go get "github.com/spiral/goridge"
-```
-
-> See `tests` folder for more examples.
-
 Check this libraries in order to find suitable socket manager:
  * https://github.com/fatih/pool
  * https://github.com/hashicorp/yamux
+ 
+License
+-------
+
+The MIT License (MIT). Please see [`LICENSE`](./LICENSE) for more information.

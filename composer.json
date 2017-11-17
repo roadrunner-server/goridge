@@ -1,7 +1,7 @@
 {
   "name": "spiral/goridge",
   "type": "goridge",
-  "description": "Goridge, high performance PHP-to-GO net/rpc Codec",
+  "description": "High-performance PHP-to-Golang RPC bridge",
   "license": "MIT",
   "authors": [
     {
@@ -10,15 +10,14 @@
     }
   ],
   "require": {
-    "php": ">=7.0",
-    "ext-sockets": "*"
+    "php": ">=7.0"
   },
   "require-dev": {
     "phpunit/phpunit": "~6.0"
   },
   "autoload": {
     "psr-4": {
-      "Spiral\\": "source/"
+      "Spiral\\Goridge\\": "source/"
     }
   },
   "autoload-dev": {

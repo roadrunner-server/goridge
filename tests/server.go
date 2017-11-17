@@ -4,8 +4,8 @@ import (
 	"github.com/spiral/goridge"
 	"net"
 	"net/rpc"
-	"strings"
 	"os"
+	"strings"
 )
 
 type Service struct{}
@@ -73,6 +73,6 @@ func main() {
 		if err != nil {
 			continue
 		}
-		go rpc.ServeCodec(goridge.NewJSONCodec(conn))
+		go rpc.ServeCodec(goridge.NewCodec(conn))
 	}
 }
