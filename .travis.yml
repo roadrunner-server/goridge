@@ -16,6 +16,7 @@ before_install:
 install:
   - composer install --no-interaction --prefer-source
   - go get "github.com/spiral/goridge"
+  - go get "github.com/stretchr/testify/assert"
   - go build tests/server.go
 
 before_script:
@@ -23,8 +24,8 @@ before_script:
   - ./server server.sock &
 
 script:
+  - go test -v
   - vendor/bin/phpunit --coverage-clover=clover.xml
-  - go test
 
 after_script:
   - wget https://github.com/satooshi/php-coveralls/releases/download/v1.0.1/coveralls.phar
