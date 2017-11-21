@@ -23,6 +23,7 @@ Features
  - sockets over TCP or Unix (ext-sockets is required), standard pipes
  - very fast (300k calls per second on Ryzen 1700X over 20 threads)
  - native `net/rpc` integration, ability to connect to existed application(s)
+ - standalone protocol usage
  - structured data transfer using json
  - `[]byte` transfer, including big payloads
  - service, message and transport level error handling
