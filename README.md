@@ -1,4 +1,4 @@
-High-performance PHP-to-Golang RPC bridge
+High-performance PHP-to-Golang IPC bridge
 =================================================
 [![Latest Stable Version](https://poser.pugx.org/spiral/goridge/v/stable)](https://packagist.org/packages/spiral/goridge) 
 [![GoDoc](https://godoc.org/github.com/spiral/goridge?status.svg)](https://godoc.org/github.com/spiral/goridge)
@@ -23,6 +23,7 @@ Features
  - sockets over TCP or Unix (ext-sockets is required), standard pipes
  - very fast (300k calls per second on Ryzen 1700X over 20 threads)
  - native `net/rpc` integration, ability to connect to existed application(s)
+ - standalone protocol usage
  - structured data transfer using json
  - `[]byte` transfer, including big payloads
  - service, message and transport level error handling

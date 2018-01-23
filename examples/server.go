@@ -8,8 +8,10 @@ import (
 	"net/rpc"
 )
 
+// App sample
 type App struct{}
 
+// Hi returns greeting message.
 func (a *App) Hi(name string, r *string) error {
 	*r = fmt.Sprintf("Hello, %s!", name)
 	return nil
