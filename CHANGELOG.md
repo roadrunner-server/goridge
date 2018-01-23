@@ -1,6 +1,9 @@
 CHANGELOG
 =========
 
+## v2.0.1 (23.01.2018)
+- support sending empty string payloads without PAYLOAD_NONE flag
+
 ## v2.0.0 (17.11.2017)
 - ext-sockets is not required anymore
 - Connection renamed to Relay

@@ -61,7 +61,7 @@ class StreamRelay implements RelayInterface
             throw new Exceptions\TransportException("unable to write prefix to the stream");
         }
 
-        if (!($flags & self::PAYLOAD_NONE) && !fwrite($this->out, $payload, $size)) {
+        if (!($flags & self::PAYLOAD_NONE) && fwrite($this->out, $payload, $size) === false) {
             throw new Exceptions\TransportException("unable to write payload to the stream");
         }
 
