@@ -1,6 +1,9 @@
 CHANGELOG
 =========
 
+## v2.0.2 (29.01.2018)
+- typo in SOCK_TPC constant
+
 ## v2.0.1 (23.01.2018)
 - support sending empty string payloads without PAYLOAD_NONE flag
 
