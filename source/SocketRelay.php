@@ -24,9 +24,12 @@ use Spiral\Goridge\Exceptions\RelayException;
 class SocketRelay implements RelayInterface
 {
     /** Supported socket types. */
-    const SOCK_TPC = 0;
+    const SOCK_TCP = 0;
     const SOCK_UNIX = 1;
-
+    
+    // @deprecated
+    const SOCK_TPC = self::SOCK_TCP;
+    
     /** @var string */
     private $address;
 
@@ -46,14 +49,14 @@ class SocketRelay implements RelayInterface
      *
      * @param string   $address Localhost, ip address or hostname.
      * @param int|null $port    Ignored for UNIX sockets.
-     * @param int      $type    Default: TPC_SOCKET
+     * @param int      $type    Default: TCP_SOCKET
      *
      * @throws Exceptions\InvalidArgumentException
      */
-    public function __construct(string $address, int $port = null, int $type = self::SOCK_TPC)
+    public function __construct(string $address, int $port = null, int $type = self::SOCK_TCP)
     {
         switch ($type) {
-            case self::SOCK_TPC:
+            case self::SOCK_TCP:
                 if ($port === null) {
                     throw new Exceptions\InvalidArgumentException(sprintf(
                         "no port given for TPC socket on '%s'",
@@ -219,7 +222,7 @@ class SocketRelay implements RelayInterface
      */
     public function __toString(): string
     {
-        if ($this->type == self::SOCK_TPC) {
+        if ($this->type == self::SOCK_TCP) {
             return "tcp://{$this->address}:{$this->port}";
         }
 
