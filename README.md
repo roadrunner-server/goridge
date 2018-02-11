@@ -15,7 +15,6 @@ Goridge is high performance PHP-to-Golang codec library which works over native 
 Goridge relays can be used independently to ensure fast IPC connection between PHP and Go processes.
 
 See [RoadRunner](https://github.com/spiral/roadrunner) - embeddable PHP worker pool library.
-
 <br/>
 
 Features
