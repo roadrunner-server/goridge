@@ -42,6 +42,12 @@ func (rl *SocketRelay) Receive() (data []byte, p Prefix, err error) {
 	rl.mur.Lock()
 	defer rl.mur.Unlock()
 
+	defer func() {
+		if rErr, ok := recover().(error); ok {
+			err = rErr
+		}
+	}()
+
 	if _, err := rl.rwc.Read(p[:]); err != nil {
 		return nil, p, err
 	}
