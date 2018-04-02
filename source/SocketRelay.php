@@ -263,7 +263,7 @@ class SocketRelay implements RelayInterface
                 throw new GoridgeException("socket {$this} unavailable on Windows");
             }
 
-            return socket_create(1, SOCK_STREAM, SOL_SOCKET);
+            return socket_create(AF_UNIX, SOCK_STREAM, 0);
         }
 
         return socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
