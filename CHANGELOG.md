@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+## v2.0.5 (03.04.2018)
+- handled possible panic on reading from broken connection in socket relay
+
+## v2.0.4 (23.03.2018)
+- minor performance improvement in memory allocation for buffer by @243083df
+
 ## v2.0.3 (20.02.2018)
 - fixed unix socket support on MacOS by @bgetsug
 
