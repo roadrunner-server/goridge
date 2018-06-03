@@ -18,6 +18,11 @@ class RPC
     private $relay;
 
     /**
+     * @var int
+     */
+    private $seq;
+
+    /**
      * @param Relay $relay
      */
     public function __construct(Relay $relay)
@@ -37,24 +42,32 @@ class RPC
      */
     public function call(string $method, $payload, int $flags = 0)
     {
-        $this->relay->send($method, Relay::PAYLOAD_CONTROL | Relay::PAYLOAD_RAW);
+        $this->relay->send(
+            pack("aP", $method, $this->seq),
+            Relay::PAYLOAD_CONTROL | Relay::PAYLOAD_RAW
+        );
 
         if ($flags & Relay::PAYLOAD_RAW) {
             $this->relay->send($payload, $flags);
         } else {
             $body = json_encode($payload);
             if ($body === false) {
-                throw new Exceptions\ServiceException(sprintf("json encode: %s", json_last_error_msg()));
+                throw new Exceptions\ServiceException(sprintf("json encode: %s",
+                    json_last_error_msg()));
             }
 
             $this->relay->send($body);
         }
 
-        // wait for the response
-        $responseMethod = $this->relay->receiveSync($flags);
-        if ($method != $responseMethod) {
+        $rpc = $this->relay->receiveSync($flags);
+        list($rMethod, $rSeq) = unpack("aP", $rpc);
+
+        if ($rMethod != $method || $rSeq != $this->seq) {
             throw new Exceptions\ServiceException("rpc method call mismatch");
         }
+
+        // request id++
+        $this->seq++;
 
         // wait for the response
         $body = $this->relay->receiveSync($flags);
