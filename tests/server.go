@@ -29,12 +29,14 @@ func (s *Service) Ping(msg string, r *string) error {
 	if msg == "ping" {
 		*r = "pong"
 	}
+
 	return nil
 }
 
 // Echo returns incoming message
 func (s *Service) Echo(msg string, r *string) error {
 	*r = msg
+
 	return nil
 }
 
@@ -54,8 +56,8 @@ func (s *Service) Process(msg Payload, r *Payload) error {
 }
 
 // EchoBinary work over binary data
-func (s *Service) EchoBinary(msg []byte, out *[]byte) error {
-	*out = append(*out, msg...)
+func (s *Service) EchoBinary(msg []byte, r *[]byte) error {
+	*r = append(*r, msg...)
 
 	return nil
 }
@@ -80,6 +82,7 @@ func main() {
 		if err != nil {
 			continue
 		}
+
 		go rpc.ServeCodec(goridge.NewCodec(conn))
 	}
 }

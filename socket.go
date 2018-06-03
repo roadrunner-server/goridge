@@ -78,10 +78,5 @@ func (rl *SocketRelay) Receive() (data []byte, p Prefix, err error) {
 
 // Close the connection.
 func (rl *SocketRelay) Close() error {
-	rl.muw.Lock()
-	rl.mur.Lock()
-	defer rl.muw.Unlock()
-	defer rl.mur.Unlock()
-
 	return rl.rwc.Close()
 }

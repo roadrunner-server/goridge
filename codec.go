@@ -27,19 +27,18 @@ func (c *Codec) ReadRequestHeader(r *rpc.Request) error {
 	}
 
 	if !p.HasFlag(PayloadControl) {
-		return errors.New("invalid request, control data is expected")
+		return errors.New("invalid rpc header, control flag is missing")
 	}
 
 	if !p.HasFlag(PayloadRaw) {
-		return errors.New("rpc control command must be in {rawData}")
+		return errors.New("rpc response header must be in {rawData}")
 	}
 
 	if !p.HasPayload() {
-		return nil
+		return errors.New("rpc request header can't be empty")
 	}
 
-	r.ServiceMethod = string(data)
-	return nil
+	return unpack(data, &r.ServiceMethod, &r.Seq)
 }
 
 // ReadRequestBody fetches prefixed body data and automatically unmarshal it as json. RawBody flag will populate
@@ -48,6 +47,11 @@ func (c *Codec) ReadRequestBody(out interface{}) error {
 	data, p, err := c.relay.Receive()
 	if err != nil {
 		return err
+	}
+
+	if out == nil {
+		// discarding
+		return nil
 	}
 
 	if !p.HasPayload() {
@@ -60,7 +64,7 @@ func (c *Codec) ReadRequestBody(out interface{}) error {
 			return nil
 		}
 
-		return errors.New("{rawData} request for " + reflect.ValueOf(out).Elem().Kind().String())
+		return errors.New("{rawData} request for " + reflect.ValueOf(out).String())
 	}
 
 	return json.Unmarshal(data, out)
@@ -68,6 +72,10 @@ func (c *Codec) ReadRequestBody(out interface{}) error {
 
 // WriteResponse marshals response, byte slice or error to remote party.
 func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error {
+	if err := c.relay.Send(pack(r.ServiceMethod, r.Seq), PayloadControl|PayloadRaw); err != nil {
+		return err
+	}
+
 	if r.Error != "" {
 		return c.relay.Send([]byte(r.Error), PayloadError|PayloadRaw)
 	}
