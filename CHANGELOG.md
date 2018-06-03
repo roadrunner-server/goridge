@@ -3,6 +3,7 @@ CHANGELOG
 
 ## v2.0.5 (03.06.2018)
 - added golang ClientCodec implementation
+- additional error detections
 - added sequence support
 - more tests
 
