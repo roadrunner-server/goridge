@@ -71,10 +71,7 @@ class RPC
         $rpc['m'] = substr($body, 0, -8);
 
         if ($rpc["m"] != $method || $rpc["s"] != $this->seq) {
-            throw new Exceptions\TransportException("rpc method call mismatch '" . $body . "'" . print_r(
-                    $rpc,
-                    1
-                ));
+            throw new Exceptions\TransportException("rpc method call mismatch");
         }
 
         // request id++
