@@ -50,7 +50,7 @@ func TestClientServer(t *testing.T) {
 	var ln net.Listener
 	var err error
 
-	ln, err = net.Listen("tcp", ":7079")
+	ln, err = net.Listen("tcp", ":8079")
 	if err != nil {
 		panic(err)
 	}
@@ -67,7 +67,7 @@ func TestClientServer(t *testing.T) {
 		}
 	}()
 
-	conn, err := net.Dial("tcp", ":7079")
+	conn, err := net.Dial("tcp", ":8079")
 	if err != nil {
 		panic(err)
 	}
