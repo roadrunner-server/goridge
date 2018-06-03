@@ -15,7 +15,6 @@ before_install:
 
 install:
   - composer install --no-interaction --prefer-source
-  - cp -r php-src/* vendor/
   - cp -r * $GOPATH/src/github.com/spiral/goridge
   - go get "github.com/pkg/errors"
   - go get "github.com/stretchr/testify/assert"
