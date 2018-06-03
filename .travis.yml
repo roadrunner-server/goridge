@@ -15,7 +15,9 @@ before_install:
 
 install:
   - composer install --no-interaction --prefer-source
-  - go get ./...
+  - cp -r php-src/* vendor/
+  - go get -u "github.com/spiral/goridge"
+  - go get "github.com/pkg/errors"
   - go build tests/server.go
 
 before_script:
