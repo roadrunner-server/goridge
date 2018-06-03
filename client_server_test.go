@@ -6,6 +6,7 @@ import (
 	"net"
 	"net/rpc"
 	"github.com/stretchr/testify/assert"
+	"github.com/pkg/errors"
 )
 
 // testService sample
@@ -22,6 +23,11 @@ type Payload struct {
 func (s *testService) Echo(msg string, r *string) error {
 	*r = msg
 	return nil
+}
+
+// Echo returns error
+func (s *testService) EchoR(msg string, r *string) error {
+	return errors.New("echoR error")
 }
 
 // Process performs payload conversion
@@ -96,4 +102,6 @@ func TestClientServer(t *testing.T) {
 
 	assert.NoError(t, client.Call("test.EchoBinary", []byte("hello world"), &rb))
 	assert.Equal(t, []byte("hello world"), rb)
+
+	assert.Error(t, client.Call("test.EchoR", "hi", &rs))
 }
