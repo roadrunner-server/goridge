@@ -59,7 +59,7 @@ class RPC
             $this->relay->send($body);
         }
 
-        $rpc = unpack("/am/Ps", $this->relay->receiveSync($flags));
+        $rpc = unpack("am/Ps", $this->relay->receiveSync($flags));
         if ($rpc == false) {
             throw new Exceptions\ServiceException("invalid rps header");
         }
