@@ -59,10 +59,13 @@ class RPC
             $this->relay->send($body);
         }
 
-        $rpc = $this->relay->receiveSync($flags);
-        list($rMethod, $rSeq) = unpack("aP", $rpc);
+        $rpc = unpack("aP", $this->relay->receiveSync($flags));
 
-        if ($rMethod != $method || $rSeq != $this->seq) {
+        if ($rpc == false) {
+            throw new Exceptions\ServiceException("invalid rps header");
+        }
+
+        if ($rpc[0] != $method || $rpc[0] != $this->seq) {
             throw new Exceptions\ServiceException("rpc method call mismatch");
         }
 
