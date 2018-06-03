@@ -56,7 +56,7 @@ abstract class RPCTest extends TestCase
 
     /**
      * @expectedException \Spiral\Goridge\Exceptions\ServiceException
-     * @expectedExceptionMessageRegExp #error '{rawData} request for <*string Value>'.*#
+     * @expectedExceptionMessage {rawData} request for <*string Value>
      */
     public function testConvertException()
     {
@@ -120,7 +120,7 @@ abstract class RPCTest extends TestCase
 
     /**
      * @expectedException \Spiral\Goridge\Exceptions\ServiceException
-     * @expectedExceptionMessageRegExp #error '{rawData} request for <*main.Payload Value>.*#
+     * @expectedExceptionMessage {rawData} request for <*main.Payload Value>
      */
     public function testBadPayload()
     {
