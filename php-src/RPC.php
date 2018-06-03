@@ -51,6 +51,12 @@ class RPC
         }
 
         // wait for the response
+        $responseMethod = $this->relay->receiveSync($flags);
+        if ($method != $responseMethod) {
+            throw new Exceptions\ServiceException("rpc method call mismatch");
+        }
+
+        // wait for the response
         $body = $this->relay->receiveSync($flags);
 
         return $this->handleBody($body, $flags);

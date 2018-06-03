@@ -17,7 +17,7 @@
   },
   "autoload": {
     "psr-4": {
-      "Spiral\\Goridge\\": "source/"
+      "Spiral\\Goridge\\": "php-src/"
     }
   },
   "autoload-dev": {

@@ -68,6 +68,10 @@ func (c *Codec) ReadRequestBody(out interface{}) error {
 
 // WriteResponse marshals response, byte slice or error to remote party.
 func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error {
+	if err := c.relay.Send([]byte(r.ServiceMethod), PayloadControl|PayloadRaw); err != nil {
+		return err
+	}
+
 	if r.Error != "" {
 		return c.relay.Send([]byte(r.Error), PayloadError|PayloadRaw)
 	}
