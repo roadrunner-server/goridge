@@ -43,7 +43,7 @@ class RPC
     public function call(string $method, $payload, int $flags = 0)
     {
         $this->relay->send(
-            pack("aP", $method, $this->seq),
+            $method . pack("P", $this->seq),
             Relay::PAYLOAD_CONTROL | Relay::PAYLOAD_RAW
         );
 
@@ -52,20 +52,29 @@ class RPC
         } else {
             $body = json_encode($payload);
             if ($body === false) {
-                throw new Exceptions\ServiceException(sprintf("json encode: %s",
-                    json_last_error_msg()));
+                throw new Exceptions\ServiceException(sprintf(
+                    "json encode: %s",
+                    json_last_error_msg()
+                ));
             }
 
             $this->relay->send($body);
         }
 
-        $rpc = unpack("am/Ps", $this->relay->receiveSync($flags));
-        if ($rpc == false) {
-            throw new Exceptions\ServiceException("invalid rps header");
+        $body = $this->relay->receiveSync($flags);
+
+        if (!($flags & Relay::PAYLOAD_CONTROL)) {
+            throw new Exceptions\TransportException("rpc response header is missing");
         }
 
+        $rpc = unpack("Ps", substr($body, -8));
+        $rpc['m'] = substr($body, 0, -8);
+
         if ($rpc["m"] != $method || $rpc["s"] != $this->seq) {
-            throw new Exceptions\ServiceException("rpc method call mismatch");
+            throw new Exceptions\TransportException("rpc method call mismatch '" . $body . "'" . print_r(
+                    $rpc,
+                    1
+                ));
         }
 
         // request id++
