@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+## v2.0.5 (03.06.2018)
+- added golang ClientCodec implementation
+- added sequence support
+- more tests
+
 ## v2.0.5 (03.04.2018)
 - handled possible panic on reading from broken connection in socket relay
 
