@@ -18,6 +18,7 @@ install:
   - cp -r php-src/* vendor/
   - go get -u "github.com/spiral/goridge"
   - go get "github.com/pkg/errors"
+  - go get "github.com/stretchr/testify/assert"
   - go build tests/server.go
 
 before_script:
