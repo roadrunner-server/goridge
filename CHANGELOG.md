@@ -1,6 +1,9 @@
 CHANGELOG
 =========
 
+## v2.1.1 (07.06.2018)
+- added panic handler for pipe relay
+
 ## v2.1.0 (03.06.2018)
 - added golang ClientCodec implementation
 - additional error detections
