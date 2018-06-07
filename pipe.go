@@ -45,6 +45,12 @@ func (rl *PipeRelay) Receive() (data []byte, p Prefix, err error) {
 	rl.mur.Lock()
 	defer rl.mur.Unlock()
 
+	defer func() {
+		if rErr, ok := recover().(error); ok {
+			err = rErr
+		}
+	}()
+	
 	if _, err := rl.in.Read(p[:]); err != nil {
 		return nil, p, err
 	}
