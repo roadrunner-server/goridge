@@ -15,8 +15,8 @@ use Spiral\Goridge\Exceptions\RelayException;
 /**
  * Communicates with remote server/client over be-directional socket using byte payload:
  *
- * [ prefix     ][ payload        ]
- * [ 1+8 bytes  ][ message length ]
+ * [ prefix       ][ payload                               ]
+ * [ 1+8+8 bytes  ][ message length|LE ][message length|BE ]
  *
  * prefix:
  * [ flag       ][ message length, unsigned int 64bits, LittleEndian ]
@@ -92,7 +92,7 @@ class SocketRelay implements RelayInterface
             throw new TransportException("unable to send payload with PAYLOAD_NONE flag");
         }
 
-        socket_send($this->socket, pack('CP', $flags, $size), 9, 0);
+        socket_send($this->socket, pack('CPJ', $flags, $size, $size), 17, 0);
 
         if (!($flags & self::PAYLOAD_NONE)) {
             socket_send($this->socket, $payload, $size, 0);
@@ -236,17 +236,21 @@ class SocketRelay implements RelayInterface
      */
     private function fetchPrefix(): array
     {
-        $prefixLength = socket_recv($this->socket, $prefixBody, 9, MSG_WAITALL);
-        if ($prefixBody === false || $prefixLength !== 9) {
+        $prefixLength = socket_recv($this->socket, $prefixBody, 17, MSG_WAITALL);
+        if ($prefixBody === false || $prefixLength !== 17) {
             throw new PrefixException(sprintf(
                 "unable to read prefix from socket: %s",
                 socket_strerror(socket_last_error($this->socket))
             ));
         }
 
-        $result = unpack("Cflags/Psize", $prefixBody);
+        $result = unpack("Cflags/Psize/Jrevs", $prefixBody);
         if (!is_array($result)) {
             throw new Exceptions\PrefixException("invalid prefix");
+        }
+
+        if ($result['size'] != $result['revs']) {
+            throw new Exceptions\PrefixException("invalid prefix (checksum)");
         }
 
         return $result;

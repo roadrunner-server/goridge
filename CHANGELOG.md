@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+## v2.1.2 (07.06.2018)
+- added 8 more bites to the payload
+- added error detection mechanism over binary masks
+
 ## v2.1.1 (07.06.2018)
 - added panic handler for pipe relay
 

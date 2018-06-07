@@ -19,14 +19,13 @@ const (
 	PayloadControl byte = 16
 )
 
-// Prefix is always 9 bytes long and contain meta flags
-// and length of next data package. Receive prefix by converting it
-// into the slice.
-type Prefix [9]byte
+// Prefix is always 17 bytes long and contain meta flags and length of next data package. Receive prefix by converting it
+// into the slice. Prefix duplicates size using reverse bytes order to detect possible transmission errors.
+type Prefix [17]byte
 
 // NewPrefix creates new empty prefix with no flags and size.
 func NewPrefix() Prefix {
-	return Prefix([9]byte{})
+	return Prefix([17]byte{})
 }
 
 // String represents prefix as string
@@ -42,6 +41,11 @@ func (p Prefix) Flags() byte {
 // HasFlag returns true if prefix has given flag.
 func (p Prefix) HasFlag(flag byte) bool {
 	return p[0]&flag == flag
+}
+
+// Valid returns true if prefix is valid.
+func (p Prefix) Valid() bool {
+	return binary.LittleEndian.Uint64(p[1:]) == binary.BigEndian.Uint64(p[9:])
 }
 
 // Size returns following data size in bytes.
@@ -73,5 +77,6 @@ func (p Prefix) WithFlags(flags byte) Prefix {
 // WithSize returns new prefix with given size.
 func (p Prefix) WithSize(size uint64) Prefix {
 	binary.LittleEndian.PutUint64(p[1:], size)
+	binary.BigEndian.PutUint64(p[9:], size)
 	return p
 }

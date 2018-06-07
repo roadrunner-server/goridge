@@ -10,8 +10,8 @@ namespace Spiral\Goridge;
 /**
  * Communicates with remote server/client over streams using byte payload:
  *
- * [ prefix     ][ payload        ]
- * [ 1+8 bytes  ][ message length ]
+ * [ prefix       ][ payload                               ]
+ * [ 1+8+8 bytes  ][ message length|LE ][message length|BE ]
  *
  * prefix:
  * [ flag       ][ message length, unsigned int 64bits, LittleEndian ]
@@ -57,7 +57,7 @@ class StreamRelay implements RelayInterface
             throw new Exceptions\TransportException("unable to send payload with PAYLOAD_NONE flag");
         }
 
-        if (fwrite($this->out, pack('CP', $flags, $size), 9) === false) {
+        if (fwrite($this->out, pack('CPJ', $flags, $size, $size), 17) === false) {
             throw new Exceptions\TransportException("unable to write prefix to the stream");
         }
 
@@ -102,14 +102,18 @@ class StreamRelay implements RelayInterface
      */
     private function fetchPrefix(): array
     {
-        $prefixBody = fread($this->in, 9);
+        $prefixBody = fread($this->in, 17);
         if ($prefixBody === false) {
             throw new Exceptions\PrefixException("unable to read prefix from the stream");
         }
 
-        $result = unpack("Cflags/Psize", $prefixBody);
+        $result = unpack("Cflags/Psize/Jrevs", $prefixBody);
         if (!is_array($result)) {
             throw new Exceptions\PrefixException("invalid prefix");
+        }
+
+        if ($result['size'] != $result['revs']) {
+            throw new Exceptions\PrefixException("invalid prefix (checksum)");
         }
 
         return $result;

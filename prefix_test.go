@@ -56,7 +56,7 @@ func TestPrefix_HasPayload(t *testing.T) {
 }
 
 func TestReadPrefix(t *testing.T) {
-	buffer := bytes.NewBuffer([]byte{PayloadRaw | PayloadControl, 255, 0, 0, 0, 255, 0, 0, 0})
+	buffer := bytes.NewBuffer([]byte{PayloadRaw | PayloadControl, 255, 0, 0, 0, 255, 0, 0, 0, 0, 0, 0, 255, 0, 0, 0, 255})
 
 	p1 := NewPrefix()
 	buffer.Read(p1[:])
@@ -65,4 +65,15 @@ func TestReadPrefix(t *testing.T) {
 	assert.True(t, p1.HasFlag(PayloadControl))
 
 	assert.Equal(t, uint64(1095216660735), p1.Size())
+
+	assert.True(t, p1.Valid())
+}
+
+func TestInvalidPrefix(t *testing.T) {
+	buffer := bytes.NewBuffer([]byte{PayloadRaw | PayloadControl, 255, 0, 0, 0, 255, 0, 0, 0, 0, 0, 0, 255, 0, 0, 0, 254})
+
+	p1 := NewPrefix()
+	buffer.Read(p1[:])
+
+	assert.False(t, p1.Valid())
 }

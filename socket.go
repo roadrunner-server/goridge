@@ -3,6 +3,7 @@ package goridge
 import (
 	"io"
 	"sync"
+	"errors"
 )
 
 // SocketRelay communicates with underlying process using sockets (TPC or Unix).
@@ -50,6 +51,10 @@ func (rl *SocketRelay) Receive() (data []byte, p Prefix, err error) {
 
 	if _, err := rl.rwc.Read(p[:]); err != nil {
 		return nil, p, err
+	}
+
+	if !p.Valid() {
+		return nil, p, errors.New("invalid prefix (checksum)")
 	}
 
 	if !p.HasPayload() {

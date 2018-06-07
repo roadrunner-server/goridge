@@ -3,6 +3,7 @@ package goridge
 import (
 	"io"
 	"sync"
+	"errors"
 )
 
 // PipeRelay communicate with underlying process using standard streams (STDIN, STDOUT). Attention, use TCP alternative for
@@ -50,9 +51,13 @@ func (rl *PipeRelay) Receive() (data []byte, p Prefix, err error) {
 			err = rErr
 		}
 	}()
-	
+
 	if _, err := rl.in.Read(p[:]); err != nil {
 		return nil, p, err
+	}
+
+	if !p.Valid() {
+		return nil, p, errors.New("invalid prefix (checksum)")
 	}
 
 	if !p.HasPayload() {
