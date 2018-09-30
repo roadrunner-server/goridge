@@ -30,11 +30,7 @@ func (rl *PipeRelay) Send(data []byte, flags byte) (err error) {
 	defer rl.muw.Unlock()
 
 	prefix := NewPrefix().WithFlags(flags).WithSize(uint64(len(data)))
-	if _, err := rl.out.Write(prefix[:]); err != nil {
-		return err
-	}
-
-	if _, err := rl.out.Write(data); err != nil {
+	if _, err := rl.out.Write(append(prefix[:], data...)); err != nil {
 		return err
 	}
 
