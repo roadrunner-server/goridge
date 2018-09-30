@@ -1,6 +1,9 @@
 CHANGELOG
 =========
 
+## v2.1.3 (30.09.2018)
+- improved performance (reduced number of syscalls required for Send command)
+
 ## v2.1.2 (07.06.2018)
 - added 8 more bytes to the payload
 - added error detection mechanism over binary masks
