@@ -54,7 +54,7 @@ func (rl *SocketRelay) Receive() (data []byte, p Prefix, err error) {
 	}
 
 	if !p.Valid() {
-		return nil, p, errors.New("invalid prefix (checksum)")
+		return nil, p, errors.New("invalid data found in the buffer (possible echo)")
 	}
 
 	if !p.HasPayload() {
