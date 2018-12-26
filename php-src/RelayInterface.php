@@ -24,8 +24,8 @@ interface RelayInterface
     /**
      * Send payload message to another party.
      *
-     * @param string $payload
-     * @param int    $flags Protocol control flags.
+     * @param string   $payload
+     * @param int|null $flags Protocol control flags.
      *
      * @throws TransportException
      */
@@ -34,7 +34,7 @@ interface RelayInterface
     /**
      * Receive message from another party in sync/blocked mode. Message can be null.
      *
-     * @param int $flags Response flags.
+     * @param int|null $flags Response flags.
      *
      * @return null|string
      *
