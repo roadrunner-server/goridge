@@ -57,11 +57,13 @@ class StreamRelay implements RelayInterface
             throw new Exceptions\TransportException("unable to send payload with PAYLOAD_NONE flag");
         }
 
-        if (fwrite($this->out, pack('CPJ', $flags, $size, $size), 17) === false) {
-            throw new Exceptions\TransportException("unable to write prefix to the stream");
+        $body = pack('CPJ', $flags, $size, $size);
+
+        if (!($flags & self::PAYLOAD_NONE)) {
+            $body .= $payload;
         }
 
-        if (!($flags & self::PAYLOAD_NONE) && fwrite($this->out, $payload, $size) === false) {
+        if (fwrite($this->out, $body, 17 + $size) === false) {
             throw new Exceptions\TransportException("unable to write payload to the stream");
         }
 

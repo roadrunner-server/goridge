@@ -83,7 +83,7 @@ class SocketRelay implements RelayInterface
     /**
      * {@inheritdoc}
      */
-    public function send($payload, int $flags = null): self
+    public function send($payload, int $flags = null)
     {
         $this->connect();
 
@@ -92,11 +92,13 @@ class SocketRelay implements RelayInterface
             throw new TransportException("unable to send payload with PAYLOAD_NONE flag");
         }
 
-        socket_send($this->socket, pack('CPJ', $flags, $size, $size), 17, 0);
+        $body = pack('CPJ', $flags, $size, $size);
 
         if (!($flags & self::PAYLOAD_NONE)) {
-            socket_send($this->socket, $payload, $size, 0);
+            $body .= $payload;
         }
+
+        socket_send($this->socket, $body, 17 + $size, 0);
 
         return $this;
     }
