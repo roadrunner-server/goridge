@@ -35,12 +35,20 @@ class StreamRelay implements RelayInterface
      */
     public function __construct($in, $out)
     {
-        if (!$this->assertMode($in, 'r')) {
+        if (!is_resource($in) || get_resource_type($in) !== 'stream') {
+            throw new Exceptions\InvalidArgumentException("expected a valid `in` stream resource");
+        }
+
+        if (!$this->assertReadable($in)) {
             throw new Exceptions\InvalidArgumentException("resource `in` must be readable");
         }
 
-        if (!$this->assertMode($out, 'w')) {
-            throw new Exceptions\InvalidArgumentException("resource `out` must be readable");
+        if (!is_resource($out) || get_resource_type($out) !== 'stream') {
+            throw new Exceptions\InvalidArgumentException("expected a valid `out` stream resource");
+        }
+
+        if (!$this->assertWritable($out)) {
+            throw new Exceptions\InvalidArgumentException("resource `out` must be writable");
         }
 
         $this->in = $in;
@@ -122,17 +130,30 @@ class StreamRelay implements RelayInterface
     }
 
     /**
-     * Checks if stream is writable or readable.
+     * Checks if stream is readable.
      *
      * @param resource $stream
-     * @param string   $mode
      *
      * @return bool
      */
-    private function assertMode($stream, $mode): bool
+    private function assertReadable($stream): bool
     {
         $meta = stream_get_meta_data($stream);
 
-        return strpos($meta['mode'], $mode) !== false;
+        return in_array($meta['mode'], ['r', 'r+', 'w+', 'a+', 'x+', 'c+'], true);
+    }
+
+    /**
+     * Checks if stream is writable.
+     *
+     * @param resource $stream
+     *
+     * @return bool
+     */
+    private function assertWritable($stream): bool
+    {
+        $meta = stream_get_meta_data($stream);
+
+        return $meta['mode'] !== 'r';
     }
 }
