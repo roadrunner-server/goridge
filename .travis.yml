@@ -9,7 +9,7 @@ php:
   - 7.3
 
 go:
-  - "1.13.x"
+  - 1.13.4
   - composer self-update
 
 install:
