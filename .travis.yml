@@ -17,9 +17,8 @@ install:
   - go mod download
   - composer install --no-interaction --prefer-source
 
-  - go build ./tests/server.go
-
 before_script:
+  - go build ./tests/server.go
   - ./server &
   - ./server server.sock &
 
