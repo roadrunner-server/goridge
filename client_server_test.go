@@ -61,7 +61,10 @@ func TestClientServer(t *testing.T) {
 		panic(err)
 	}
 
-	rpc.RegisterName("test", new(testService))
+	err = rpc.RegisterName("test", new(testService))
+	if err != nil {
+		panic(err)
+	}
 
 	go func() {
 		for {
@@ -79,7 +82,12 @@ func TestClientServer(t *testing.T) {
 	}
 
 	client := rpc.NewClientWithCodec(NewClientCodec(conn))
-	defer client.Close()
+	defer func() {
+		err := client.Close()
+		if err != nil {
+			panic(err)
+		}
+	}()
 
 	var (
 		rs = ""

@@ -75,7 +75,10 @@ func main() {
 		panic(err)
 	}
 
-	rpc.Register(new(Service))
+	err = rpc.Register(new(Service))
+	if err != nil {
+		panic(err)
+	}
 
 	for {
 		conn, err := ln.Accept()

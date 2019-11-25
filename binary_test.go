@@ -1,9 +1,9 @@
 package goridge
 
 import (
-	"testing"
-	"net/rpc"
 	"github.com/stretchr/testify/assert"
+	"net/rpc"
+	"testing"
 )
 
 func TestPackUnpack(t *testing.T) {
@@ -15,8 +15,10 @@ func TestPackUnpack(t *testing.T) {
 		res = &rpc.Response{}
 	)
 
-	data := pack(req.ServiceMethod, req.Seq)
-	assert.Len(t, data, len(req.ServiceMethod)+8)
+	data := make([]byte, len(req.ServiceMethod)+Uint64Size)
+	pack(req.ServiceMethod, req.Seq, data)
+
+	assert.Len(t, data, len(req.ServiceMethod)+Uint64Size)
 	assert.NoError(t, unpack(data, &res.ServiceMethod, &res.Seq))
 
 	assert.Equal(t, res.ServiceMethod, req.ServiceMethod)
@@ -25,3 +27,5 @@ func TestPackUnpack(t *testing.T) {
 	assert.Equal(t, "test.Process", res.ServiceMethod)
 	assert.Equal(t, uint64(199), res.Seq)
 }
+
+

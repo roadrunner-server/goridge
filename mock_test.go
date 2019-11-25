@@ -46,7 +46,7 @@ func (m *connMock) Write(p []byte) (n int, err error) {
 		return 0, err
 	}
 
-	if bytes.Compare(next, p) != 0 {
+	if !bytes.Equal(next, p) {
 		return 0, errors.New("payload expectation mismatch")
 	}
 

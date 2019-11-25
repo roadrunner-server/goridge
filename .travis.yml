@@ -9,17 +9,14 @@ php:
   - 7.3
 
 go:
-  - 1.8
-
-before_install:
+  - "1.13.x"
   - composer self-update
 
 install:
+  - export GO111MODULE=on
+  - go mod download
   - composer install --no-interaction --prefer-source
-  - go get "github.com/spiral/goridge"
-  - cp -r * $GOPATH/src/github.com/spiral/goridge
-  - go get "github.com/pkg/errors"
-  - go get "github.com/stretchr/testify/assert"
+
   - go build tests/server.go
 
 before_script:
