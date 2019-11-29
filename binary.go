@@ -1,15 +1,16 @@
 package goridge
 
 import (
-	"bytes"
 	"encoding/binary"
 )
 
-func pack(m string, s uint64) []byte {
-	b := bytes.Buffer{}
-	b.WriteString(m)
+// Size in bytes of uint64
+// https://golang.org/ref/spec#Size_and_alignment_guarantees
+const Uint64Size = 8
 
-	b.Write([]byte{
+func pack(m string, s uint64, buf []byte) {
+	copy(buf[0:], m)
+	copy(buf[len(m):], []byte{
 		byte(s),
 		byte(s >> 8),
 		byte(s >> 16),
@@ -19,8 +20,6 @@ func pack(m string, s uint64) []byte {
 		byte(s >> 48),
 		byte(s >> 56),
 	})
-
-	return b.Bytes()
 }
 
 func unpack(in []byte, m *string, s *uint64) error {

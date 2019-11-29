@@ -21,7 +21,9 @@ func NewClientCodec(rwc io.ReadWriteCloser) *ClientCodec {
 
 // WriteRequest writes request to the connection. Sequential.
 func (c *ClientCodec) WriteRequest(r *rpc.Request, body interface{}) error {
-	if err := c.relay.Send(pack(r.ServiceMethod, r.Seq), PayloadControl|PayloadRaw); err != nil {
+	data := make([]byte, len(r.ServiceMethod) + Uint64Size)
+	pack(r.ServiceMethod, r.Seq, data)
+	if err := c.relay.Send(data, PayloadControl|PayloadRaw); err != nil {
 		return err
 	}
 

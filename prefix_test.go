@@ -59,7 +59,10 @@ func TestReadPrefix(t *testing.T) {
 	buffer := bytes.NewBuffer([]byte{PayloadRaw | PayloadControl, 255, 0, 0, 0, 255, 0, 0, 0, 0, 0, 0, 255, 0, 0, 0, 255})
 
 	p1 := NewPrefix()
-	buffer.Read(p1[:])
+	_, err := buffer.Read(p1[:])
+	if err != nil {
+		t.Errorf("error during reading the buffer: %v", err)
+	}
 
 	assert.True(t, p1.HasFlag(PayloadRaw))
 	assert.True(t, p1.HasFlag(PayloadControl))
@@ -73,7 +76,10 @@ func TestInvalidPrefix(t *testing.T) {
 	buffer := bytes.NewBuffer([]byte{PayloadRaw | PayloadControl, 255, 0, 0, 0, 255, 0, 0, 0, 0, 0, 0, 255, 0, 0, 0, 254})
 
 	p1 := NewPrefix()
-	buffer.Read(p1[:])
+	_, err := buffer.Read(p1[:])
+	if err != nil {
+		t.Errorf("error during reading the buffer: %v", err)
+	}
 
 	assert.False(t, p1.Valid())
 }
