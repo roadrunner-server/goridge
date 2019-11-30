@@ -1,6 +1,21 @@
 CHANGELOG
 =========
 
+## v2.2.1 (30.11.2019)
+- Fixed too strict StreamRelay check by @tarampampam 
+
+## v2.2.0 (29.11.2019)
+- Updated travis to support go 1.13
+- Updated tests (errors handling, simplify)
+- Add go modules support
+- Optimize pack function
+
+by @ValeryPiashchynski 
+
+## v2.1.4 (01.04.2019)
+- minor performance improvements by @zloyuser
+- removed nighly from travis
+
 ## v2.1.3 (30.09.2018)
 - improved performance (reduced number of syscalls required for Send command)
 
