@@ -140,7 +140,7 @@ class StreamRelay implements RelayInterface
     {
         $meta = stream_get_meta_data($stream);
 
-        return in_array($meta['mode'], ['r', 'r+', 'w+', 'a+', 'x+', 'c+'], true);
+        return in_array($meta['mode'], ['r', 'rb', 'r+', 'w+', 'a+', 'x+', 'c+'], true);
     }
 
     /**
