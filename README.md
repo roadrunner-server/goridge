@@ -32,7 +32,7 @@ Features
 Installation
 ------------
 ```
-$ go get "github.com/spiral/goridge/v2"
+$ go get "github.com/spiral/goridge"
 ```
 ```
 $ composer require spiral/goridge
