@@ -32,7 +32,7 @@ Features
 Installation
 ------------
 ```
-$ go get "github.com/spiral/goridge"
+$ go get "github.com/spiral/goridge/v2"
 ```
 ```
 $ composer require spiral/goridge
@@ -55,7 +55,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/spiral/goridge"
+	"github.com/spiral/goridge/v2"
 	"net"
 	"net/rpc"
 )
