@@ -57,7 +57,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/spiral/goridge"
+	"github.com/spiral/goridge/v2"
 	"net"
 	"net/rpc"
 )

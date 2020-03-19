@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/spiral/goridge"
+	"github.com/spiral/goridge/v2"
 	"log"
 	"net"
 	"net/rpc"
