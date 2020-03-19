@@ -1,11 +1,11 @@
 package goridge
 
 import (
+	json "github.com/json-iterator/go"
+	"github.com/pkg/errors"
 	"io"
 	"net/rpc"
 	"reflect"
-	"encoding/json"
-	"github.com/pkg/errors"
 )
 
 // Client codec for goridge connection.
@@ -21,17 +21,16 @@ func NewClientCodec(rwc io.ReadWriteCloser) *ClientCodec {
 
 // WriteRequest writes request to the connection. Sequential.
 func (c *ClientCodec) WriteRequest(r *rpc.Request, body interface{}) error {
-	data := make([]byte, len(r.ServiceMethod) + Uint64Size)
+	data := make([]byte, len(r.ServiceMethod)+Uint64Size)
 	pack(r.ServiceMethod, r.Seq, data)
 	if err := c.relay.Send(data, PayloadControl|PayloadRaw); err != nil {
 		return err
 	}
 
-	if bin, ok := body.(*[]byte); ok {
+	switch bin := body.(type) {
+	case *[]byte:
 		return c.relay.Send(*bin, PayloadRaw)
-	}
-
-	if bin, ok := body.([]byte); ok {
+	case []byte:
 		return c.relay.Send(bin, PayloadRaw)
 	}
 

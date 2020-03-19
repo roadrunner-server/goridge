@@ -1,11 +1,12 @@
 package goridge
 
 import (
-	"encoding/json"
 	"errors"
+	json "github.com/json-iterator/go"
 	"io"
 	"net/rpc"
 	"reflect"
+	"sync"
 )
 
 // Codec represent net/rpc bridge over Goridge socket relay.
@@ -72,7 +73,7 @@ func (c *Codec) ReadRequestBody(out interface{}) error {
 
 // WriteResponse marshals response, byte slice or error to remote party.
 func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error {
-	data := make([]byte, len(r.ServiceMethod) + Uint64Size)
+	data := make([]byte, len(r.ServiceMethod)+Uint64Size)
 	pack(r.ServiceMethod, r.Seq, data)
 	if err := c.relay.Send(data, PayloadControl|PayloadRaw); err != nil {
 		return err
@@ -82,11 +83,10 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error {
 		return c.relay.Send([]byte(r.Error), PayloadError|PayloadRaw)
 	}
 
-	if bin, ok := body.(*[]byte); ok {
+	switch bin := body.(type) {
+	case *[]byte:
 		return c.relay.Send(*bin, PayloadRaw)
-	}
-
-	if bin, ok := body.([]byte); ok {
+	case []byte:
 		return c.relay.Send(bin, PayloadRaw)
 	}
 
@@ -106,4 +106,22 @@ func (c *Codec) Close() error {
 
 	c.closed = true
 	return c.relay.Close()
+}
+
+// some Rust here
+func borrowBytesSlice() *[]byte {
+	return bytesPool.Get().(*[]byte)
+}
+
+func releaseBytesSlice(slice *[]byte) {
+	bytesPool.Put(slice)
+}
+
+var bytesPool = sync.Pool{
+	New: func() interface{} {
+		// The Pool's New function should generally only return pointer
+		// types, since a pointer can be put into the return interface
+		// value without an allocation:
+		return new([]byte)
+	},
 }

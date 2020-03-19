@@ -2,7 +2,7 @@ package goridge
 
 const (
 	// BufferSize defines max amount of bytes to read from connection at once.
-	BufferSize = 655336
+	BufferSize = 65336
 )
 
 // Relay provide IPC over signed payloads.

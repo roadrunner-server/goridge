@@ -1,9 +1,8 @@
 package goridge
 
 import (
-	"io"
-	"sync"
 	"errors"
+	"io"
 )
 
 // PipeRelay communicate with underlying process using standard streams (STDIN, STDOUT). Attention, use TCP alternative for
@@ -11,11 +10,7 @@ import (
 type PipeRelay struct {
 	// How many bytes to write/read at once.
 	BufferSize uint64
-
-	mur sync.Mutex // concurrent read
 	in  io.ReadCloser
-
-	muw sync.Mutex // concurrent write
 	out io.WriteCloser
 }
 
@@ -26,9 +21,6 @@ func NewPipeRelay(in io.ReadCloser, out io.WriteCloser) *PipeRelay {
 
 // Send signed (prefixed) data to underlying process.
 func (rl *PipeRelay) Send(data []byte, flags byte) (err error) {
-	rl.muw.Lock()
-	defer rl.muw.Unlock()
-
 	prefix := NewPrefix().WithFlags(flags).WithSize(uint64(len(data)))
 	if _, err := rl.out.Write(append(prefix[:], data...)); err != nil {
 		return err
@@ -39,9 +31,6 @@ func (rl *PipeRelay) Send(data []byte, flags byte) (err error) {
 
 // Receive data from the underlying process and returns associated prefix or error.
 func (rl *PipeRelay) Receive() (data []byte, p Prefix, err error) {
-	rl.mur.Lock()
-	defer rl.mur.Unlock()
-
 	defer func() {
 		if rErr, ok := recover().(error); ok {
 			err = rErr
@@ -63,7 +52,6 @@ func (rl *PipeRelay) Receive() (data []byte, p Prefix, err error) {
 	data = make([]byte, 0, p.Size())
 	leftBytes := p.Size()
 	buffer := make([]byte, min(uint64(cap(data)), rl.BufferSize))
-
 	for {
 		if n, err := rl.in.Read(buffer); err == nil {
 			data = append(data, buffer[:n]...)
