@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/rpc"
 	"reflect"
-	"sync"
 )
 
 // Codec represent net/rpc bridge over Goridge socket relay.
@@ -106,22 +105,4 @@ func (c *Codec) Close() error {
 
 	c.closed = true
 	return c.relay.Close()
-}
-
-// some Rust here
-func borrowBytesSlice() *[]byte {
-	return bytesPool.Get().(*[]byte)
-}
-
-func releaseBytesSlice(slice *[]byte) {
-	bytesPool.Put(slice)
-}
-
-var bytesPool = sync.Pool{
-	New: func() interface{} {
-		// The Pool's New function should generally only return pointer
-		// types, since a pointer can be put into the return interface
-		// value without an allocation:
-		return new([]byte)
-	},
 }
