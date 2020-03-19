@@ -5,7 +5,7 @@ High-performance PHP-to-Golang IPC bridge
 ![CI](https://github.com/spiral/goridge/workflows/CI/badge.svg)
 [![Scrutinizer Code Quality](https://scrutinizer-ci.com/g/spiral/goridge/badges/quality-score.png)](https://scrutinizer-ci.com/g/spiral/goridge/?branch=master)
 [![Go Report Card](https://goreportcard.com/badge/github.com/spiral/goridge)](https://goreportcard.com/report/github.com/spiral/goridge)
-[![Codecov](https://codecov.io/gh/spiral/goringe/branch/master/graph/badge.svg)](https://codecov.io/gh/spiral/goringe/)
+[![Codecov](https://codecov.io/gh/spiral/goridge/branch/master/graph/badge.svg)](https://codecov.io/gh/spiral/goridge/)
 <a href="https://discord.gg/TFeEmCs"><img src="https://img.shields.io/badge/discord-chat-magenta.svg"></a>
 
 <img src="https://files.phpclasses.org/graphics/phpclasses/innovation-award-logo.png" height="90px" alt="PHPClasses Innovation Award" align="left"/>
