@@ -1,0 +1,82 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Build (PHP ${{ matrix.php }}, Go ${{ matrix.go }}, OS ${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        php: [7.1, 7.2, 7.3, 7.4]
+        go: [1.13, 1.14]
+        os: [ubuntu-latest]
+    env:
+      GO111MODULE: on
+    steps:
+      - name: Set up Go ${{ matrix.go }}
+        uses: actions/setup-go@v1
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Set up PHP ${{ matrix.php }}
+        uses: shivammathur/setup-php@v1
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: dom
+          coverage: xdebug
+
+      - name: Check out code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 1
+
+      - name: Show versions
+        run: php -v ; composer -V ; go version
+
+      - name: Syntax check only (lint)
+        run: find ./src/ -name "*.php" -print0 | xargs -0 -n1 -P8 php -l
+
+      - name: Get Composer Cache Directory # Docs: <https://github.com/actions/cache/blob/master/examples.md#php---composer>
+        id: composer-cache
+        run: echo "::set-output name=dir::$(composer config cache-files-dir)"
+
+      - name: Cache dependencies # Docs: <https://github.com/actions/cache/blob/master/examples.md#php---composer>
+        uses: actions/cache@v1
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.json') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install Composer dependencies
+        run: composer install --prefer-dist --no-interaction --no-suggest # --prefer-source
+
+      - name: Install Go dependencies
+        run: go mod download
+
+      - name: Run tests
+        run: |
+          go test -v -race -cover -coverprofile=goridge.txt -covermode=atomic
+
+      - name: Run code coverage
+        env:
+          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+        run: |
+          if [[ "$CODECOV_TOKEN" != "" ]]; then
+            curl https://codecov.io/bash -o codecov-bash
+            chmod +x codecov-bash
+            ./codecov-bash -f goridge.txt
+          fi
+
+  golangci-check:
+    name: runner / golangci-lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v1
+      - name: golangci-lint
+        uses: reviewdog/action-golangci-lint@v1
+        with:
+          github_token: ${{ secrets.github_token }}
+

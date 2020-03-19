@@ -1,8 +1,8 @@
 package goridge
 
 import (
-	"encoding/json"
 	"errors"
+	json "github.com/json-iterator/go"
 	"io"
 	"net/rpc"
 	"reflect"
@@ -72,7 +72,7 @@ func (c *Codec) ReadRequestBody(out interface{}) error {
 
 // WriteResponse marshals response, byte slice or error to remote party.
 func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error {
-	data := make([]byte, len(r.ServiceMethod) + Uint64Size)
+	data := make([]byte, len(r.ServiceMethod)+Uint64Size)
 	pack(r.ServiceMethod, r.Seq, data)
 	if err := c.relay.Send(data, PayloadControl|PayloadRaw); err != nil {
 		return err
@@ -82,11 +82,10 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error {
 		return c.relay.Send([]byte(r.Error), PayloadError|PayloadRaw)
 	}
 
-	if bin, ok := body.(*[]byte); ok {
+	switch bin := body.(type) {
+	case *[]byte:
 		return c.relay.Send(*bin, PayloadRaw)
-	}
-
-	if bin, ok := body.([]byte); ok {
+	case []byte:
 		return c.relay.Send(bin, PayloadRaw)
 	}
 
