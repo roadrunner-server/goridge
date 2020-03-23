@@ -57,6 +57,8 @@ jobs:
 
       - name: Run tests
         run: |
+          go mod vendor
+          composer update
           go test -v -race -cover -coverprofile=goridge.txt -covermode=atomic
 
       - name: Run code coverage
