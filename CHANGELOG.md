@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+## v2.3.0 (23.03.2020)
+- Replaced std encoding/json package with the https://github.com/json-iterator/go 
+- Added BORS and GHA support
+- go modules go1.13 updated to 1.14
+
 ## v2.2.1 (30.11.2019)
 - Fixed too strict StreamRelay check by @tarampampam 
 
