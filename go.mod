@@ -1,4 +1,4 @@
-module github.com/spiral/goridge
+module github.com/spiral/goridge/v2
 
 require (
 	github.com/json-iterator/go v1.1.9
