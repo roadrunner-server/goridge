@@ -2,10 +2,11 @@ package goridge
 
 import (
 	"errors"
-	json "github.com/json-iterator/go"
 	"io"
 	"net/rpc"
 	"reflect"
+
+	json "github.com/json-iterator/go"
 )
 
 // Codec represent net/rpc bridge over Goridge socket relay.
@@ -19,6 +20,7 @@ func NewCodec(rwc io.ReadWriteCloser) *Codec {
 	return &Codec{relay: NewSocketRelay(rwc)}
 }
 
+// NewCodecWithRelay initiates new server rpc codec with a relay of choice.
 func NewCodecWithRelay(relay Relay) *Codec {
 	return &Codec{relay: relay}
 }
