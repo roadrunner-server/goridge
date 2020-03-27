@@ -19,6 +19,10 @@ func NewCodec(rwc io.ReadWriteCloser) *Codec {
 	return &Codec{relay: NewSocketRelay(rwc)}
 }
 
+func NewCodecWithRelay(relay Relay) *Codec {
+	return &Codec{relay: relay}
+}
+
 // ReadRequestHeader receives
 func (c *Codec) ReadRequestHeader(r *rpc.Request) error {
 	data, p, err := c.relay.Receive()
