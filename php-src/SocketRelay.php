@@ -265,10 +265,6 @@ class SocketRelay implements RelayInterface
     private function createSocket()
     {
         if ($this->type === self::SOCK_UNIX) {
-            if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-                throw new GoridgeException("socket {$this} unavailable on Windows");
-            }
-
             return socket_create(AF_UNIX, SOCK_STREAM, 0);
         }
 

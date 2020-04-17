@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 )
 
+// Uint64Size is standard size of uint on 64 bit platforms
 // Size in bytes of uint64
 // https://golang.org/ref/spec#Size_and_alignment_guarantees
 const Uint64Size = 8

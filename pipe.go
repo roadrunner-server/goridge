@@ -10,8 +10,8 @@ import (
 type PipeRelay struct {
 	// How many bytes to write/read at once.
 	BufferSize uint64
-	in  io.ReadCloser
-	out io.WriteCloser
+	in         io.ReadCloser
+	out        io.WriteCloser
 }
 
 // NewPipeRelay creates new pipe based data relay.

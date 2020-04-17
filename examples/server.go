@@ -23,7 +23,10 @@ func main() {
 		panic(err)
 	}
 
-	rpc.Register(new(App))
+	err = rpc.Register(new(App))
+	if err != nil {
+		panic(err)
+	}
 	log.Printf("started")
 
 	for {

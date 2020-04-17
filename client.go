@@ -8,13 +8,13 @@ import (
 	"reflect"
 )
 
-// Client codec for goridge connection.
+// ClientCodec is codec for goridge connection.
 type ClientCodec struct {
 	relay  Relay
 	closed bool
 }
 
-// NewCodec initiates new server rpc codec over socket connection.
+// NewClientCodec initiates new server rpc codec over socket connection.
 func NewClientCodec(rwc io.ReadWriteCloser) *ClientCodec {
 	return &ClientCodec{relay: NewSocketRelay(rwc)}
 }

@@ -27,5 +27,3 @@ func TestPackUnpack(t *testing.T) {
 	assert.Equal(t, "test.Process", res.ServiceMethod)
 	assert.Equal(t, uint64(199), res.Seq)
 }
-
-
