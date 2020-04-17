@@ -30,6 +30,7 @@ Features
  - service, message and transport level error handling
  - hackable
  - works on Windows
+ - unix sockets powered (also on Windows)
 
 Installation
 ------------

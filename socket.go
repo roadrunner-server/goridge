@@ -9,7 +9,7 @@ import (
 type SocketRelay struct {
 	// How many bytes to write/read at once.
 	BufferSize uint64
-	rwc io.ReadWriteCloser
+	rwc        io.ReadWriteCloser
 }
 
 // NewSocketRelay creates new socket based data relay.

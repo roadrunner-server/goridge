@@ -1,12 +1,12 @@
 package goridge
 
 import (
-	"testing"
-	"strings"
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 	"net"
 	"net/rpc"
-	"github.com/stretchr/testify/assert"
-	"github.com/pkg/errors"
+	"strings"
+	"testing"
 )
 
 // testService sample
