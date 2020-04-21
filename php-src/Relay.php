@@ -7,37 +7,41 @@
 
 namespace Spiral\Goridge;
 
-abstract class Relay implements RelayInterface
+abstract class Relay
 {
     public const TCP_SOCKET  = 'tcp';
     public const UNIX_SOCKET = 'unix';
     public const STREAM      = 'pipes';
 
+    private const CONNECTION = '/(?P<protocol>[^:\/]+):\/\/(?P<arg1>[^:]+)(:(?P<arg2>[^:]+))?/';
+
     public static function create(string $connection): RelayInterface
     {
-        $parsed = self::detectProtocol($connection);
-        if ($parsed === null) {
-            throw new Exceptions\RelayException('unknown connection');
+        if (!preg_match(self::CONNECTION, strtolower($connection), $match)) {
+            throw new Exceptions\RelayFactoryException('unsupported connection format');
         }
 
-        [$protocol, $etc] = $parsed;
+        switch ($match['protocol']) {
+            case self::TCP_SOCKET:
+                //fall through
+            case self::UNIX_SOCKET:
+                return new SocketRelay(
+                    $match['arg1'],
+                    isset($match['arg2']) ? (int)$match['arg2'] : null,
+                    $match['protocol'] === self::TCP_SOCKET ? SocketRelay::SOCK_TCP : SocketRelay::SOCK_UNIX
+                );
 
-    }
+            case self::STREAM:
+                if (!isset($match['arg2'])) {
+                    throw new Exceptions\RelayFactoryException('unsupported stream connection format');
+                }
 
-    private static function detectProtocol(string $connection)
-    {
-        $connection = strtolower($connection);
-        if (mb_strpos($connection, '://') === false) {
-            return null;
+                return new StreamRelay(
+                    fopen("php://{$match['arg1']}", 'rb'),
+                    fopen("php://{$match['arg2']}", 'wb')
+                );
+            default:
+                throw new Exceptions\RelayFactoryException('unknown connection protocol');
         }
-
-        return explode('://', $connection, 2);
-    }
-
-    private static function createTCP(string $connection): SocketRelay
-    {
-    }
-    private static function createUnix(string $connection): SocketRelay
-    {
     }
 }
