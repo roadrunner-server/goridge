@@ -42,36 +42,33 @@ class RPC
      */
     public function call(string $method, $payload, int $flags = 0)
     {
-        $this->relay->send(
-            $method . pack("P", $this->seq),
-            Relay::PAYLOAD_CONTROL | Relay::PAYLOAD_RAW
-        );
+        $header = $method . pack('P', $this->seq);
 
         if ($flags & Relay::PAYLOAD_RAW) {
-            $this->relay->send($payload, $flags);
+            $this->relay->sendPackage($header, Relay::PAYLOAD_CONTROL | Relay::PAYLOAD_RAW, $payload, $flags);
         } else {
             $body = json_encode($payload);
             if ($body === false) {
                 throw new Exceptions\ServiceException(sprintf(
-                    "json encode: %s",
+                    'json encode: %s',
                     json_last_error_msg()
                 ));
             }
 
-            $this->relay->send($body);
+            $this->relay->sendPackage($header, Relay::PAYLOAD_CONTROL | Relay::PAYLOAD_RAW, $body);
         }
 
         $body = $this->relay->receiveSync($flags);
 
         if (!($flags & Relay::PAYLOAD_CONTROL)) {
-            throw new Exceptions\TransportException("rpc response header is missing");
+            throw new Exceptions\TransportException('rpc response header is missing');
         }
 
-        $rpc = unpack("Ps", substr($body, -8));
+        $rpc = unpack('Ps', substr($body, -8));
         $rpc['m'] = substr($body, 0, -8);
 
-        if ($rpc["m"] != $method || $rpc["s"] != $this->seq) {
-            throw new Exceptions\TransportException("rpc method call mismatch");
+        if ($rpc['m'] !== $method || $rpc['s'] !== $this->seq) {
+            throw new Exceptions\TransportException('rpc method call mismatch');
         }
 
         // request id++
