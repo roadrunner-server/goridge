@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+## v2.3.1 (21.04.2020)
+- Syscall usage optimized. Now the data is packing and sending via 1 (or 2 in some cases) send_socket calls, instead of 2-3 (by @vvval)
+- Unix sockets supported on windows (AF_UNIX) starting from OS Build 17056.
+- Added the ability to define own relay with a codec (by @Reasno)
+
 ## v2.3.0 (23.03.2020)
 - Replaced std encoding/json package with the https://github.com/json-iterator/go 
 - Added BORS and GHA support
