@@ -6,6 +6,8 @@
  * @author Valentin V
  */
 
+declare(strict_types=1);
+
 namespace Spiral\Goridge;
 
 if (!function_exists('packMessage')) {

@@ -1,16 +1,16 @@
 <?php
+
 /**
  * Dead simple, high performance, drop-in bridge to Golang RPC with zero dependencies
  *
  * @author Wolfy-J
  */
 
+declare(strict_types=1);
+
 namespace Spiral\Goridge;
 
-use Spiral\Goridge\Exceptions\GoridgeException;
-use Spiral\Goridge\Exceptions\PrefixException;
-use Spiral\Goridge\Exceptions\RelayException;
-use Spiral\Goridge\Exceptions\TransportException;
+use Error;
 
 /**
  * Communicates with remote server/client over be-directional socket using byte payload:
@@ -24,11 +24,11 @@ use Spiral\Goridge\Exceptions\TransportException;
 class SocketRelay implements RelayInterface
 {
     /** Supported socket types. */
-    const SOCK_TCP  = 0;
-    const SOCK_UNIX = 1;
+    public const SOCK_TCP  = 0;
+    public const SOCK_UNIX = 1;
 
     // @deprecated
-    const SOCK_TPC = self::SOCK_TCP;
+    public const SOCK_TPC = self::SOCK_TCP;
 
     /** @var string */
     private $address;
@@ -53,7 +53,7 @@ class SocketRelay implements RelayInterface
      *
      * @throws Exceptions\InvalidArgumentException
      */
-    public function __construct(string $address, int $port = null, int $type = self::SOCK_TCP)
+    public function __construct(string $address, ?int $port = null, int $type = self::SOCK_TCP)
     {
         if (!extension_loaded('sockets')) {
             throw new Exceptions\InvalidArgumentException("'sockets' extension not loaded");
@@ -85,20 +85,43 @@ class SocketRelay implements RelayInterface
     }
 
     /**
+     * Destruct connection and disconnect.
+     */
+    public function __destruct()
+    {
+        if ($this->isConnected()) {
+            $this->close();
+        }
+    }
+
+    /**
+     * @return string
+     */
+    public function __toString(): string
+    {
+        if ($this->type === self::SOCK_TCP) {
+            return "tcp://{$this->address}:{$this->port}";
+        }
+
+        return "unix://{$this->address}";
+    }
+
+    /**
      * {@inheritdoc}
+     * @return self
      */
     public function sendPackage(
         string $headerPayload,
         ?int $headerFlags,
         string $bodyPayload,
         ?int $bodyFlags = null
-    ) {
+    ): self {
         $this->connect();
 
         $headerPackage = packMessage($headerPayload, $headerFlags);
         $bodyPackage = packMessage($bodyPayload, $bodyFlags);
         if ($headerPackage === null || $bodyPackage === null) {
-            throw new TransportException('unable to send payload with PAYLOAD_NONE flag');
+            throw new Exceptions\TransportException('unable to send payload with PAYLOAD_NONE flag');
         }
 
         socket_send(
@@ -113,14 +136,15 @@ class SocketRelay implements RelayInterface
 
     /**
      * {@inheritdoc}
+     * @return self
      */
-    public function send($payload, int $flags = null)
+    public function send(string $payload, ?int $flags = null): self
     {
         $this->connect();
 
         $package = packMessage($payload, $flags);
         if ($package === null) {
-            throw new TransportException('unable to send payload with PAYLOAD_NONE flag');
+            throw new Exceptions\TransportException('unable to send payload with PAYLOAD_NONE flag');
         }
 
         socket_send($this->socket, $package['body'], 17 + $package['size'], 0);
@@ -131,7 +155,7 @@ class SocketRelay implements RelayInterface
     /**
      * {@inheritdoc}
      */
-    public function receiveSync(int &$flags = null)
+    public function receiveSync(?int &$flags = null): ?string
     {
         $this->connect();
 
@@ -171,7 +195,7 @@ class SocketRelay implements RelayInterface
     /**
      * @return int|null
      */
-    public function getPort()
+    public function getPort(): ?int
     {
         return $this->port;
     }
@@ -189,7 +213,7 @@ class SocketRelay implements RelayInterface
      */
     public function isConnected(): bool
     {
-        return $this->socket != null;
+        return $this->socket !== null;
     }
 
     /**
@@ -198,8 +222,8 @@ class SocketRelay implements RelayInterface
      *
      * @return bool
      *
-     * @throws RelayException
-     * @throws \Error When sockets are used in unsupported environment.
+     * @throws Exceptions\RelayException
+     * @throws Error When sockets are used in unsupported environment.
      */
     public function connect(): bool
     {
@@ -210,10 +234,10 @@ class SocketRelay implements RelayInterface
         $this->socket = $this->createSocket();
         try {
             if (socket_connect($this->socket, $this->address, $this->port) === false) {
-                throw new RelayException(socket_strerror(socket_last_error($this->socket)));
+                throw new Exceptions\RelayException(socket_strerror(socket_last_error($this->socket)));
             }
         } catch (\Exception $e) {
-            throw new RelayException("unable to establish connection {$this}", 0, $e);
+            throw new Exceptions\RelayException("unable to establish connection {$this}", 0, $e);
         }
 
         return true;
@@ -222,12 +246,12 @@ class SocketRelay implements RelayInterface
     /**
      * Close connection.
      *
-     * @throws RelayException
+     * @throws Exceptions\RelayException
      */
-    public function close()
+    public function close(): void
     {
         if (!$this->isConnected()) {
-            throw new RelayException("unable to close socket '{$this}', socket already closed");
+            throw new Exceptions\RelayException("unable to close socket '{$this}', socket already closed");
         }
 
         socket_close($this->socket);
@@ -235,49 +259,27 @@ class SocketRelay implements RelayInterface
     }
 
     /**
-     * Destruct connection and disconnect.
-     */
-    public function __destruct()
-    {
-        if ($this->isConnected()) {
-            $this->close();
-        }
-    }
-
-    /**
-     * @return string
-     */
-    public function __toString(): string
-    {
-        if ($this->type == self::SOCK_TCP) {
-            return "tcp://{$this->address}:{$this->port}";
-        }
-
-        return "unix://{$this->address}";
-    }
-
-    /**
      * @return array Prefix [flag, length]
      *
-     * @throws PrefixException
+     * @throws Exceptions\PrefixException
      */
     private function fetchPrefix(): array
     {
         $prefixLength = socket_recv($this->socket, $prefixBody, 17, MSG_WAITALL);
         if ($prefixBody === false || $prefixLength !== 17) {
-            throw new PrefixException(sprintf(
-                "unable to read prefix from socket: %s",
+            throw new Exceptions\PrefixException(sprintf(
+                'unable to read prefix from socket: %s',
                 socket_strerror(socket_last_error($this->socket))
             ));
         }
 
-        $result = unpack("Cflags/Psize/Jrevs", $prefixBody);
+        $result = unpack('Cflags/Psize/Jrevs', $prefixBody);
         if (!is_array($result)) {
-            throw new Exceptions\PrefixException("invalid prefix");
+            throw new Exceptions\PrefixException('invalid prefix');
         }
 
-        if ($result['size'] != $result['revs']) {
-            throw new Exceptions\PrefixException("invalid prefix (checksum)");
+        if ($result['size'] !== $result['revs']) {
+            throw new Exceptions\PrefixException('invalid prefix (checksum)');
         }
 
         return $result;
@@ -285,7 +287,7 @@ class SocketRelay implements RelayInterface
 
     /**
      * @return resource
-     * @throws GoridgeException
+     * @throws Exceptions\GoridgeException
      */
     private function createSocket()
     {

@@ -9,18 +9,17 @@
          processIsolation="false"
          stopOnFailure="false"
          stopOnError="false"
-         syntaxCheck="true"
          stderr="true"
 >
     <testsuites>
         <testsuite name="Goridge Tests">
-            <directory>./tests/</directory>
+            <directory>tests</directory>
         </testsuite>
     </testsuites>
 
     <filter>
         <whitelist>
-            <directory>php-src</directory>
+            <directory>src</directory>
         </whitelist>
     </filter>
 </phpunit>

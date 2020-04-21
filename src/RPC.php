@@ -1,9 +1,12 @@
 <?php
+
 /**
  * Dead simple, high performance, drop-in bridge to Golang RPC with zero dependencies
  *
  * @author Wolfy-J
  */
+
+declare(strict_types=1);
 
 namespace Spiral\Goridge;
 
@@ -44,8 +47,8 @@ class RPC
     {
         $header = $method . pack('P', $this->seq);
 
-        if ($flags & Relay::PAYLOAD_RAW) {
-            $this->relay->sendPackage($header, Relay::PAYLOAD_CONTROL | Relay::PAYLOAD_RAW, $payload, $flags);
+        if ($flags & Relay::PAYLOAD_RAW && is_scalar($payload)) {
+            $this->relay->sendPackage($header, Relay::PAYLOAD_CONTROL | Relay::PAYLOAD_RAW, (string)$payload, $flags);
         } else {
             $body = json_encode($payload);
             if ($body === false) {
@@ -90,7 +93,7 @@ class RPC
      *
      * @throws Exceptions\ServiceException
      */
-    protected function handleBody($body, int $flags)
+    protected function handleBody(string $body, int $flags)
     {
         if ($flags & Relay::PAYLOAD_ERROR && $flags & Relay::PAYLOAD_RAW) {
             throw new Exceptions\ServiceException("error '$body' on '{$this->relay}'");

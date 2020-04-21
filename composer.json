@@ -10,16 +10,20 @@
     }
   ],
   "require": {
-    "php": "^7.1",
+    "php": ">=7.2",
     "ext-json": "*"
   },
   "require-dev": {
-    "phpunit/phpunit": "~6.0"
+    "phpunit/phpunit": "~8.0",
+    "spiral/code-style": "^1.0"
   },
   "autoload": {
     "psr-4": {
-      "Spiral\\Goridge\\": "php-src/"
-    }
+      "Spiral\\Goridge\\": "src/"
+    },
+    "files": [
+      "src/functions.php"
+    ]
   },
   "autoload-dev": {
     "psr-4": {
