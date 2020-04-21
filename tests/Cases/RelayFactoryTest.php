@@ -58,6 +58,8 @@ class RelayFactoryTest extends TestCase
             ['tcp://localhost'],
             ['tcp://localhost:123'],
             ['unix://localhost:123'],
+            ['unix://rpc.sock'],
+            ['unix:///tmp/rpc.sock'],
             ['tcp://localhost:abc'],
             ['pipes://stdin:stdout'],
         ];
@@ -76,9 +78,9 @@ class RelayFactoryTest extends TestCase
     public function testUnix(): void
     {
         /** @var SocketRelay $relay */
-        $relay = Relay::create('unix://localhost:123');
+        $relay = Relay::create('unix:///tmp/rpc.sock');
         $this->assertInstanceOf(SocketRelay::class, $relay);
-        $this->assertSame('localhost', $relay->getAddress());
+        $this->assertSame('/tmp/rpc.sock', $relay->getAddress());
         $this->assertSame(SocketRelay::SOCK_UNIX, $relay->getType());
     }
 
