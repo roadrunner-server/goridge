@@ -8,9 +8,9 @@
 namespace Spiral\Goridge;
 
 use Spiral\Goridge\Exceptions\GoridgeException;
-use Spiral\Goridge\Exceptions\TransportException;
 use Spiral\Goridge\Exceptions\PrefixException;
 use Spiral\Goridge\Exceptions\RelayException;
+use Spiral\Goridge\Exceptions\TransportException;
 
 /**
  * Communicates with remote server/client over be-directional socket using byte payload:
@@ -24,12 +24,12 @@ use Spiral\Goridge\Exceptions\RelayException;
 class SocketRelay implements RelayInterface
 {
     /** Supported socket types. */
-    const SOCK_TCP = 0;
+    const SOCK_TCP  = 0;
     const SOCK_UNIX = 1;
-    
+
     // @deprecated
     const SOCK_TPC = self::SOCK_TCP;
-    
+
     /** @var string */
     private $address;
 
@@ -55,6 +55,10 @@ class SocketRelay implements RelayInterface
      */
     public function __construct(string $address, int $port = null, int $type = self::SOCK_TCP)
     {
+        if (!extension_loaded('sockets')) {
+            throw new Exceptions\InvalidArgumentException("'sockets' extension not loaded");
+        }
+
         switch ($type) {
             case self::SOCK_TCP:
                 if ($port === null) {
@@ -83,22 +87,43 @@ class SocketRelay implements RelayInterface
     /**
      * {@inheritdoc}
      */
+    public function sendPackage(
+        string $headerPayload,
+        ?int $headerFlags,
+        string $bodyPayload,
+        ?int $bodyFlags = null
+    ) {
+        $this->connect();
+
+        $headerPackage = packMessage($headerPayload, $headerFlags);
+        $bodyPackage = packMessage($bodyPayload, $bodyFlags);
+        if ($headerPackage === null || $bodyPackage === null) {
+            throw new TransportException('unable to send payload with PAYLOAD_NONE flag');
+        }
+
+        socket_send(
+            $this->socket,
+            $headerPackage['body'] . $bodyPackage['body'],
+            34 + $headerPackage['size'] + $bodyPackage['size'],
+            0
+        );
+
+        return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function send($payload, int $flags = null)
     {
         $this->connect();
 
-        $size = strlen($payload);
-        if ($flags & self::PAYLOAD_NONE && $size != 0) {
-            throw new TransportException("unable to send payload with PAYLOAD_NONE flag");
+        $package = packMessage($payload, $flags);
+        if ($package === null) {
+            throw new TransportException('unable to send payload with PAYLOAD_NONE flag');
         }
 
-        $body = pack('CPJ', $flags, $size, $size);
-
-        if (!($flags & self::PAYLOAD_NONE)) {
-            $body .= $payload;
-        }
-
-        socket_send($this->socket, $body, 17 + $size, 0);
+        socket_send($this->socket, $package['body'], 17 + $package['size'], 0);
 
         return $this;
     }

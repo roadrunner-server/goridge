@@ -7,6 +7,8 @@
 
 namespace Spiral\Goridge;
 
+use Spiral\Goridge\Exceptions\TransportException;
+
 /**
  * Communicates with remote server/client over streams using byte payload:
  *
@@ -58,21 +60,41 @@ class StreamRelay implements RelayInterface
     /**
      * {@inheritdoc}
      */
+    public function sendPackage(
+        string $headerPayload,
+        ?int $headerFlags,
+        string $bodyPayload,
+        ?int $bodyFlags = null
+    ) {
+        $headerPackage = packMessage($headerPayload, $headerFlags);
+        $bodyPackage = packMessage($bodyPayload, $bodyFlags);
+        if ($headerPackage === null || $bodyPackage === null) {
+            throw new TransportException('unable to send payload with PAYLOAD_NONE flag');
+        }
+
+        if (fwrite(
+                $this->out,
+                $headerPackage['body'] . $bodyPackage['body'],
+                34 + $headerPackage['size'] + $bodyPackage['size']
+            ) === false) {
+            throw new TransportException('unable to write payload to the stream');
+        }
+
+        return $this;
+    }
+
+    /**
+     * {@inheritdoc}
+     */
     public function send($payload, int $flags = null)
     {
-        $size = strlen($payload);
-        if ($flags & self::PAYLOAD_NONE && $size != 0) {
-            throw new Exceptions\TransportException("unable to send payload with PAYLOAD_NONE flag");
+        $package = packMessage($payload, $flags);
+        if ($package === null) {
+            throw new TransportException('unable to send payload with PAYLOAD_NONE flag');
         }
 
-        $body = pack('CPJ', $flags, $size, $size);
-
-        if (!($flags & self::PAYLOAD_NONE)) {
-            $body .= $payload;
-        }
-
-        if (fwrite($this->out, $body, 17 + $size) === false) {
-            throw new Exceptions\TransportException("unable to write payload to the stream");
+        if (fwrite($this->out, $package['body'], 17 + $package['size']) === false) {
+            throw new TransportException('unable to write payload to the stream');
         }
 
         return $this;
