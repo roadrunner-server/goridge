@@ -55,6 +55,10 @@ class SocketRelay implements RelayInterface
      */
     public function __construct(string $address, int $port = null, int $type = self::SOCK_TCP)
     {
+        if (!extension_loaded('sockets')) {
+            throw new Exceptions\InvalidArgumentException("'socket' extension not loaded");
+        }
+
         switch ($type) {
             case self::SOCK_TCP:
                 if ($port === null) {
