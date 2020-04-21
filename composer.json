@@ -19,7 +19,10 @@
   "autoload": {
     "psr-4": {
       "Spiral\\Goridge\\": "php-src/"
-    }
+    },
+    "files": [
+      "php-src/functions.php"
+    ]
   },
   "autoload-dev": {
     "psr-4": {
