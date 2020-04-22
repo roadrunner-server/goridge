@@ -67,6 +67,13 @@ class SocketRelay implements RelayInterface
                         $address
                     ));
                 }
+
+                if ($port < 0 || $port > 65535) {
+                    throw new Exceptions\InvalidArgumentException(sprintf(
+                        "invalid port given for TPC socket on '%s'",
+                        $address
+                    ));
+                }
                 break;
             case self::SOCK_UNIX:
                 $port = null;
