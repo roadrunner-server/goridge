@@ -10,7 +10,9 @@ declare(strict_types=1);
 
 namespace Spiral\Tests;
 
+use Exception;
 use PHPUnit\Framework\TestCase;
+use Spiral\Goridge\Exceptions\ServiceException;
 use Spiral\Goridge\RelayInterface;
 use Spiral\Goridge\RPC;
 use Spiral\Goridge\SocketRelay;
@@ -46,6 +48,9 @@ abstract class RPCTest extends TestCase
         $this->assertSame(10, $conn->call('Service.Negate', -10));
     }
 
+    /**
+     * @throws Exception
+     */
     public function testLongEcho(): void
     {
         $conn = $this->makeRPC();
@@ -58,11 +63,13 @@ abstract class RPCTest extends TestCase
     }
 
     /**
-     * @expectedException \Spiral\Goridge\Exceptions\ServiceException
-     * @expectedExceptionMessage {rawData} request for <*string Value>
+     * @throws Exception
      */
     public function testConvertException(): void
     {
+        $this->expectException(ServiceException::class);
+        $this->expectExceptionMessageMatches('{rawData} request for  <*string Value>');
+
         $conn = $this->makeRPC();
         $payload = base64_encode(random_bytes(SocketRelay::BUFFER_SIZE * 5));
 
@@ -76,6 +83,9 @@ abstract class RPCTest extends TestCase
         $this->assertSame(md5($payload), md5($resp));
     }
 
+    /**
+     * @throws Exception
+     */
     public function testRawBody(): void
     {
         $conn = $this->makeRPC();
@@ -91,6 +101,9 @@ abstract class RPCTest extends TestCase
         $this->assertSame(md5($payload), md5($resp));
     }
 
+    /**
+     * @throws Exception
+     */
     public function testLongRawBody(): void
     {
         $conn = $this->makeRPC();
@@ -121,12 +134,11 @@ abstract class RPCTest extends TestCase
         ], $resp);
     }
 
-    /**
-     * @expectedException \Spiral\Goridge\Exceptions\ServiceException
-     * @expectedExceptionMessage {rawData} request for <*main.Payload Value>
-     */
     public function testBadPayload(): void
     {
+        $this->expectException(ServiceException::class);
+        $this->expectExceptionMessageMatches('{rawData} request for <*main.Payload Value>');
+
         $conn = $this->makeRPC();
         $conn->call('Service.Process', 'raw', RelayInterface::PAYLOAD_RAW);
     }
@@ -144,7 +156,7 @@ abstract class RPCTest extends TestCase
             ]
         ]);
 
-        $this->assertInternalType('array', $resp['keys']);
+        $this->assertIsArray($resp['keys']);
         $this->assertArrayHasKey('value', $resp['keys']);
         $this->assertArrayHasKey('domain', $resp['keys']);
 
@@ -152,12 +164,11 @@ abstract class RPCTest extends TestCase
         $this->assertSame('email', $resp['keys']['domain']);
     }
 
-    /**
-     * @expectedException \Spiral\Goridge\Exceptions\ServiceException
-     * @expectedExceptionMessageRegExp #error '.*cannot unmarshal number*#
-     */
     public function testBrokenPayloadMap(): void
     {
+        $this->expectException(ServiceException::class);
+        $this->expectExceptionMessageMatches('#error \'.*cannot unmarshal number*#');
+
         $conn = $this->makeRPC();
 
         $conn->call('Service.Process', [
@@ -168,18 +179,20 @@ abstract class RPCTest extends TestCase
     }
 
     /**
-     * @expectedException \Spiral\Goridge\Exceptions\ServiceException
-     * @expectedExceptionMessageRegExp #.*json encode.*#
+     * @throws Exception
      */
     public function testJsonException(): void
     {
+        $this->expectException(ServiceException::class);
+        $this->expectExceptionMessageMatches('#.*json encode.*#');
+
         $conn = $this->makeRPC();
 
         $conn->call('Service.Process', random_bytes(256));
     }
 
     /**
-     * @return \Spiral\Goridge\RPC
+     * @return RPC
      */
     protected function makeRPC(): RPC
     {
