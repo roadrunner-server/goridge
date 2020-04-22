@@ -58,6 +58,9 @@ jobs:
       - name: Run tests
         run: |
           composer update
+          go build ./tests/server.go
+          ./server
+          ./server server.sock
           composer run tests
           go test -v -race -cover -coverprofile=goridge.txt -covermode=atomic
 
