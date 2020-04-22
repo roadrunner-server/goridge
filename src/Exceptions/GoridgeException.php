@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 namespace Spiral\Goridge\Exceptions;
 
-class GoridgeException extends \RuntimeException
+use RuntimeException;
+
+class GoridgeException extends RuntimeException
 {
 }

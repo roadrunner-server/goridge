@@ -11,6 +11,7 @@ declare(strict_types=1);
 namespace Spiral\Goridge;
 
 use Error;
+use Exception;
 
 /**
  * Communicates with remote server/client over be-directional socket using byte payload:
@@ -254,7 +255,7 @@ class SocketRelay implements RelayInterface
             if (socket_connect($this->socket, $this->address, $this->port) === false) {
                 throw new Exceptions\RelayException(socket_strerror(socket_last_error($this->socket)));
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             throw new Exceptions\RelayException("unable to establish connection {$this}", 0, $e);
         }
 
