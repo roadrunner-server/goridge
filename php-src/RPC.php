@@ -68,7 +68,10 @@ class RPC
         $rpc['m'] = substr($body, 0, -8);
 
         if ($rpc['m'] !== $method || $rpc['s'] !== $this->seq) {
-            throw new Exceptions\TransportException('rpc method call mismatch');
+            throw new Exceptions\TransportException(sprintf(
+                'rpc method call, expected %s:%d, got %s%d',
+                $method, $this->seq, $rpc['m'], $rpc['s']
+            ));
         }
 
         // request id++
