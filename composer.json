@@ -9,6 +9,9 @@
       "email": "wolfy.jd@gmail.com"
     }
   ],
+  "scripts": {
+    "tests": "phpunit"
+  },
   "require": {
     "php": "^7.1",
     "ext-json": "*"
