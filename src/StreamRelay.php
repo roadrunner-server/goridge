@@ -10,8 +10,6 @@ declare(strict_types=1);
 
 namespace Spiral\Goridge;
 
-use Spiral\Goridge\Exceptions\TransportException;
-
 /**
  * Communicates with remote server/client over streams using byte payload:
  *
@@ -73,7 +71,7 @@ class StreamRelay implements RelayInterface
         $headerPackage = packMessage($headerPayload, $headerFlags);
         $bodyPackage = packMessage($bodyPayload, $bodyFlags);
         if ($headerPackage === null || $bodyPackage === null) {
-            throw new TransportException('unable to send payload with PAYLOAD_NONE flag');
+            throw new Exceptions\TransportException('unable to send payload with PAYLOAD_NONE flag');
         }
 
         if (
@@ -83,7 +81,7 @@ class StreamRelay implements RelayInterface
                 34 + $headerPackage['size'] + $bodyPackage['size']
             ) === false
         ) {
-            throw new TransportException('unable to write payload to the stream');
+            throw new Exceptions\TransportException('unable to write payload to the stream');
         }
 
         return $this;
@@ -97,11 +95,11 @@ class StreamRelay implements RelayInterface
     {
         $package = packMessage($payload, $flags);
         if ($package === null) {
-            throw new TransportException('unable to send payload with PAYLOAD_NONE flag');
+            throw new Exceptions\TransportException('unable to send payload with PAYLOAD_NONE flag');
         }
 
         if (fwrite($this->out, $package['body'], 17 + $package['size']) === false) {
-            throw new TransportException('unable to write payload to the stream');
+            throw new Exceptions\TransportException('unable to write payload to the stream');
         }
 
         return $this;

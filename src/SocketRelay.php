@@ -131,12 +131,16 @@ class SocketRelay implements RelayInterface
             throw new Exceptions\TransportException('unable to send payload with PAYLOAD_NONE flag');
         }
 
-        socket_send(
-            $this->socket,
-            $headerPackage['body'] . $bodyPackage['body'],
-            34 + $headerPackage['size'] + $bodyPackage['size'],
-            0
-        );
+        if (
+            socket_send(
+                $this->socket,
+                $headerPackage['body'] . $bodyPackage['body'],
+                34 + $headerPackage['size'] + $bodyPackage['size'],
+                0
+            ) === false
+        ) {
+            throw new Exceptions\TransportException('unable to write payload to the stream');
+        }
 
         return $this;
     }
@@ -154,7 +158,9 @@ class SocketRelay implements RelayInterface
             throw new Exceptions\TransportException('unable to send payload with PAYLOAD_NONE flag');
         }
 
-        socket_send($this->socket, $package['body'], 17 + $package['size'], 0);
+        if (socket_send($this->socket, $package['body'], 17 + $package['size'], 0) === false) {
+            throw new Exceptions\TransportException('unable to write payload to the stream');
+        }
 
         return $this;
     }
