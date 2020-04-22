@@ -252,7 +252,7 @@ class SocketRelay implements RelayInterface
 
         $this->socket = $this->createSocket();
         try {
-            if (socket_connect($this->socket, $this->address, $this->port) === false) {
+            if (socket_connect($this->socket, $this->address, $this->port ?? 0) === false) {
                 throw new Exceptions\RelayException(socket_strerror(socket_last_error($this->socket)));
             }
         } catch (Exception $e) {
