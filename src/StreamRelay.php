@@ -183,6 +183,6 @@ class StreamRelay implements RelayInterface
     {
         $meta = stream_get_meta_data($stream);
 
-        return $meta['mode'] !== 'r';
+        return !in_array($meta['mode'], ['r', 'rb'], true);
     }
 }

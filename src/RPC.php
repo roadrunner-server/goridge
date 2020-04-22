@@ -20,9 +20,7 @@ class RPC
     /** @var Relay */
     private $relay;
 
-    /**
-     * @var int
-     */
+    /** @var int */
     private $seq;
 
     /**

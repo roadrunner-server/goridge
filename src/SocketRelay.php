@@ -161,11 +161,10 @@ class SocketRelay implements RelayInterface
 
         $prefix = $this->fetchPrefix();
         $flags = $prefix['flags'];
-        $result = null;
 
+        $result = '';
         if ($prefix['size'] !== 0) {
             $readBytes = $prefix['size'];
-            $buffer = null;
 
             //Add ability to write to stream in a future
             while ($readBytes > 0) {
@@ -175,13 +174,19 @@ class SocketRelay implements RelayInterface
                     min(self::BUFFER_SIZE, $readBytes),
                     MSG_WAITALL
                 );
+                if ($bufferLength === false || $buffer === null) {
+                    throw new Exceptions\PrefixException(sprintf(
+                        'unable to read prefix from socket: %s',
+                        socket_strerror(socket_last_error($this->socket))
+                    ));
+                }
 
                 $result .= $buffer;
                 $readBytes -= $bufferLength;
             }
         }
 
-        return $result;
+        return $result ?: null;
     }
 
     /**
@@ -266,7 +271,7 @@ class SocketRelay implements RelayInterface
     private function fetchPrefix(): array
     {
         $prefixLength = socket_recv($this->socket, $prefixBody, 17, MSG_WAITALL);
-        if ($prefixBody === false || $prefixLength !== 17) {
+        if ($prefixBody === null || $prefixLength !== 17) {
             throw new Exceptions\PrefixException(sprintf(
                 'unable to read prefix from socket: %s',
                 socket_strerror(socket_last_error($this->socket))
