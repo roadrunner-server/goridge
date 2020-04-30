@@ -122,6 +122,7 @@ func (s *Service2) EchoBinary(msg []byte, r *[]byte) error {
 func listenUnixSockets(wg *sync.WaitGroup) {
 	var ln net.Listener
 	var err error
+	wg.Add(1)
 	defer wg.Done()
 
 	if fileExists("goridge.sock") {
@@ -163,6 +164,7 @@ func fileExists(filename string) bool {
 func listenTCP(wg *sync.WaitGroup) {
 	var ln net.Listener
 	var err error
+	wg.Add(1)
 	defer wg.Done()
 
 	ln, err = net.Listen("tcp", ":7079")
@@ -188,7 +190,6 @@ func listenTCP(wg *sync.WaitGroup) {
 
 func main() {
 	wg := &sync.WaitGroup{}
-	wg.Add(2)
 	go listenTCP(wg)
 	//go listenUnixSockets(wg)
 	wg.Wait()
