@@ -49,9 +49,14 @@ use Spiral\Goridge;
 require "vendor/autoload.php";
 
 $rpc = new Goridge\RPC(new Goridge\SocketRelay("127.0.0.1", 6001));
+//or, using factory:
+$tcpRPC = Goridge\Relay::create('tcp://127.0.0.1:6001');
+$unixRPC = Goridge\Relay::create('unix:///tmp/rpc.sock');
+$streamRPC = Goridge\Relay::create('pipes://stdin:stdout');
 
 echo $rpc->call("App.Hi", "Antony");
 ```
+> Factory applies the next format: `<protocol>://<arg1>:<arg2>`
 
 ```go
 package main
