@@ -58,9 +58,7 @@ jobs:
       - name: Run tests
         run: |
           composer update
-          go build ./tests/server.go
-          ./server
-          ./server server.sock
+          docker-compose -f ./tests/docker-compose.yml up -d
           vendor/bin/phpunit --coverage-clover=coverage.xml
           go test -v -race -cover -coverprofile=goridge.txt -covermode=atomic
 

@@ -1,0 +1,12 @@
+version: '3'
+
+services:
+  goridge:
+    container_name: goridge
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports: ["7079:7079"]
+    volumes:
+      - $PWD/goridge.sock:/app/goridge.sock
+    command: ["/app/server"]
