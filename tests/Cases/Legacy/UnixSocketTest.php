@@ -7,10 +7,13 @@
 
 namespace Spiral\Tests\Legacy;
 
+use Spiral\Goridge\RPC;
 use Spiral\Goridge\SocketRelay;
 
-class UnixSocketTest extends RPCTest
+class UnixSocketTest extends \Spiral\Tests\UnixSocketTest
 {
-    const SOCK_ADDR = 'server.sock';
-    const SOCK_TYPE = SocketRelay::SOCK_UNIX;
+    protected function makeRPC(): RPC
+    {
+        return new RPC(new Relay(new SocketRelay(static::SOCK_ADDR, static::SOCK_PORT, static::SOCK_TYPE)));
+    }
 }

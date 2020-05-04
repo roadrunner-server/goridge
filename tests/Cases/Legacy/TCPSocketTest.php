@@ -7,11 +7,13 @@
 
 namespace Spiral\Tests\Legacy;
 
+use Spiral\Goridge\RPC;
 use Spiral\Goridge\SocketRelay;
 
-class TCPSocketTest extends RPCTest
+class TCPSocketTest extends \Spiral\Tests\TCPSocketTest
 {
-    const SOCK_ADDR = '127.0.0.1';
-    const SOCK_PORT = 7079;
-    const SOCK_TYPE = SocketRelay::SOCK_TCP;
+    protected function makeRPC(): RPC
+    {
+        return new RPC(new Relay(new SocketRelay(static::SOCK_ADDR, static::SOCK_PORT, static::SOCK_TYPE)));
+    }
 }
