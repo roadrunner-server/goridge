@@ -14,7 +14,6 @@ use Spiral\Goridge\RPC;
 
 abstract class RPCTest extends TestCase
 {
-    const GO_APP = "server";
     const SOCK_ADDR = "";
     const SOCK_PORT = 7079;
     const SOCK_TYPE = SocketRelay::SOCK_TPC;
