@@ -1,17 +1,18 @@
 package main
 
 import (
-	"github.com/spiral/goridge/v2"
 	"net"
 	"net/rpc"
 	"os"
 	"strings"
+
+	"github.com/spiral/goridge/v2"
 )
 
-// Service sample
+// Service
 type Service struct{}
 
-// Payload sample
+// Payload
 type Payload struct {
 	Name  string            `json:"name"`
 	Value int               `json:"value"`
@@ -29,14 +30,12 @@ func (s *Service) Ping(msg string, r *string) error {
 	if msg == "ping" {
 		*r = "pong"
 	}
-
 	return nil
 }
 
 // Echo returns incoming message
 func (s *Service) Echo(msg string, r *string) error {
 	*r = msg
-
 	return nil
 }
 
@@ -56,8 +55,8 @@ func (s *Service) Process(msg Payload, r *Payload) error {
 }
 
 // EchoBinary work over binary data
-func (s *Service) EchoBinary(msg []byte, r *[]byte) error {
-	*r = append(*r, msg...)
+func (s *Service) EchoBinary(msg []byte, out *[]byte) error {
+	*out = append(*out, msg...)
 
 	return nil
 }
@@ -75,17 +74,13 @@ func main() {
 		panic(err)
 	}
 
-	err = rpc.Register(new(Service))
-	if err != nil {
-		panic(err)
-	}
+	rpc.Register(new(Service))
 
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
 			continue
 		}
-
 		go rpc.ServeCodec(goridge.NewCodec(conn))
 	}
 }

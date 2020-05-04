@@ -68,7 +68,7 @@ abstract class RPCTest extends TestCase
     public function testConvertException(): void
     {
         $this->expectException(ServiceException::class);
-        $this->expectExceptionMessageMatches('{rawData} request for  <*string Value>');
+        $this->expectExceptionMessage('{rawData} request for <*string Value>');
 
         $conn = $this->makeRPC();
         $payload = base64_encode(random_bytes(SocketRelay::BUFFER_SIZE * 5));
@@ -107,7 +107,7 @@ abstract class RPCTest extends TestCase
     public function testLongRawBody(): void
     {
         $conn = $this->makeRPC();
-        $payload = random_bytes(SocketRelay::BUFFER_SIZE * 1000);
+        $payload = random_bytes(SocketRelay::BUFFER_SIZE * 100);
 
         $resp = $conn->call(
             'Service.EchoBinary',
@@ -137,7 +137,7 @@ abstract class RPCTest extends TestCase
     public function testBadPayload(): void
     {
         $this->expectException(ServiceException::class);
-        $this->expectExceptionMessageMatches('{rawData} request for <*main.Payload Value>');
+        $this->expectExceptionMessage('{rawData} request for <*main.Payload Value>');
 
         $conn = $this->makeRPC();
         $conn->call('Service.Process', 'raw', RelayInterface::PAYLOAD_RAW);
@@ -167,7 +167,6 @@ abstract class RPCTest extends TestCase
     public function testBrokenPayloadMap(): void
     {
         $this->expectException(ServiceException::class);
-        $this->expectExceptionMessageMatches('#error \'.*cannot unmarshal number*#');
 
         $conn = $this->makeRPC();
 

@@ -20,8 +20,11 @@ class RPC
     /** @var Relay */
     private $relay;
 
+    /** @var bool */
+    private $optimizedRelay;
+
     /** @var int */
-    private $seq;
+    private $seq = 0;
 
     /**
      * @param Relay $relay
@@ -29,6 +32,7 @@ class RPC
     public function __construct(Relay $relay)
     {
         $this->relay = $relay;
+        $this->optimizedRelay = method_exists($relay, 'sendPackage');
     }
 
     /**
@@ -44,9 +48,16 @@ class RPC
     public function call(string $method, $payload, int $flags = 0)
     {
         $header = $method . pack('P', $this->seq);
+        if (!$this->optimizedRelay) {
+            $this->relay->send($header, Relay::PAYLOAD_CONTROL | Relay::PAYLOAD_RAW);
+        }
 
         if ($flags & Relay::PAYLOAD_RAW && is_scalar($payload)) {
-            $this->relay->sendPackage($header, Relay::PAYLOAD_CONTROL | Relay::PAYLOAD_RAW, (string)$payload, $flags);
+            if (!$this->optimizedRelay) {
+                $this->relay->send($payload, $flags);
+            } else {
+                $this->relay->sendPackage($header, Relay::PAYLOAD_CONTROL | Relay::PAYLOAD_RAW, $payload, $flags);
+            }
         } else {
             $body = json_encode($payload);
             if ($body === false) {
@@ -56,7 +67,11 @@ class RPC
                 ));
             }
 
-            $this->relay->sendPackage($header, Relay::PAYLOAD_CONTROL | Relay::PAYLOAD_RAW, $body);
+            if (!$this->optimizedRelay) {
+                $this->relay->send($body);
+            } else {
+                $this->relay->sendPackage($header, Relay::PAYLOAD_CONTROL | Relay::PAYLOAD_RAW, $body);
+            }
         }
 
         $body = $this->relay->receiveSync($flags);
@@ -69,7 +84,13 @@ class RPC
         $rpc['m'] = substr($body, 0, -8);
 
         if ($rpc['m'] !== $method || $rpc['s'] !== $this->seq) {
-            throw new Exceptions\TransportException('rpc method call mismatch');
+            throw new Exceptions\TransportException(sprintf(
+                'rpc method call, expected %s:%d, got %s%d',
+                $method,
+                $this->seq,
+                $rpc['m'],
+                $rpc['s']
+            ));
         }
 
         // request id++

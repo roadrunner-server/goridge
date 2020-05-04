@@ -57,6 +57,9 @@ jobs:
 
       - name: Run tests
         run: |
+          composer update
+          docker-compose -f ./tests/docker-compose.yml up -d
+          vendor/bin/phpunit --coverage-clover=coverage.xml
           go test -v -race -cover -coverprofile=goridge.txt -covermode=atomic
 
       - name: Run code coverage
@@ -68,6 +71,11 @@ jobs:
             chmod +x codecov-bash
             ./codecov-bash -f goridge.txt
           fi
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./coverage.xml
 
   golangci-check:
     name: runner / golangci-lint
