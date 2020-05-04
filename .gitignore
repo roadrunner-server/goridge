@@ -5,3 +5,4 @@ clover.xml
 coveralls.json
 tests/server.exe
 tests/server
+**/vendor

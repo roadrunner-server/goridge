@@ -85,7 +85,13 @@ class SocketRelay implements RelayInterface
     }
 
     /**
-     * {@inheritdoc}
+     * Send message package with header and body.
+     *
+     * @param string   $headerPayload
+     * @param int|null $headerFlags
+     * @param string   $bodyPayload
+     * @param int|null $bodyFlags
+     * @return mixed
      */
     public function sendPackage(
         string $headerPayload,

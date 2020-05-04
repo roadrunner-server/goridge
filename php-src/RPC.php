@@ -17,6 +17,9 @@ class RPC
     /** @var Relay */
     private $relay;
 
+    /** @var bool */
+    private $optimizedRelay;
+
     /**
      * @var int
      */
@@ -28,6 +31,7 @@ class RPC
     public function __construct(Relay $relay)
     {
         $this->relay = $relay;
+        $this->optimizedRelay = method_exists($relay, 'sendPackage');
     }
 
     /**
@@ -43,9 +47,16 @@ class RPC
     public function call(string $method, $payload, int $flags = 0)
     {
         $header = $method . pack('P', $this->seq);
+        if (!$this->optimizedRelay) {
+            $this->relay->send($header, Relay::PAYLOAD_CONTROL | Relay::PAYLOAD_RAW);
+        }
 
         if ($flags & Relay::PAYLOAD_RAW) {
-            $this->relay->sendPackage($header, Relay::PAYLOAD_CONTROL | Relay::PAYLOAD_RAW, $payload, $flags);
+            if (!$this->optimizedRelay) {
+                $this->relay->send($payload, $flags);
+            } else {
+                $this->relay->sendPackage($header, Relay::PAYLOAD_CONTROL | Relay::PAYLOAD_RAW, $payload, $flags);
+            }
         } else {
             $body = json_encode($payload);
             if ($body === false) {
@@ -55,7 +66,11 @@ class RPC
                 ));
             }
 
-            $this->relay->sendPackage($header, Relay::PAYLOAD_CONTROL | Relay::PAYLOAD_RAW, $body);
+            if (!$this->optimizedRelay) {
+                $this->relay->send($body);
+            } else {
+                $this->relay->sendPackage($header, Relay::PAYLOAD_CONTROL | Relay::PAYLOAD_RAW, $body);
+            }
         }
 
         $body = $this->relay->receiveSync($flags);

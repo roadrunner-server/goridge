@@ -21,22 +21,6 @@ interface RelayInterface
     public const PAYLOAD_CONTROL = 16;
 
     /**
-     * Send message package with header and body.
-     *
-     * @param string   $headerPayload
-     * @param int|null $headerFlags
-     * @param string   $bodyPayload
-     * @param int|null $bodyFlags
-     * @return mixed
-     */
-    public function sendPackage(
-        string $headerPayload,
-        ?int $headerFlags,
-        string $bodyPayload,
-        ?int $bodyFlags = null
-    );
-
-    /**
      * Send payload message to another party.
      *
      * @param string   $payload
