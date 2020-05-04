@@ -43,9 +43,16 @@ class RPC
     public function call(string $method, $payload, int $flags = 0)
     {
         $header = $method . pack('P', $this->seq);
+        if (!method_exists($this->relay, 'sendPackage')) {
+            $this->relay->send($header, Relay::PAYLOAD_CONTROL | Relay::PAYLOAD_RAW);
+        }
 
         if ($flags & Relay::PAYLOAD_RAW) {
-            $this->relay->sendPackage($header, Relay::PAYLOAD_CONTROL | Relay::PAYLOAD_RAW, $payload, $flags);
+            if (!method_exists($this->relay, 'sendPackage')) {
+                $this->relay->send($payload, $flags);
+            } else {
+                $this->relay->sendPackage($header, Relay::PAYLOAD_CONTROL | Relay::PAYLOAD_RAW, $payload, $flags);
+            }
         } else {
             $body = json_encode($payload);
             if ($body === false) {
@@ -55,7 +62,11 @@ class RPC
                 ));
             }
 
-            $this->relay->sendPackage($header, Relay::PAYLOAD_CONTROL | Relay::PAYLOAD_RAW, $body);
+            if (!method_exists($this->relay, 'sendPackage')) {
+                $this->relay->send($body);
+            } else {
+                $this->relay->sendPackage($header, Relay::PAYLOAD_CONTROL | Relay::PAYLOAD_RAW, $body);
+            }
         }
 
         $body = $this->relay->receiveSync($flags);

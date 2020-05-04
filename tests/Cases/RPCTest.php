@@ -16,7 +16,7 @@ abstract class RPCTest extends TestCase
 {
     const SOCK_ADDR = "";
     const SOCK_PORT = 7079;
-    const SOCK_TYPE = SocketRelay::SOCK_TPC;
+    const SOCK_TYPE = SocketRelay::SOCK_TCP;
 
     public function testPingPong()
     {
@@ -90,7 +90,7 @@ abstract class RPCTest extends TestCase
     public function testLongRawBody()
     {
         $conn = $this->makeRPC();
-        $payload = random_bytes(SocketRelay::BUFFER_SIZE * 1000);
+        $payload = random_bytes(SocketRelay::BUFFER_SIZE * 100);
 
         $resp = $conn->call(
             'Service.EchoBinary',
@@ -150,7 +150,6 @@ abstract class RPCTest extends TestCase
 
     /**
      * @expectedException \Spiral\Goridge\Exceptions\ServiceException
-     * @expectedExceptionMessageRegExp #error '.*cannot unmarshal number*#
      */
     public function testBrokenPayloadMap()
     {

@@ -5,7 +5,7 @@
  * @author Wolfy-J
  */
 
-namespace Spiral\Tests;
+namespace Spiral\Tests\Legacy;
 
 use Spiral\Goridge\SocketRelay;
 
