@@ -10,7 +10,7 @@ namespace Spiral\Tests\Legacy;
 use Spiral\Goridge\RPC;
 use Spiral\Goridge\SocketRelay;
 
-class UnixSocketTest extends \Spiral\Tests\UnixSocketTest
+class UnixSocketTest_ extends \Spiral\Tests\UnixSocketTest_
 {
     protected function makeRPC(): RPC
     {
