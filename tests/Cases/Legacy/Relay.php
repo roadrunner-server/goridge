@@ -25,4 +25,12 @@ class Relay implements RelayInterface
     {
         return $this->relay->receiveSync($flags);
     }
+
+    /**
+     * @return string
+     */
+    public function __toString(): string
+    {
+        return (string)$this->relay;
+    }
 }
