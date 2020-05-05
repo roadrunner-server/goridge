@@ -1,48 +1,57 @@
 <?php
+
 /**
  * Dead simple, high performance, drop-in bridge to Golang RPC with zero dependencies
  *
  * @author Wolfy-J
  */
 
+declare(strict_types=1);
+
 namespace Spiral\Tests;
 
+use Exception;
 use PHPUnit\Framework\TestCase;
-use Spiral\Goridge\SocketRelay;
+use Spiral\Goridge\Exceptions\ServiceException;
 use Spiral\Goridge\RelayInterface;
 use Spiral\Goridge\RPC;
+use Spiral\Goridge\SocketRelay;
 
 abstract class RPCTest extends TestCase
 {
-    const SOCK_ADDR = '';
-    const SOCK_PORT = 7079;
-    const SOCK_TYPE = SocketRelay::SOCK_TCP;
+    public const GO_APP    = 'server';
+    public const SOCK_ADDR = '';
+    public const SOCK_PORT = 7079;
+    public const SOCK_TYPE = SocketRelay::SOCK_TCP;
 
-    public function testPingPong()
+    public function testPingPong(): void
     {
         $conn = $this->makeRPC();
-        $this->assertSame("pong", $conn->call('Service.Ping', 'ping'));
+        $this->assertSame('pong', $conn->call('Service.Ping', 'ping'));
     }
 
-    public function testPingNull()
+    public function testPingNull(): void
     {
         $conn = $this->makeRPC();
-        $this->assertSame("", $conn->call('Service.Ping', 'not-ping'));
+        $this->assertSame('', $conn->call('Service.Ping', 'not-ping'));
     }
 
-    public function testNegate()
+    public function testNegate(): void
     {
         $conn = $this->makeRPC();
         $this->assertSame(-10, $conn->call('Service.Negate', 10));
     }
 
-    public function testNegateNegative()
+    public function testNegateNegative(): void
     {
         $conn = $this->makeRPC();
         $this->assertSame(10, $conn->call('Service.Negate', -10));
     }
 
-    public function testLongEcho()
+    /**
+     * @throws Exception
+     */
+    public function testLongEcho(): void
     {
         $conn = $this->makeRPC();
         $payload = base64_encode(random_bytes(SocketRelay::BUFFER_SIZE * 5));
@@ -54,11 +63,13 @@ abstract class RPCTest extends TestCase
     }
 
     /**
-     * @expectedException \Spiral\Goridge\Exceptions\ServiceException
-     * @expectedExceptionMessage {rawData} request for <*string Value>
+     * @throws Exception
      */
-    public function testConvertException()
+    public function testConvertException(): void
     {
+        $this->expectException(ServiceException::class);
+        $this->expectExceptionMessage('{rawData} request for <*string Value>');
+
         $conn = $this->makeRPC();
         $payload = base64_encode(random_bytes(SocketRelay::BUFFER_SIZE * 5));
 
@@ -72,7 +83,10 @@ abstract class RPCTest extends TestCase
         $this->assertSame(md5($payload), md5($resp));
     }
 
-    public function testRawBody()
+    /**
+     * @throws Exception
+     */
+    public function testRawBody(): void
     {
         $conn = $this->makeRPC();
         $payload = random_bytes(SocketRelay::BUFFER_SIZE * 100);
@@ -87,7 +101,10 @@ abstract class RPCTest extends TestCase
         $this->assertSame(md5($payload), md5($resp));
     }
 
-    public function testLongRawBody()
+    /**
+     * @throws Exception
+     */
+    public function testLongRawBody(): void
     {
         $conn = $this->makeRPC();
         $payload = random_bytes(SocketRelay::BUFFER_SIZE * 100);
@@ -102,37 +119,36 @@ abstract class RPCTest extends TestCase
         $this->assertSame(md5($payload), md5($resp));
     }
 
-    public function testPayload()
+    public function testPayload(): void
     {
         $conn = $this->makeRPC();
 
         $resp = $conn->call('Service.Process', [
-            'name'  => "wolfy-j",
+            'name'  => 'wolfy-j',
             'value' => 18
         ]);
 
         $this->assertSame([
-            'name'  => "WOLFY-J",
+            'name'  => 'WOLFY-J',
             'value' => -18
         ], $resp);
     }
 
-    /**
-     * @expectedException \Spiral\Goridge\Exceptions\ServiceException
-     * @expectedExceptionMessage {rawData} request for <*main.Payload Value>
-     */
-    public function testBadPayload()
+    public function testBadPayload(): void
     {
+        $this->expectException(ServiceException::class);
+        $this->expectExceptionMessage('{rawData} request for <*main.Payload Value>');
+
         $conn = $this->makeRPC();
         $conn->call('Service.Process', 'raw', RelayInterface::PAYLOAD_RAW);
     }
 
-    public function testPayloadWithMap()
+    public function testPayloadWithMap(): void
     {
         $conn = $this->makeRPC();
 
         $resp = $conn->call('Service.Process', [
-            'name'  => "wolfy-j",
+            'name'  => 'wolfy-j',
             'value' => 18,
             'keys'  => [
                 'key'   => 'value',
@@ -140,7 +156,7 @@ abstract class RPCTest extends TestCase
             ]
         ]);
 
-        $this->assertInternalType('array', $resp['keys']);
+        $this->assertIsArray($resp['keys']);
         $this->assertArrayHasKey('value', $resp['keys']);
         $this->assertArrayHasKey('domain', $resp['keys']);
 
@@ -148,33 +164,34 @@ abstract class RPCTest extends TestCase
         $this->assertSame('email', $resp['keys']['domain']);
     }
 
-    /**
-     * @expectedException \Spiral\Goridge\Exceptions\ServiceException
-     */
-    public function testBrokenPayloadMap()
+    public function testBrokenPayloadMap(): void
     {
+        $this->expectException(ServiceException::class);
+
         $conn = $this->makeRPC();
 
         $conn->call('Service.Process', [
-            'name'  => "wolfy-j",
+            'name'  => 'wolfy-j',
             'value' => 18,
             'keys'  => 1111
         ]);
     }
 
     /**
-     * @expectedException \Spiral\Goridge\Exceptions\ServiceException
-     * @expectedExceptionMessageRegExp #.*json encode.*#
+     * @throws Exception
      */
-    public function testJsonException()
+    public function testJsonException(): void
     {
+        $this->expectException(ServiceException::class);
+        $this->expectExceptionMessageMatches('#.*json encode.*#');
+
         $conn = $this->makeRPC();
 
         $conn->call('Service.Process', random_bytes(256));
     }
 
     /**
-     * @return \Spiral\Goridge\RPC
+     * @return RPC
      */
     protected function makeRPC(): RPC
     {

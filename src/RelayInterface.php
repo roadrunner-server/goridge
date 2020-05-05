@@ -1,9 +1,12 @@
 <?php
+
 /**
  * Dead simple, high performance, drop-in bridge to Golang RPC with zero dependencies
  *
  * @author Wolfy-J
  */
+
+declare(strict_types=1);
 
 namespace Spiral\Goridge;
 
@@ -28,7 +31,7 @@ interface RelayInterface
      *
      * @throws TransportException
      */
-    public function send($payload, int $flags = null);
+    public function send(string $payload, ?int $flags = null);
 
     /**
      * Receive message from another party in sync/blocked mode. Message can be null.
@@ -39,5 +42,5 @@ interface RelayInterface
      *
      * @throws TransportException
      */
-    public function receiveSync(int &$flags = null);
+    public function receiveSync(?int &$flags = null): ?string;
 }

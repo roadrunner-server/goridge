@@ -6,7 +6,9 @@
  * @author Valentin V
  */
 
-namespace Cases;
+declare(strict_types=1);
+
+namespace Spiral\Tests;
 
 use PHPUnit\Framework\TestCase;
 use Spiral\Goridge\Exceptions;

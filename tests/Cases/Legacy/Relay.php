@@ -16,21 +16,21 @@ class Relay implements RelayInterface
         $this->relay = $relay;
     }
 
-    public function send($payload, int $flags = null)
-    {
-        return $this->relay->send($payload, $flags);
-    }
-
-    public function receiveSync(int &$flags = null)
-    {
-        return $this->relay->receiveSync($flags);
-    }
-
     /**
      * @return string
      */
     public function __toString(): string
     {
         return (string)$this->relay;
+    }
+
+    public function send($payload, int $flags = null)
+    {
+        return $this->relay->send($payload, $flags);
+    }
+
+    public function receiveSync(int &$flags = null): ?string
+    {
+        return $this->relay->receiveSync($flags);
     }
 }

@@ -1,16 +1,19 @@
 <?php
+
 /**
  * Dead simple, high performance, drop-in bridge to Golang RPC with zero dependencies
  *
  * @author Wolfy-J
  */
 
+declare(strict_types=1);
+
 namespace Spiral\Tests\Legacy;
 
 use Spiral\Goridge\RPC;
 use Spiral\Goridge\SocketRelay;
 
-class UnixSocketTest_ extends \Spiral\Tests\UnixSocketTest_
+class UnixSocketTestIgnored extends \Spiral\Tests\UnixSocketTestIgnored
 {
     protected function makeRPC(): RPC
     {
