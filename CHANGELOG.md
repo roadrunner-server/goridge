@@ -3,7 +3,7 @@ CHANGELOG
 
 ## v2.4.0 (05.05.2020)
 - More tests for PHP (@vvval)
-- PHP version upgraded to the 7.2 (currently minimum supported)
+- Upgrade PHP version to the 7.2 (currently minimum supported)
 - Add new RelayInterface [link](https://github.com/spiral/goridge/pull/56/files#diff-85a3f483116946b4093f21ad855af4a8) (@vvval)
 - See the full milestone here: [link](https://github.com/spiral/goridge/issues?q=is%3Aclosed+milestone%3A2.4.0)
 
