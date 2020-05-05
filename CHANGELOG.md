@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+## v2.4.0 (05.05.2020)
+- More tests for PHP (@vvval)
+- PHP version upgraded to the 7.2 (currently minimum supported)
+- Add new RelayInterface [link](https://github.com/spiral/goridge/pull/56/files#diff-85a3f483116946b4093f21ad855af4a8) (@vvval)
+- See the full milestone here: [link](https://github.com/spiral/goridge/issues?q=is%3Aclosed+milestone%3A2.4.0)
+
 ## v2.3.1 (21.04.2020)
 - Syscall usage optimized. Now the data is packing and sending via 1 (or 2 in some cases) send_socket calls, instead of 2-3 (by @vvval)
 - Unix sockets supported on windows (AF_UNIX) starting from OS Build 17056.
