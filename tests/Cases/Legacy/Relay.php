@@ -29,7 +29,7 @@ class Relay implements RelayInterface
         return $this->relay->send($payload, $flags);
     }
 
-    public function receiveSync(int &$flags = null): ?string
+    public function receiveSync(int &$flags = null)
     {
         return $this->relay->receiveSync($flags);
     }
