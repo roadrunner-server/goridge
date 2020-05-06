@@ -1,7 +1,5 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Spiral\Tests\Legacy;
 
 use Spiral\Goridge\RelayInterface;
@@ -29,7 +27,7 @@ class Relay implements RelayInterface
         return $this->relay->send($payload, $flags);
     }
 
-    public function receiveSync(int &$flags = null): ?string
+    public function receiveSync(int &$flags = null)
     {
         return $this->relay->receiveSync($flags);
     }
