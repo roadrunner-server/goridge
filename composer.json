@@ -15,7 +15,8 @@
   },
   "require-dev": {
     "phpunit/phpunit": "~8.0",
-    "spiral/code-style": "^1.0"
+    "spiral/code-style": "^1.0",
+    "phpstan/phpstan": "^0.12.23"
   },
   "autoload": {
     "psr-4": {
@@ -24,6 +25,9 @@
     "files": [
       "src/functions.php"
     ]
+  },
+  "scripts": {
+    "analyze": "phpstan analyze -c ./phpstan.neon.dist --no-progress --ansi"
   },
   "autoload-dev": {
     "psr-4": {

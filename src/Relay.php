@@ -39,10 +39,17 @@ abstract class Relay
                     throw new Exceptions\RelayFactoryException('unsupported stream connection format');
                 }
 
-                return new StreamRelay(
-                    fopen("php://{$match['arg1']}", 'rb'),
-                    fopen("php://{$match['arg2']}", 'wb')
-                );
+                $in = fopen("php://{$match['arg1']}", 'rb');
+                if ($in === false) {
+                    throw new Exceptions\RelayFactoryException('could not initiate `in` stream resource');
+                }
+
+                $out = fopen("php://{$match['arg2']}", 'wb');
+                if ($out === false) {
+                    throw new Exceptions\RelayFactoryException('could not initiate `out` stream resource');
+                }
+
+                return new StreamRelay($in, $out);
             default:
                 throw new Exceptions\RelayFactoryException('unknown connection protocol');
         }

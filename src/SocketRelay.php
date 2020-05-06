@@ -22,7 +22,7 @@ use Exception;
  * prefix:
  * [ flag       ][ message length, unsigned int 64bits, LittleEndian ]
  */
-class SocketRelay implements RelayInterface
+class SocketRelay implements RelayInterface, SendPackageRelayInterface
 {
     /** Supported socket types. */
     public const SOCK_TCP  = 0;
@@ -40,8 +40,11 @@ class SocketRelay implements RelayInterface
     /** @var int */
     private $type;
 
-    /** @var resource|null */
+    /** @var resource */
     private $socket;
+
+    /** @var bool */
+    private $connected = false;
 
     /**
      * Example:
@@ -255,14 +258,21 @@ class SocketRelay implements RelayInterface
             return true;
         }
 
-        $this->socket = $this->createSocket();
+        $socket = $this->createSocket();
+        if ($socket === false) {
+            throw new Exceptions\RelayException("unable to create socket {$this}");
+        }
+
         try {
-            if (socket_connect($this->socket, $this->address, $this->port ?? 0) === false) {
-                throw new Exceptions\RelayException(socket_strerror(socket_last_error($this->socket)));
+            if (socket_connect($socket, $this->address, $this->port ?? 0) === false) {
+                throw new Exceptions\RelayException(socket_strerror(socket_last_error($socket)));
             }
         } catch (Exception $e) {
             throw new Exceptions\RelayException("unable to establish connection {$this}", 0, $e);
         }
+
+        $this->socket = $socket;
+        $this->connected = true;
 
         return true;
     }
@@ -279,7 +289,7 @@ class SocketRelay implements RelayInterface
         }
 
         socket_close($this->socket);
-        $this->socket = null;
+        $this->connected = false;
     }
 
     /**
@@ -310,7 +320,7 @@ class SocketRelay implements RelayInterface
     }
 
     /**
-     * @return resource
+     * @return resource|false
      * @throws Exceptions\GoridgeException
      */
     private function createSocket()
