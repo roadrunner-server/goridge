@@ -43,5 +43,5 @@ interface RelayInterface
      *
      * @throws TransportException
      */
-    public function receiveSync(?int &$flags = null): ?string;
+    public function receiveSync(?int &$flags = null);
 }
