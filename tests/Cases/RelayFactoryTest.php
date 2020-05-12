@@ -56,6 +56,8 @@ class RelayFactoryTest extends TestCase
             //pipes require 2 args
             ['pipes://localhost:', true],
             ['pipes://localhost', true],
+            //invalid resources
+            ['pipes://test:test', true],
             //valid format
             ['tcp://localhost'],
             ['tcp://localhost:123'],
