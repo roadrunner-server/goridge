@@ -10,7 +10,7 @@ declare(strict_types=1);
 
 namespace Spiral\Goridge;
 
-if (!function_exists('packMessage')) {
+if (!function_exists('Spiral\\Goridge\\packMessage')) {
     /**
      * @param string   $payload
      * @param int|null $flags
