@@ -240,7 +240,7 @@ class SocketRelay implements RelayInterface, SendPackageRelayInterface, Stringab
      */
     public function isConnected(): bool
     {
-        return $this->socket !== null;
+        return $this->connected;
     }
 
     /**
