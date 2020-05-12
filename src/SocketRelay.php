@@ -22,7 +22,7 @@ use Exception;
  * prefix:
  * [ flag       ][ message length, unsigned int 64bits, LittleEndian ]
  */
-class SocketRelay implements RelayInterface, SendPackageRelayInterface
+class SocketRelay implements RelayInterface, SendPackageRelayInterface, StringableRelayInterface
 {
     /** Supported socket types. */
     public const SOCK_TCP  = 0;
@@ -290,6 +290,7 @@ class SocketRelay implements RelayInterface, SendPackageRelayInterface
 
         socket_close($this->socket);
         $this->connected = false;
+        unset($this->socket);
     }
 
     /**
