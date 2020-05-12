@@ -57,6 +57,8 @@ class RelayFactoryTest extends TestCase
             ['pipes://localhost:', true],
             ['pipes://localhost', true],
             //invalid resources
+            ['pipes://stdin:test', true],
+            ['pipes://test:stdout', true],
             ['pipes://test:test', true],
             //valid format
             ['tcp://localhost'],
