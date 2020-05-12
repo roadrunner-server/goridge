@@ -10,6 +10,8 @@ declare(strict_types=1);
 
 namespace Spiral\Goridge;
 
+use Throwable;
+
 abstract class Relay
 {
     public const TCP_SOCKET  = 'tcp';
@@ -39,19 +41,53 @@ abstract class Relay
                     throw new Exceptions\RelayFactoryException('unsupported stream connection format');
                 }
 
-                $in = fopen("php://{$match['arg1']}", 'rb');
-                if ($in === false) {
-                    throw new Exceptions\RelayFactoryException('could not initiate `in` stream resource');
-                }
-
-                $out = fopen("php://{$match['arg2']}", 'wb');
-                if ($out === false) {
-                    throw new Exceptions\RelayFactoryException('could not initiate `out` stream resource');
-                }
-
-                return new StreamRelay($in, $out);
+                return new StreamRelay(self::openIn($match['arg1']), self::openOut($match['arg2']));
             default:
                 throw new Exceptions\RelayFactoryException('unknown connection protocol');
+        }
+    }
+
+    /**
+     * @param string $input
+     * @return resource
+     */
+    private static function openIn(string $input)
+    {
+        try {
+            $resource = fopen("php://$input", 'rb');
+            if ($resource === false) {
+                throw new Exceptions\RelayFactoryException('could not initiate `in` stream resource');
+            }
+
+            return $resource;
+        } catch (Throwable $e) {
+            throw new Exceptions\RelayFactoryException(
+                'could not initiate `in` stream resource',
+                $e->getCode(),
+                $e
+            );
+        }
+    }
+
+    /**
+     * @param string $output
+     * @return resource
+     */
+    private static function openOut(string $output)
+    {
+        try {
+            $resource = fopen("php://$output", 'wb');
+            if ($resource === false) {
+                throw new Exceptions\RelayFactoryException('could not initiate `out` stream resource');
+            }
+
+            return $resource;
+        } catch (Throwable $e) {
+            throw new Exceptions\RelayFactoryException(
+                'could not initiate `out` stream resource',
+                $e->getCode(),
+                $e
+            );
         }
     }
 }
