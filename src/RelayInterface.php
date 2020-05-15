@@ -28,6 +28,7 @@ interface RelayInterface
      *
      * @param string   $payload
      * @param int|null $flags Protocol control flags.
+     * @return mixed|void
      *
      * @throws TransportException
      */

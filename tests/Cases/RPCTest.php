@@ -24,6 +24,39 @@ abstract class RPCTest extends TestCase
     public const SOCK_PORT = 7079;
     public const SOCK_TYPE = SocketRelay::SOCK_TCP;
 
+    public function testManualConnect(): void
+    {
+        /** @var SocketRelay $relay */
+        $relay = $this->makeRelay();
+        $conn = new RPC($relay);
+
+        $this->assertFalse($relay->isConnected());
+
+        $relay->connect();
+        $this->assertTrue($relay->isConnected());
+
+        $this->assertSame('pong', $conn->call('Service.Ping', 'ping'));
+        $this->assertTrue($relay->isConnected());
+    }
+
+    public function testReconnect(): void
+    {
+        /** @var SocketRelay $relay */
+        $relay = $this->makeRelay();
+        $conn = new RPC($relay);
+
+        $this->assertFalse($relay->isConnected());
+
+        $this->assertSame('pong', $conn->call('Service.Ping', 'ping'));
+        $this->assertTrue($relay->isConnected());
+
+        $relay->close();
+        $this->assertFalse($relay->isConnected());
+
+        $this->assertSame('pong', $conn->call('Service.Ping', 'ping'));
+        $this->assertTrue($relay->isConnected());
+    }
+
     public function testPingPong(): void
     {
         $conn = $this->makeRPC();
@@ -123,15 +156,21 @@ abstract class RPCTest extends TestCase
     {
         $conn = $this->makeRPC();
 
-        $resp = $conn->call('Service.Process', [
-            'name'  => 'wolfy-j',
-            'value' => 18
-        ]);
+        $resp = $conn->call(
+            'Service.Process',
+            [
+                'name'  => 'wolfy-j',
+                'value' => 18
+            ]
+        );
 
-        $this->assertSame([
-            'name'  => 'WOLFY-J',
-            'value' => -18
-        ], $resp);
+        $this->assertSame(
+            [
+                'name'  => 'WOLFY-J',
+                'value' => -18
+            ],
+            $resp
+        );
     }
 
     public function testBadPayload(): void
@@ -147,14 +186,17 @@ abstract class RPCTest extends TestCase
     {
         $conn = $this->makeRPC();
 
-        $resp = $conn->call('Service.Process', [
-            'name'  => 'wolfy-j',
-            'value' => 18,
-            'keys'  => [
-                'key'   => 'value',
-                'email' => 'domain'
+        $resp = $conn->call(
+            'Service.Process',
+            [
+                'name'  => 'wolfy-j',
+                'value' => 18,
+                'keys'  => [
+                    'key'   => 'value',
+                    'email' => 'domain'
+                ]
             ]
-        ]);
+        );
 
         $this->assertIsArray($resp['keys']);
         $this->assertArrayHasKey('value', $resp['keys']);
@@ -170,11 +212,14 @@ abstract class RPCTest extends TestCase
 
         $conn = $this->makeRPC();
 
-        $conn->call('Service.Process', [
-            'name'  => 'wolfy-j',
-            'value' => 18,
-            'keys'  => 1111
-        ]);
+        $conn->call(
+            'Service.Process',
+            [
+                'name'  => 'wolfy-j',
+                'value' => 18,
+                'keys'  => 1111
+            ]
+        );
     }
 
     /**
@@ -195,6 +240,14 @@ abstract class RPCTest extends TestCase
      */
     protected function makeRPC(): RPC
     {
-        return new RPC(new SocketRelay(static::SOCK_ADDR, static::SOCK_PORT, static::SOCK_TYPE));
+        return new RPC($this->makeRelay());
+    }
+
+    /**
+     * @return RelayInterface
+     */
+    protected function makeRelay(): RelayInterface
+    {
+        return new SocketRelay(static::SOCK_ADDR, static::SOCK_PORT, static::SOCK_TYPE);
     }
 }

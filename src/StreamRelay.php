@@ -19,7 +19,7 @@ namespace Spiral\Goridge;
  * prefix:
  * [ flag       ][ message length, unsigned int 64bits, LittleEndian ]
  */
-class StreamRelay implements RelayInterface
+class StreamRelay implements RelayInterface, SendPackageRelayInterface
 {
     /** @var resource */
     private $in;
