@@ -1,6 +1,14 @@
 CHANGELOG
 =========
 
+## v2.4.2 (19.05.2020)
+- Add phpstan analyzer
+- Fix code warnings from phpstan
+- Improve Relay factory and  SocketRelay
+- Improve test coverage
+- Performance improvements
+- See the full milestone here: [link](https://github.com/spiral/goridge/milestone/5?closed=1)
+
 ## v2.4.0 (05.05.2020)
 - More tests for PHP (@vvval)
 - Upgrade PHP version to the 7.2 (currently minimum supported)
