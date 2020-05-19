@@ -3,7 +3,7 @@ CHANGELOG
 
 ## v2.4.2 (19.05.2020)
 - Add phpstan analyzer
-- Fx code warnings from phpstan
+- Fix code warnings from phpstan
 - Improve Relay factory and  SocketRelay
 - Improve test coverage
 - Performance improvements
