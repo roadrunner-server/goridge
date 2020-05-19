@@ -7,14 +7,12 @@ import (
 
 // SocketRelay communicates with underlying process using sockets (TPC or Unix).
 type SocketRelay struct {
-	// How many bytes to write/read at once.
-	BufferSize uint64
-	rwc        io.ReadWriteCloser
+	rwc io.ReadWriteCloser
 }
 
 // NewSocketRelay creates new socket based data relay.
 func NewSocketRelay(rwc io.ReadWriteCloser) *SocketRelay {
-	return &SocketRelay{BufferSize: BufferSize, rwc: rwc}
+	return &SocketRelay{rwc: rwc}
 }
 
 // Send signed (prefixed) data to PHP process.
@@ -51,21 +49,9 @@ func (rl *SocketRelay) Receive() (data []byte, p Prefix, err error) {
 		return nil, p, nil
 	}
 
-	leftBytes := p.Size()
-	data = make([]byte, 0, leftBytes)
-	buffer := make([]byte, min(leftBytes, rl.BufferSize))
-
-	for {
-		if n, err := rl.rwc.Read(buffer); err == nil {
-			data = append(data, buffer[:n]...)
-			leftBytes -= uint64(n)
-		} else {
-			return nil, p, err
-		}
-
-		if leftBytes == 0 {
-			break
-		}
+	data = make([]byte, p.Size())
+	if _, err := rl.rwc.Read(data); err != nil {
+		return nil, p, err
 	}
 
 	return

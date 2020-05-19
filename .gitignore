@@ -6,3 +6,4 @@ coveralls.json
 tests/server.exe
 tests/server
 **/vendor
+vendor_php

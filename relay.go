@@ -1,10 +1,5 @@
 package goridge
 
-const (
-	// BufferSize defines max amount of bytes to read from connection at once.
-	BufferSize = 65536
-)
-
 // Relay provide IPC over signed payloads.
 type Relay interface {
 	// Send signed (prefixed) data to PHP process.

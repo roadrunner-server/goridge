@@ -1,11 +1,12 @@
 package goridge
 
 import (
-	json "github.com/json-iterator/go"
-	"github.com/pkg/errors"
 	"io"
 	"net/rpc"
 	"reflect"
+
+	json "github.com/json-iterator/go"
+	"github.com/pkg/errors"
 )
 
 // ClientCodec is codec for goridge connection.
