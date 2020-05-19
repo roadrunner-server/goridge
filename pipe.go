@@ -8,15 +8,13 @@ import (
 // PipeRelay communicate with underlying process using standard streams (STDIN, STDOUT). Attention, use TCP alternative for
 // Windows as more reliable option. This relay closes automatically with the process.
 type PipeRelay struct {
-	// How many bytes to write/read at once.
-	BufferSize uint64
-	in         io.ReadCloser
-	out        io.WriteCloser
+	in  io.ReadCloser
+	out io.WriteCloser
 }
 
 // NewPipeRelay creates new pipe based data relay.
 func NewPipeRelay(in io.ReadCloser, out io.WriteCloser) *PipeRelay {
-	return &PipeRelay{BufferSize: BufferSize, in: in, out: out}
+	return &PipeRelay{in: in, out: out}
 }
 
 // Send signed (prefixed) data to underlying process.
@@ -49,20 +47,9 @@ func (rl *PipeRelay) Receive() (data []byte, p Prefix, err error) {
 		return nil, p, nil
 	}
 
-	data = make([]byte, 0, p.Size())
-	leftBytes := p.Size()
-	buffer := make([]byte, min(uint64(cap(data)), rl.BufferSize))
-	for {
-		if n, err := rl.in.Read(buffer); err == nil {
-			data = append(data, buffer[:n]...)
-			leftBytes -= uint64(n)
-		} else {
-			return nil, p, err
-		}
-
-		if leftBytes == 0 {
-			break
-		}
+	data = make([]byte, p.Size())
+	if _, err := rl.in.Read(data); err != nil {
+		return nil, p, err
 	}
 
 	return

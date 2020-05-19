@@ -26,6 +26,9 @@
       "src/functions.php"
     ]
   },
+  "config": {
+    "vendor-dir": "vendor_php"
+  },
   "scripts": {
     "analyze": "phpstan analyze -c ./phpstan.neon.dist --no-progress --ansi"
   },

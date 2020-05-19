@@ -59,7 +59,7 @@ jobs:
         run: |
           composer update
           docker-compose -f ./tests/docker-compose.yml up -d
-          vendor/bin/phpunit --coverage-clover=coverage.xml
+          vendor_php/bin/phpunit --coverage-clover=coverage.xml
           go test -v -race -cover -coverprofile=goridge.txt -covermode=atomic
 
       - name: Run code coverage
