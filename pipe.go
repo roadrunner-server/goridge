@@ -47,13 +47,16 @@ func (rl *PipeRelay) Receive() (data []byte, p Prefix, err error) {
 		return nil, p, nil
 	}
 
-	// Here can be 3 cases
-	// n > 0, then we make a syscall to read all data from the Relay
+	maxAlloc := getAllocSize()
+
+	// Here can be 4 cases
+	// n > 0 and n < maxAlloc, then we make a syscall to read all data from the Relay
 	// n == 0, no need to make an extra call, because we do not expect any data from the Relay
+	// n > maxAlloc - error, cannot allocate such bit slice
 	// n < 0, impossible, since the p.Size() is uint64
 	switch n := p.Size(); {
 	// LIKELY
-	case n > 0:
+	case n > 0 && uint(n) < maxAlloc:
 		data = make([]byte, n)
 		n, err := rl.in.Read(data)
 		if err != nil {
@@ -65,6 +68,9 @@ func (rl *PipeRelay) Receive() (data []byte, p Prefix, err error) {
 		}
 		return nil, p, errors.New("read only part of the data from the pipe relay")
 
+		// POSSIBLE
+	case uint(n) >= maxAlloc:
+		return nil, p, errors.New("cannot allocate more then 17.1 Gb on x64 or 2.14 on x86 systems")
 		// POSSIBLE
 	case n == 0:
 		// return valid prefix, w/o data and w/o error
