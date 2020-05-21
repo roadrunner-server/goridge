@@ -2,6 +2,7 @@ package goridge
 
 import (
 	"errors"
+	"fmt"
 	"io"
 )
 
@@ -56,28 +57,28 @@ func (rl *PipeRelay) Receive() (data []byte, p Prefix, err error) {
 	// n < 0, impossible, since the p.Size() is uint64
 	switch n := p.Size(); {
 	// LIKELY
-	case n > 0 && uint(n) < maxAlloc:
+	case n > 0 && uint(n) <= maxAlloc:
 		data = make([]byte, n)
-		n, err := rl.in.Read(data)
+		rd, err := rl.in.Read(data)
 		if err != nil {
 			return nil, p, err
 		}
 		// ensure, that we read all the provided data
-		if uint64(n) == p.Size() {
+		if uint64(rd) == p.Size() {
 			return data, p, nil
 		}
-		return nil, p, errors.New("read only part of the data from the pipe relay")
+		return nil, p, fmt.Errorf("read only part of the data from the pipe relay, n: %d, p.Size(): %d", n, rd)
 
 		// POSSIBLE
-	case uint(n) >= maxAlloc:
-		return nil, p, errors.New("cannot allocate more then 17.1 Gb on x64 or 2.14 on x86 systems")
+	case uint(n) > maxAlloc:
+		return nil, p, fmt.Errorf("cannot allocate more then 17.1 Gb on x64 or 2.14 on x86 systems, n: %d", n)
 		// POSSIBLE
 	case n == 0:
 		// return valid prefix, w/o data and w/o error
 		return nil, p, nil
 		// IMPOSSIBLE
 	default:
-		return nil, p, errors.New("unexpected case in the pipes relay")
+		return nil, p, fmt.Errorf("unexpected case in the pipes relay. n: %d", n)
 	}
 }
 
