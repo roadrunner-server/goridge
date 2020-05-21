@@ -47,7 +47,7 @@ func TestPipeReceive_MaxAlloc(t *testing.T) {
 
 	assert.Error(t, err)
 	assert.True(t, p.HasFlag(PayloadControl))
-	assert.Equal(t, uint64(uint(1) << 40), p.Size())
+	assert.Equal(t, uint64(uint(1)<<40), p.Size())
 	assert.Empty(t, 0, conn.leftSegments())
 }
 
