@@ -49,12 +49,32 @@ func (rl *SocketRelay) Receive() (data []byte, p Prefix, err error) {
 		return nil, p, nil
 	}
 
-	data = make([]byte, p.Size())
-	if _, err := rl.rwc.Read(data); err != nil {
-		return nil, p, err
-	}
+	// Here can be 3 cases
+	// n > 0, then we make a syscall to read all data from the Relay
+	// n == 0, no need to make an extra call, because we do not expect any data from the Relay
+	// n < 0, impossible, since the p.Size() is uint64
+	switch n := p.Size(); {
+	// LIKELY
+	case n > 0:
+		data = make([]byte, n)
+		n, err := rl.rwc.Read(data)
+		if err != nil {
+			return nil, p, err
+		}
+		// ensure, that we read all the provided data
+		if uint64(n) == p.Size() {
+			return data, p, nil
+		}
+		return nil, p, errors.New("read only part of the data from the socket relay")
 
-	return
+		// POSSIBLE
+	case n == 0:
+		// return valid prefix, w/o data and w/o error
+		return nil, p, nil
+		// IMPOSSIBLE
+	default:
+		return nil, p, errors.New("unexpected case in the socket relay")
+	}
 }
 
 // Close the connection.
