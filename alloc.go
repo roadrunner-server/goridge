@@ -1,4 +1,15 @@
+// +build linux
+
 package goridge
+
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"strconv"
+	"strings"
+)
 
 func getAllocSize() uint {
 	// ARCH detection
@@ -28,4 +39,37 @@ func getAllocSize() uint {
 		maxAlloc = maxAlloc << 31 // approx 2147483648 bytes or 2.14 Gb in 32 bit system
 	}
 	return maxAlloc
+}
+
+func MemAvail() uint64 {
+	fname := "/proc/meminfo"
+	FileBytes, err := ioutil.ReadFile(fname)
+	if err != nil {
+		return uint64(1) << 31 //2.14 Gb
+	}
+	bufr := bytes.NewBuffer(FileBytes)
+	for {
+		line, err := bufr.ReadString('\n')
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+
+		}
+		ndx := strings.Index(line, "MemFree:")
+		if ndx >= 0 {
+			line = strings.TrimSpace(line[9:])
+			fmt.Printf("%q\n", line)
+			line = line[:len(line)-3]
+			fmt.Printf("%q\n", line)
+			mem, err := strconv.ParseUint(line, 10, 64)
+			if err == nil {
+				return mem
+			} else {
+				return uint64(1) << 31 //2.14 Gb
+			}
+		}
+	}
+
+	return uint64(1) << 31 //2.14 Gb
 }

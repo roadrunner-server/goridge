@@ -2,8 +2,8 @@ package goridge
 
 import (
 	"errors"
-	"fmt"
 	"io"
+	"math"
 )
 
 // SocketRelay communicates with underlying process using sockets (TPC or Unix).
@@ -50,38 +50,24 @@ func (rl *SocketRelay) Receive() (data []byte, p Prefix, err error) {
 		return nil, p, nil
 	}
 
-	maxAlloc := getAllocSize()
+	leftBytes := p.Size()
+	data = make([]byte, 0, leftBytes)
+	buffer := make([]byte, uint(math.Min(float64(leftBytes), BufferSize)))
 
-	// Here can be 4 cases
-	// n > 0 and n < maxAlloc, then we make a syscall to read all data from the Relay
-	// n == 0, no need to make an extra call, because we do not expect any data from the Relay
-	// n > maxAlloc - error, cannot allocate such bit slice
-	// n < 0, impossible, since the p.Size() is uint64
-	switch n := p.Size(); {
-	// LIKELY
-	case n > 0 && uint(n) <= maxAlloc:
-		data = make([]byte, n)
-		rd, err := rl.rwc.Read(data)
-		if err != nil {
+	for {
+		if n, err := rl.rwc.Read(buffer); err == nil {
+			data = append(data, buffer[:n]...)
+			leftBytes -= uint64(n)
+		} else {
 			return nil, p, err
 		}
-		// ensure, that we read all the provided data
-		if uint64(rd) == p.Size() {
-			return data, p, nil
-		}
-		return nil, p, fmt.Errorf("read only part of the data from the socket relay, n: %d, p.Size(): %d", n, rd)
 
-		// POSSIBLE
-	case uint(n) > maxAlloc:
-		return nil, p, fmt.Errorf("cannot allocate more then 17.1 Gb on x64 or 2.14 on x86 systems, n: %d", n)
-		// POSSIBLE
-	case n == 0:
-		// return valid prefix, w/o data and w/o error
-		return nil, p, nil
-		// IMPOSSIBLE
-	default:
-		return nil, p, fmt.Errorf("unexpected case in the socket relay. n: %d", n)
+		if leftBytes == 0 {
+			break
+		}
 	}
+
+	return
 }
 
 // Close the connection.
