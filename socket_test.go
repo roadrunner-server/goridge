@@ -35,6 +35,24 @@ func TestSocketReceive(t *testing.T) {
 	assert.Empty(t, 0, conn.leftSegments())
 }
 
+func TestSocketReceive_ZeroCase(t *testing.T) {
+	conn := &connMock{}
+	r := NewSocketRelay(conn)
+	assert.Nil(t, r.Close())
+
+	prefix := NewPrefix().WithFlag(PayloadControl).WithSize(0)
+	payload := []byte("hello")
+
+	conn.expect(read, prefix[:])
+	conn.expect(read, payload)
+
+	_, p, err := r.Receive()
+
+	assert.Nil(t, err)
+	assert.True(t, p.HasFlag(PayloadControl))
+	assert.Equal(t, uint64(0), p.Size())
+}
+
 func TestSocketReceive_MaxAlloc(t *testing.T) {
 	conn := &connMock{}
 	r := NewPipeRelay(conn, &connMock{})

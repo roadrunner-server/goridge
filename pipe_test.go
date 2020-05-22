@@ -32,6 +32,24 @@ func TestPipeReceive(t *testing.T) {
 	assert.Empty(t, 0, conn.leftSegments())
 }
 
+func TestPipeReceive_ZeroCase(t *testing.T) {
+	conn := &connMock{}
+	r := NewPipeRelay(conn, &connMock{})
+	assert.Nil(t, r.Close())
+
+	prefix := NewPrefix().WithFlag(PayloadControl).WithSize(0)
+	payload := []byte("hello")
+
+	conn.expect(read, prefix[:])
+	conn.expect(read, payload)
+
+	_, p, err := r.Receive()
+
+	assert.Nil(t, err)
+	assert.True(t, p.HasFlag(PayloadControl))
+	assert.Equal(t, uint64(0), p.Size())
+}
+
 func TestPipeReceive_MaxAlloc(t *testing.T) {
 	conn := &connMock{}
 	r := NewPipeRelay(conn, &connMock{})
@@ -65,3 +83,4 @@ func TestPipeSend(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Empty(t, 0, conn.leftSegments())
 }
+
