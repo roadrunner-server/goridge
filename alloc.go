@@ -65,9 +65,9 @@ func MemAvail() uint64 {
 			mem, err := strconv.ParseUint(line, 10, 64)
 			if err == nil {
 				return mem
-			} else {
-				return uint64(1) << 31 //2.14 Gb
 			}
+			return uint64(1) << 31 //2.14 Gb
+
 		}
 	}
 
