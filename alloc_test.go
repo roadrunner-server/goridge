@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestAlloc(t *testing.T)  {
+func TestAlloc(t *testing.T) {
 	s := getAllocSize()
 	if runtime.GOARCH == "amd64" {
 		assert.Equal(t, s, uint(17179869184))

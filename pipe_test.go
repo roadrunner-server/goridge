@@ -83,4 +83,3 @@ func TestPipeSend(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Empty(t, 0, conn.leftSegments())
 }
-
