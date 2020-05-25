@@ -15,4 +15,5 @@ func getAllocSize() uint {
 
 	ret, _, err := proc.Call(uintptr(unsafe.Pointer(&mem)))
 	fmt.Printf("Ret: %d, err: %v, Physical memory: %d\n", ret, err, mem)
+	return 0
 }
