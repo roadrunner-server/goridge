@@ -208,7 +208,7 @@ class SocketRelay implements RelayInterface, SendPackageRelayInterface, Stringab
             }
         }
 
-        return $result ?: null;
+        return ($result !== '') ? $result : null;
     }
 
     /**
