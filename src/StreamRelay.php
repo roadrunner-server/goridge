@@ -134,7 +134,7 @@ class StreamRelay implements RelayInterface, SendPackageRelayInterface
             }
         }
 
-        return $result ?: null;
+        return ($result !== '') ? $result : null;
     }
 
     /**
