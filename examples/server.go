@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/spiral/goridge/v2"
 	"log"
 	"net"
 	"net/rpc"
+
+	"github.com/spiral/goridge/v2"
 )
 
 // App sample

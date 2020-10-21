@@ -4,7 +4,6 @@ import (
 	"errors"
 	"io"
 	"net/rpc"
-	"reflect"
 
 	json "github.com/json-iterator/go"
 )
@@ -64,13 +63,9 @@ func (c *Codec) ReadRequestBody(out interface{}) error {
 		return nil
 	}
 
-	if p.HasFlag(PayloadRaw) {
-		if bin, ok := out.(*[]byte); ok {
-			*bin = append(*bin, data...)
-			return nil
-		}
-
-		return errors.New("{rawData} request for " + reflect.ValueOf(out).String())
+	if bin, ok := out.(*[]byte); ok {
+		*bin = append(*bin, data...)
+		return nil
 	}
 
 	return json.Unmarshal(data, out)
