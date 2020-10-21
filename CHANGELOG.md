@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+### v2.4.6 (21.10.2020)
+- Remove RawMessage check for the payload (@wolfy-j)
+- golang version in go.mod bumped to 1.15
+
 ## v2.4.2 (19.05.2020)
 - Add phpstan analyzer
 - Fix code warnings from phpstan
@@ -18,19 +22,19 @@ CHANGELOG
 ## v2.3.1 (21.04.2020)
 - Syscall usage optimized. Now the data is packing and sending via 1 (or 2 in some cases) send_socket calls, instead of 2-3 (by @vvval)
 - Unix sockets supported on windows (AF_UNIX) starting from OS Build 17056.
-- Added the ability to define own relay with a codec (by @Reasno)
+- Add the ability to define own relay with a codec (by @Reasno)
 
 ## v2.3.0 (23.03.2020)
-- Replaced std encoding/json package with the https://github.com/json-iterator/go 
-- Added BORS and GHA support
+- Replace std encoding/json package with the https://github.com/json-iterator/go 
+- Add BORS and GHA support
 - golang modules updated to v2
 
 ## v2.2.1 (30.11.2019)
 - Fixed too strict StreamRelay check by @tarampampam 
 
 ## v2.2.0 (29.11.2019)
-- Updated travis to support go 1.13
-- Updated tests (errors handling, simplify)
+- Update travis to support go 1.13
+- Update tests (errors handling, simplify)
 - Add go modules support
 - Optimize pack function
 
