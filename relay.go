@@ -1,6 +1,7 @@
 package goridge
 
 const (
+	Version        = 0
 	PayloadControl = 1
 	PayloadError   = 2
 )
