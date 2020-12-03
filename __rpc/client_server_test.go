@@ -1,4 +1,4 @@
-package goridge
+package __rpc
 
 import (
 	"github.com/pkg/errors"

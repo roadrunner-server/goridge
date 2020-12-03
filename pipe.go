@@ -19,7 +19,7 @@ func NewPipeRelay(in io.ReadCloser, out io.WriteCloser) *PipeRelay {
 }
 
 // Send signed (prefixed) data to underlying process.
-func (rl *PipeRelay) Send(data []byte, flags byte) (err error) {
+func (rl *PipeRelay) Send(f Frame) (err error) {
 	prefix := NewPrefix().WithFlags(flags).WithSize(uint64(len(data)))
 	if _, err := rl.out.Write(append(prefix[:], data...)); err != nil {
 		return err
@@ -28,7 +28,7 @@ func (rl *PipeRelay) Send(data []byte, flags byte) (err error) {
 	return nil
 }
 
-func (rl *PipeRelay) Receive() (data []byte, p Prefix, err error) {
+func (rl *PipeRelay) Receive() (f Frame, err error) {
 	defer func() {
 		if rErr, ok := recover().(error); ok {
 			err = rErr

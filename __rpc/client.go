@@ -1,4 +1,4 @@
-package goridge
+package __rpc
 
 import (
 	"io"
@@ -45,21 +45,13 @@ func (c *ClientCodec) WriteRequest(r *rpc.Request, body interface{}) error {
 
 // ReadResponseHeader reads response from the connection.
 func (c *ClientCodec) ReadResponseHeader(r *rpc.Response) error {
-	data, p, err := c.relay.Receive()
+	f, err := c.relay.Receive()
 	if err != nil {
 		return err
 	}
 
-	if !p.HasFlag(PayloadControl) {
+	if !f.HasFlag(PayloadControl) {
 		return errors.New("invalid rpc header, control flag is missing")
-	}
-
-	if !p.HasFlag(PayloadRaw) {
-		return errors.New("rpc response header must be in {rawData}")
-	}
-
-	if !p.HasPayload() {
-		return errors.New("rpc response header can't be empty")
 	}
 
 	return unpack(data, &r.ServiceMethod, &r.Seq)
@@ -67,7 +59,7 @@ func (c *ClientCodec) ReadResponseHeader(r *rpc.Response) error {
 
 // ReadResponseBody response from the connection.
 func (c *ClientCodec) ReadResponseBody(out interface{}) error {
-	data, p, err := c.relay.Receive()
+	f, err := c.relay.Receive()
 	if err != nil {
 		return err
 	}
