@@ -125,7 +125,7 @@ func (f *Frame) Header() []byte {
 	return f.header
 }
 
-func (f *Frame) ReadPayload() []byte {
+func (f *Frame) Payload() []byte {
 	// start from the 1st (staring from 0) byte
 	return f.payload
 }

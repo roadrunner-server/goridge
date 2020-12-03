@@ -4,9 +4,11 @@ import "sync"
 
 // CRC-8 Lookup table
 var lookupTable = [256]byte{}
-
+//
+const generator = byte(0x1F)
+//
 var once = &sync.Once{}
-
+// Lookup table
 func createLookupTable() {
 	once.Do(func() {
 		for i := 0; i < 256; i++ {
@@ -25,8 +27,6 @@ func createLookupTable() {
 		}
 	})
 }
-
-const generator = byte(0x1F)
 
 func crc8slow(data []byte) byte {
 	var crc = byte(0)
