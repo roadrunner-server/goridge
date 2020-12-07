@@ -1,10 +1,11 @@
 package goridge
 
-const (
-	Version        = 0
-	PayloadControl = 1
-	PayloadError   = 2
+import (
+	"unsafe"
 )
+
+const FRAME_OPTIONS_MAX_SIZE = 40 //bytes
+const WORD = 4
 
 // Frame defines new user level package format.
 type Frame struct {
@@ -19,6 +20,17 @@ func ReadFrame(data []byte) *Frame {
 	if lookupTable[1] == 0 {
 		panic("should initialize lookup table")
 	}
+	_ = data[0]
+	opt := data[0] & 0x0F
+	// if more than 2, that we have options
+	if opt > 2 {
+		return &Frame{
+			header:  data[:opt*WORD],
+			payload: data[opt*WORD:],
+		}
+	}
+
+	// no options
 	return &Frame{
 		header:  data[:8],
 		payload: data[8:],
@@ -29,15 +41,18 @@ func NewFrame() *Frame {
 	if lookupTable[1] == 0 {
 		panic("should initialize lookup table")
 	}
-	return &Frame{
+	f := &Frame{
 		header:  make([]byte, 8),
 		payload: make([]byte, 0, 100),
 	}
+	// set default header len (5)
+	f.defaultHL()
+	return f
 }
 
 // To read version, we should return our 4 upper bits to their original place
 // 1111_0000 -> 0000_1111 (15)
-func (f *Frame) ReadVersion() uint8 {
+func (f *Frame) ReadVersion() byte {
 	_ = f.header[0]
 	return f.header[0] >> 4
 }
@@ -46,32 +61,41 @@ func (f *Frame) ReadVersion() uint8 {
 // 1. For example we have version 15 it's 0000_1111 (1 byte)
 // 2. We should shift 4 lower bits to upper and write that to the 0th byte
 // 3. The 0th byte should become 1111_0000, but it's not 240, it's only 15, because version only 4 bits len
-func (f *Frame) WriteVersion(version uint8) {
+func (f *Frame) WriteVersion(version Version) {
 	_ = f.header[0]
 	if version > 15 {
 		panic("version is only 4 bits")
 	}
-	f.header[0] = version << 4
+	f.header[0] = byte(version)<<4 | f.header[0]
 }
 
 // The lower 4 bits of the 0th octet occupies our header len data.
 // We should erase upper 4 bits, which contain information about Version
 // To erase, we applying bitwise AND to the upper 4 bits and returning result
-func (f *Frame) ReadHL() uint8 {
+func (f *Frame) readHL() byte {
 	_ = f.header[0]
 	// 0101_1111         0000_1111
-	return f.header[0] & uint8(0x0F)
+	return f.header[0] & 0x0F
 }
 
 // Writing HL is very simple. Since we are using lower 4 bits
 // we can easily apply bitwise OR and set lower 4 bits to needed hl value
-func (f *Frame) WriteHL(hl uint8) {
+func (f *Frame) writeHl(hl byte) {
 	_ = f.header[0]
-	if hl > 15 {
-		panic("header length is only 4 bits")
-	}
-	//
 	f.header[0] = f.header[0] | hl
+}
+
+func (f *Frame) incrementHL() {
+	_ = f.header[0]
+	hl := f.readHL()
+	if hl > 15 {
+		panic("header len should be less than 15")
+	}
+	f.header[0] = f.header[0] | hl + 1
+}
+func (f *Frame) defaultHL() {
+	_ = f.header[0]
+	f.writeHl(2)
 }
 
 // Flags is full 1st byte
@@ -80,9 +104,62 @@ func (f *Frame) ReadFlags() uint8 {
 	return f.header[1]
 }
 
-func (f *Frame) WriteFlags(flags uint8) {
+func (f *Frame) WriteFlags(flags ...FrameFlag) {
 	_ = f.header[1]
-	f.header[1] = f.header[1] | flags
+	for i := 0; i < len(flags); i++ {
+		f.header[1] = f.header[1] | byte(flags[i])
+	}
+}
+
+// Options slice len should not be more than 10 (40 bytes)
+func (f *Frame) WriteOption(options ...uint32) {
+	hl := f.readHL()
+	// check before writing. we can't handle more than 15*4 bytes of HL (2 for header and 12 for options)
+	if hl == 15 {
+		panic("header len could not be more than 15")
+	}
+	if len(options) > 10 {
+		panic("header options limited by 40 bytes")
+	}
+
+	tmp := make([]byte, 0, FRAME_OPTIONS_MAX_SIZE)
+	for i := 0; i < len(options); i++ {
+		tmp = append(tmp, byte(options[i]))
+		tmp = append(tmp, byte(options[i]>>8))
+		tmp = append(tmp, byte(options[i]>>16))
+		tmp = append(tmp, byte(options[i]>>24))
+		f.incrementHL() // increment header len by 32 bit
+	}
+
+	f.header = append(f.header, tmp...)
+}
+
+// f.readHL() - 2 needed to know actual options size
+// we know, that 2 WORDS is minimal header len
+// extra WORDS will add extra 32bits to the options (4 bytes)
+//
+func (f *Frame) ReadOptions() []uint32 {
+	// we can read options, if there are no options
+	if f.readHL() <= 2 {
+		return nil
+	}
+	// Get the options len
+	optionLen := f.readHL() - 2 // 2 is the default
+	// slice in place
+	options := make([]uint32, 0, optionLen)
+
+	// Options starting from 8-th byte
+	// we should scan with 4 byte window (32bit, WORD)
+	for i := byte(0); i < optionLen*WORD; i += WORD {
+		// for example
+		// 8  12  16
+		// 9  13  17
+		// 10 14  18
+		// 11 15  19
+		// For this data, HL will be 3, optionLen will be 12 (3*4) bytes
+		options = append(options, uint32(f.header[8+i])|uint32(f.header[8+i+1])<<8|uint32(f.header[8+i+2])<<16|uint32(f.header[8+i+3])<<24)
+	}
+	return options
 }
 
 // LE format used to write Payload
@@ -107,6 +184,17 @@ func (f *Frame) WritePayloadLen(len uint32) {
 func (f *Frame) WriteCRC() {
 	_ = f.header[7]
 	crc := byte(0)
+	hl := f.readHL()
+	// write CRC with options
+	if f.readHL() > 2 {
+		for i := byte(0); i < hl*WORD; i++ {
+			data := f.header[i] ^ crc
+			crc = lookupTable[data]
+		}
+		f.header[6] = crc
+		return
+	}
+
 	for i := 0; i < 6; i++ {
 		data := f.header[i] ^ crc
 		crc = lookupTable[data]
@@ -120,6 +208,21 @@ func (f *Frame) WriteCRC() {
 func (f *Frame) VerifyCRC() bool {
 	_ = f.header[7]
 	crc := byte(0)
+	hl := f.readHL()
+	if hl > 2 {
+		for i := byte(0); i < hl*WORD; i++ {
+			// to verify, we are skipping the CRC field itself
+			if i == 6 {
+				data := 0 ^ crc
+				crc = lookupTable[data]
+				continue
+			}
+			data := f.header[i] ^ crc
+			crc = lookupTable[data]
+		}
+		return crc == f.header[6]
+	}
+
 	for i := 0; i < 6; i++ {
 		data := f.header[i] ^ crc
 		crc = lookupTable[data]
@@ -146,8 +249,22 @@ func (f *Frame) Payload() []byte {
 	return f.payload
 }
 
-
+//
 func (f *Frame) WritePayload(data []byte) {
 	f.payload = make([]byte, len(data))
-	f.payload = data
+	copy(f.payload, data)
+	//f.payload = data
+}
+
+//go:nosplit
+//go:nocheckptr
+func noescape(p unsafe.Pointer) unsafe.Pointer {
+	x := uintptr(p)
+	return unsafe.Pointer(x ^ 0)
+}
+
+// After reset you should write all data from the start
+func (f *Frame) Reset() {
+	f.header = make([]byte, 0, 8)
+	f.payload = make([]byte, 0, 100)
 }
