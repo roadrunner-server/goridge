@@ -15,6 +15,8 @@ type PipeRelay struct {
 
 // NewPipeRelay creates new pipe based data relay.
 func NewPipeRelay(in io.ReadCloser, out io.WriteCloser) *PipeRelay {
+	// init lookup table for the PipeRelay
+	initLookupTable()
 	return &PipeRelay{in: in, out: out}
 }
 

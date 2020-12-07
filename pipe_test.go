@@ -8,9 +8,6 @@ import (
 )
 
 func TestPipeReceive(t *testing.T) {
-	// ATTENTION, SHOULD BE INITIALIZED
-	initLookupTable()
-
 	var err error
 	pr, pw := io.Pipe()
 
@@ -49,9 +46,6 @@ func TestPipeReceive(t *testing.T) {
 }
 
 func TestPipeCRC_Failed(t *testing.T) {
-	// ATTENTION, SHOULD BE INITIALIZED
-	initLookupTable()
-
 	var err error
 	pr, pw := io.Pipe()
 
