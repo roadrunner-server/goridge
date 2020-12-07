@@ -4,8 +4,8 @@ import (
 	"unsafe"
 )
 
-const FRAME_OPTIONS_MAX_SIZE = 40 //bytes
-const WORD = 4
+const FRAME_OPTIONS_MAX_SIZE = 40 //nolint:golint
+const WORD = 4                    //nolint:golint
 
 // Frame defines new user level package format.
 type Frame struct {
@@ -280,14 +280,13 @@ func (f *Frame) Payload() []byte {
 func (f *Frame) WritePayload(data []byte) {
 	f.payload = make([]byte, len(data))
 	copy(f.payload, data)
-	//f.payload = data
 }
 
 //go:nosplit
 //go:nocheckptr
 func noescape(p unsafe.Pointer) unsafe.Pointer {
 	x := uintptr(p)
-	return unsafe.Pointer(x ^ 0)
+	return unsafe.Pointer(x ^ 0) //nolint:staticcheck
 }
 
 // After reset you should write all data from the start

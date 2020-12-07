@@ -25,10 +25,8 @@ func TestPipeReceive(t *testing.T) {
 		defer func() {
 			_ = pw.Close()
 		}()
-		err := relay.Send(nf)
-		if err != nil {
-			t.Fatal(err)
-		}
+		err = relay.Send(nf)
+		assert.NoError(t, err)
 		_ = pw.Close()
 	}(nf)
 
@@ -64,10 +62,8 @@ func TestPipeCRC_Failed(t *testing.T) {
 		defer func() {
 			_ = pw.Close()
 		}()
-		err := relay.Send(nf)
-		if err != nil {
-			t.Fatal(err)
-		}
+		err = relay.Send(nf)
+		assert.NoError(t, err)
 		_ = pw.Close()
 	}(nf)
 
