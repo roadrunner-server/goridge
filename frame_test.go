@@ -9,14 +9,14 @@ import (
 const TestPayload = `alsdjf;lskjdgljasg;lkjsalfkjaskldjflkasjdf;lkasjfdalksdjflkajsdf;lfasdgnslsnblna;sldjjfawlkejr;lwjenlksndlfjawl;ejr;lwjelkrjaldfjl;sdjf`
 
 func TestNewFrame(t *testing.T) {
-	createLookupTable()
+	initLookupTable()
 
 	nf := NewFrame()
 	nf.WriteVersion(1)
 	nf.WriteHL(5)
 	nf.WriteFlags(12)
 	nf.WritePayloadLen(uint32(len([]byte(TestPayload))))
-	nf.WriteCRC(true)
+	nf.WriteCRC()
 
 	nf.WritePayload([]byte(TestPayload))
 
@@ -28,10 +28,11 @@ func TestNewFrame(t *testing.T) {
 	assert.Equal(t, rf.ReadHL(), nf.ReadHL())
 	assert.Equal(t, rf.ReadFlags(), nf.ReadFlags())
 	assert.Equal(t, rf.ReadPayloadLen(), nf.ReadPayloadLen())
-	assert.Equal(t, rf.VerifyCRC(true), true)
+	assert.Equal(t, rf.VerifyCRC(), true)
 }
 
 func BenchmarkFrame_Bytes(b *testing.B) {
+	initLookupTable()
 	nf := NewFrame()
 	nf.WriteVersion(1)
 	nf.WriteHL(5)
@@ -40,11 +41,10 @@ func BenchmarkFrame_Bytes(b *testing.B) {
 
 	b.ResetTimer()
 	b.ReportAllocs()
-	createLookupTable()
 
 	for i := 0; i < b.N; i++ {
-		nf.WriteCRC(true)
-		if !nf.VerifyCRC(true) {
+		nf.WriteCRC()
+		if !nf.VerifyCRC() {
 			panic("CRC")
 		}
 	}
