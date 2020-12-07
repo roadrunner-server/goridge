@@ -50,6 +50,11 @@ func NewFrame() *Frame {
 	return f
 }
 
+// MergeHeader merge header from other frame with original payload
+func (f *Frame) MergeHeader(frame *Frame) {
+	f.header = frame.header
+}
+
 // To read version, we should return our 4 upper bits to their original place
 // 1111_0000 -> 0000_1111 (15)
 func (f *Frame) ReadVersion() byte {
