@@ -25,8 +25,8 @@ func ReadFrame(data []byte) *Frame {
 	// if more than 2, that we have options
 	if opt > 2 {
 		return &Frame{
-			payload: data[opt*WORD:],
 			header:  data[:opt*WORD],
+			payload: data[opt*WORD:],
 		}
 	}
 
