@@ -43,7 +43,6 @@ func crc8slow(data *[]byte) {
 		}
 	}
 	(*data)[6] = crc
-	//return crc
 }
 
 func crc8slowCheck(data []byte) bool {
