@@ -38,20 +38,23 @@ func (rl *PipeRelay) Receive(frame *Frame) error {
 	}
 
 	// Read frame header
-	header := ReadFrame(hb)
+	header := ReadHeader(hb)
+	// verify header
 	if header.VerifyCRC() == false {
 		return errors.E(op, errors.Str("CRC verification failed"))
 	}
 
-	// payload bytes
+	// read the read payload
 	pb := make([]byte, header.ReadPayloadLen())
 	_, err = rl.in.Read(pb)
 	if err != nil {
 		return errors.E(op, err)
 	}
 
-	*frame = *ReadFrame(pb)
-	frame.MergeHeader(header)
+	*frame = Frame{
+		payload: pb,
+		header:  hb,
+	}
 
 	return nil
 }

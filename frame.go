@@ -16,6 +16,28 @@ type Frame struct {
 	header []byte
 }
 
+// ReadHeader reads only header, without payload
+func ReadHeader(data []byte) *Frame {
+	if lookupTable[1] == 0 {
+		panic("should initialize lookup table")
+	}
+	_ = data[0]
+	opt := data[0] & 0x0F
+	// if more than 2, that we have options
+	if opt > 2 {
+		return &Frame{
+			header:  data[:opt*WORD],
+			payload: nil,
+		}
+	}
+
+	// no options
+	return &Frame{
+		header:  data[:8],
+		payload: nil,
+	}
+}
+
 func ReadFrame(data []byte) *Frame {
 	if lookupTable[1] == 0 {
 		panic("should initialize lookup table")

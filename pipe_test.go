@@ -20,10 +20,9 @@ func TestPipeReceive(t *testing.T) {
 	nf.WriteVersion(VERSION_1)
 	nf.WriteFlags(CONTEXT_SEPARATOR, PAYLOAD_CONTROL, PAYLOAD_ERROR)
 	nf.WritePayloadLen(uint32(len([]byte(TestPayload))))
+	nf.WritePayload([]byte(TestPayload))
 	nf.WriteCRC()
 	assert.Equal(t, true, nf.VerifyCRC())
-
-	nf.WritePayload([]byte(TestPayload))
 
 	go func(frame *Frame) {
 		defer func() {
@@ -46,6 +45,7 @@ func TestPipeReceive(t *testing.T) {
 	assert.Equal(t, frame.ReadFlags(), nf.ReadFlags())
 	assert.Equal(t, frame.ReadPayloadLen(), nf.ReadPayloadLen())
 	assert.Equal(t, true, frame.VerifyCRC())
+	assert.Equal(t, []byte(TestPayload), frame.Payload())
 }
 
 func TestPipeCRC_Failed(t *testing.T) {
