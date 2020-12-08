@@ -46,7 +46,7 @@ func (rl *PipeRelay) Receive(frame *Frame) error {
 		// we should read the options
 		optsLen := (header.readHL() - 2) * WORD
 		opts := make([]byte, optsLen)
-		_, err := rl.in.Read(opts)
+		_, err = rl.in.Read(opts)
 		if err != nil {
 			return errors.E(op, err)
 		}

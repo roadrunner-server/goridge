@@ -8,7 +8,6 @@ import (
 )
 
 func TestPipeReceive(t *testing.T) {
-	var err error
 	pr, pw := io.Pipe()
 
 	relay := NewPipeRelay(pr, pw)
@@ -31,7 +30,7 @@ func TestPipeReceive(t *testing.T) {
 	}(nf)
 
 	frame := &Frame{}
-	err = relay.Receive(frame)
+	err := relay.Receive(frame)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -44,7 +43,6 @@ func TestPipeReceive(t *testing.T) {
 }
 
 func TestPipeReceiveWithOptions(t *testing.T) {
-	var err error
 	pr, pw := io.Pipe()
 
 	relay := NewPipeRelay(pr, pw)
@@ -68,7 +66,7 @@ func TestPipeReceiveWithOptions(t *testing.T) {
 	}(nf)
 
 	frame := &Frame{}
-	err = relay.Receive(frame)
+	err := relay.Receive(frame)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,7 +80,6 @@ func TestPipeReceiveWithOptions(t *testing.T) {
 }
 
 func TestPipeCRC_Failed(t *testing.T) {
-	var err error
 	pr, pw := io.Pipe()
 
 	relay := NewPipeRelay(pr, pw)
@@ -106,7 +103,7 @@ func TestPipeCRC_Failed(t *testing.T) {
 	}(nf)
 
 	frame := &Frame{}
-	err = relay.Receive(frame)
+	err := relay.Receive(frame)
 	assert.Error(t, err)
 	assert.Nil(t, frame.header)
 	assert.Nil(t, frame.payload)

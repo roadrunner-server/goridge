@@ -44,7 +44,7 @@ func (rl *SocketRelay) Receive(frame *Frame) error {
 		// we should read the options
 		optsLen := (header.readHL() - 2) * WORD
 		opts := make([]byte, optsLen)
-		_, err := rl.rwc.Read(opts)
+		_, err = rl.rwc.Read(opts)
 		if err != nil {
 			return errors.E(op, err)
 		}
