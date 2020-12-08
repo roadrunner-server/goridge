@@ -139,7 +139,7 @@ func (f *Frame) WriteFlags(flags ...FrameFlag) {
 }
 
 // Options slice len should not be more than 10 (40 bytes)
-func (f *Frame) WriteOption(options ...uint32) {
+func (f *Frame) WriteOptions(options ...uint32) {
 	if options == nil {
 		panic("you should write at least one option (uint32)")
 	}

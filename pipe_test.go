@@ -54,7 +54,7 @@ func TestPipeReceiveWithOptions(t *testing.T) {
 	nf.WriteFlags(CONTEXT_SEPARATOR, PAYLOAD_CONTROL, PAYLOAD_ERROR)
 	nf.WritePayloadLen(uint32(len([]byte(TestPayload))))
 	nf.WritePayload([]byte(TestPayload))
-	nf.WriteOption(100, 10000, 100000)
+	nf.WriteOptions(100, 10000, 100000)
 	nf.WriteCRC()
 	assert.Equal(t, true, nf.VerifyCRC())
 
