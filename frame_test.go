@@ -56,7 +56,7 @@ func TestFrame_Options(t *testing.T) {
 
 	nf := NewFrame()
 	nf.WriteVersion(1)
-	nf.WriteFlags(CONTEXT_SEPARATOR, PAYLOAD_CONTROL)
+	nf.WriteFlags(CONTEXT_SEPARATOR, CODEC_GOB)
 	nf.WritePayloadLen(uint32(len([]byte(TestPayload))))
 	nf.WriteOptions(323423432)
 
@@ -81,7 +81,7 @@ func TestFrame_Bytes(t *testing.T) {
 
 	nf := NewFrame()
 	nf.WriteVersion(1)
-	nf.WriteFlags(CONTEXT_SEPARATOR, PAYLOAD_CONTROL)
+	nf.WriteFlags(CONTEXT_SEPARATOR, CODEC_GOB)
 	nf.WritePayloadLen(uint32(len([]byte(TestPayload))))
 
 	nf.WriteOptions(323423432)
@@ -105,7 +105,7 @@ func BenchmarkFrame_CRC(b *testing.B) {
 	initLookupTable()
 	nf := NewFrame()
 	nf.WriteVersion(VERSION_1)
-	nf.WriteFlags(CONTEXT_SEPARATOR, PAYLOAD_CONTROL)
+	nf.WriteFlags(CONTEXT_SEPARATOR, CODEC_GOB)
 	nf.WritePayloadLen(uint32(len([]byte(TestPayload))))
 
 	b.ResetTimer()

@@ -15,7 +15,7 @@ func TestSocketRelay(t *testing.T) {
 	// TEST FRAME TO SEND
 	nf := NewFrame()
 	nf.WriteVersion(VERSION_1)
-	nf.WriteFlags(CONTEXT_SEPARATOR, PAYLOAD_CONTROL, PAYLOAD_ERROR)
+	nf.WriteFlags(CONTEXT_SEPARATOR, CODEC_GOB, CODEC_JSON)
 	nf.WritePayloadLen(uint32(len([]byte(TestPayload))))
 	nf.WritePayload([]byte(TestPayload))
 	nf.WriteCRC()
@@ -54,7 +54,7 @@ func TestSocketRelayOptions(t *testing.T) {
 	// TEST FRAME TO SEND
 	nf := NewFrame()
 	nf.WriteVersion(VERSION_1)
-	nf.WriteFlags(CONTEXT_SEPARATOR, PAYLOAD_CONTROL, PAYLOAD_ERROR)
+	nf.WriteFlags(CONTEXT_SEPARATOR, CODEC_GOB, CODEC_JSON)
 	nf.WritePayloadLen(uint32(len([]byte(TestPayload))))
 	nf.WritePayload([]byte(TestPayload))
 	nf.WriteOptions(100, 10000, 100000)
@@ -95,7 +95,7 @@ func TestSocketRelayNoPayload(t *testing.T) {
 	// TEST FRAME TO SEND
 	nf := NewFrame()
 	nf.WriteVersion(VERSION_1)
-	nf.WriteFlags(CONTEXT_SEPARATOR, PAYLOAD_CONTROL, PAYLOAD_ERROR)
+	nf.WriteFlags(CONTEXT_SEPARATOR, CODEC_GOB, CODEC_JSON)
 	nf.WriteOptions(100, 10000, 100000)
 	nf.WriteCRC()
 	assert.Equal(t, true, nf.VerifyCRC())
@@ -134,7 +134,7 @@ func TestSocketRelayWrongCRC(t *testing.T) {
 	// TEST FRAME TO SEND
 	nf := NewFrame()
 	nf.WriteVersion(VERSION_1)
-	nf.WriteFlags(CONTEXT_SEPARATOR, PAYLOAD_CONTROL, PAYLOAD_ERROR)
+	nf.WriteFlags(CONTEXT_SEPARATOR, CODEC_GOB, CODEC_JSON)
 	nf.WriteOptions(100, 10000, 100000)
 	nf.WriteCRC()
 	nf.header[6] = 22 // just random wrong CRC directly

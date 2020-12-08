@@ -1,12 +1,14 @@
-package __rpc
+package goridge
 
 import (
-	"github.com/pkg/errors"
-	"github.com/stretchr/testify/assert"
 	"net"
 	"net/rpc"
 	"strings"
+	"sync"
 	"testing"
+
+	"github.com/pkg/errors"
+	"github.com/stretchr/testify/assert"
 )
 
 // testService sample
@@ -53,15 +55,7 @@ func (s *testService) EchoBinary(msg []byte, out *[]byte) error {
 }
 
 func TestClientServer(t *testing.T) {
-	var ln net.Listener
-	var err error
-
-	ln, err = net.Listen("tcp", ":8079")
-	if err != nil {
-		panic(err)
-	}
-
-	err = rpc.RegisterName("test", new(testService))
+	ln, err := net.Listen("tcp", ":8079")
 	if err != nil {
 		panic(err)
 	}
@@ -75,6 +69,11 @@ func TestClientServer(t *testing.T) {
 			rpc.ServeCodec(NewCodec(conn))
 		}
 	}()
+
+	err = rpc.RegisterName("test", new(testService))
+	if err != nil {
+		panic(err)
+	}
 
 	conn, err := net.Dial("tcp", ":8079")
 	if err != nil {
@@ -91,19 +90,29 @@ func TestClientServer(t *testing.T) {
 
 	var (
 		rs = ""
-		rp = Payload{}
+		//rp = Payload{}
 		rb = make([]byte, 0)
 	)
 
-	assert.NoError(t, client.Call("test.Process", Payload{
-		Name:  "name",
-		Value: 1000,
-		Keys:  map[string]string{"key": "value"},
-	}, &rp))
+	wg := &sync.WaitGroup{}
+	wg.Add(300)
+	for i := 0; i < 300; i++ {
+		go func() {
+			defer wg.Done()
+			var rp = Payload{}
+			assert.NoError(t, client.Call("test.Process", Payload{
+				Name:  "name",
+				Value: 1000,
+				Keys:  map[string]string{"key": "value"},
+			}, &rp))
 
-	assert.Equal(t, "NAME", rp.Name)
-	assert.Equal(t, -1000, rp.Value)
-	assert.Equal(t, "key", rp.Keys["value"])
+			assert.Equal(t, "NAME", rp.Name)
+			assert.Equal(t, -1000, rp.Value)
+			assert.Equal(t, "key", rp.Keys["value"])
+		}()
+	}
+
+	wg.Wait()
 
 	assert.NoError(t, client.Call("test.Echo", "hello", &rs))
 	assert.Equal(t, "hello", rs)
