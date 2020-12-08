@@ -1,70 +1,158 @@
 package goridge
 
-//import (
-//	"bytes"
-//	"github.com/stretchr/testify/assert"
-//	"testing"
-//)
-//
-//func TestCloseSocketRelay(t *testing.T) {
-//	m := &connMock{}
-//	r := NewSocketRelay(m)
-//
-//	assert.False(t, m.closed)
-//	r.Close()
-//	assert.True(t, m.closed)
-//}
-//
-//func TestSocketReceive(t *testing.T) {
-//	conn := &connMock{}
-//	r := NewSocketRelay(conn)
-//	assert.Nil(t, r.Close())
-//
-//	prefix := NewPrefix().WithFlag(PayloadControl).WithSize(5)
-//	payload := []byte("hello")
-//
-//	conn.expect(read, prefix[:])
-//	conn.expect(read, payload)
-//
-//	data, p, err := r.Receive()
-//
-//	assert.Nil(t, err)
-//	assert.True(t, p.HasFlag(PayloadControl))
-//	assert.Equal(t, uint64(5), p.Size())
-//	assert.Equal(t, 0, bytes.Compare(data, payload))
-//	assert.Empty(t, 0, conn.leftSegments())
-//}
-//
-//func TestSocketReceive_ZeroCase(t *testing.T) {
-//	conn := &connMock{}
-//	r := NewSocketRelay(conn)
-//	assert.Nil(t, r.Close())
-//
-//	prefix := NewPrefix().WithFlag(PayloadControl).WithSize(0)
-//	payload := []byte("hello")
-//
-//	conn.expect(read, prefix[:])
-//	conn.expect(read, payload)
-//
-//	_, p, err := r.Receive()
-//
-//	assert.Nil(t, err)
-//	assert.True(t, p.HasFlag(PayloadControl))
-//	assert.Equal(t, uint64(0), p.Size())
-//}
-//
-//func TestSocketSend(t *testing.T) {
-//	conn := &connMock{}
-//	r := NewSocketRelay(conn)
-//	assert.Nil(t, r.Close())
-//
-//	prefix := NewPrefix().WithFlag(PayloadControl).WithSize(5)
-//	payload := []byte("hello")
-//
-//	conn.expect(write, prefix[:])
-//	conn.expect(write, payload)
-//
-//	err := r.Send(payload, prefix.Flags())
-//	assert.Nil(t, err)
-//	assert.Empty(t, 0, conn.leftSegments())
-//}
+import (
+	"net"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+func TestSocketRelay(t *testing.T) {
+	// configure and create tcp4 listener
+	ls, err := net.Listen("tcp", "localhost:10002")
+	assert.NoError(t, err)
+
+	// TEST FRAME TO SEND
+	nf := NewFrame()
+	nf.WriteVersion(VERSION_1)
+	nf.WriteFlags(CONTEXT_SEPARATOR, PAYLOAD_CONTROL, PAYLOAD_ERROR)
+	nf.WritePayloadLen(uint32(len([]byte(TestPayload))))
+	nf.WritePayload([]byte(TestPayload))
+	nf.WriteCRC()
+	assert.Equal(t, true, nf.VerifyCRC())
+
+	conn, err := net.Dial("tcp", "localhost:10002")
+	assert.NoError(t, err)
+	rsend := NewSocketRelay(conn)
+	err = rsend.Send(nf)
+	assert.NoError(t, err)
+
+	accept, err := ls.Accept()
+	assert.NoError(t, err)
+	assert.NotNil(t, accept)
+
+	r := NewSocketRelay(accept)
+
+	frame := &Frame{}
+	err = r.Receive(frame)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, frame.ReadVersion(), nf.ReadVersion())
+	assert.Equal(t, frame.ReadFlags(), nf.ReadFlags())
+	assert.Equal(t, frame.ReadPayloadLen(), nf.ReadPayloadLen())
+	assert.Equal(t, true, frame.VerifyCRC())
+	assert.Equal(t, []byte(TestPayload), frame.Payload())
+}
+
+func TestSocketRelayOptions(t *testing.T) {
+	// configure and create tcp4 listener
+	ls, err := net.Listen("tcp", "localhost:10001")
+	assert.NoError(t, err)
+
+	// TEST FRAME TO SEND
+	nf := NewFrame()
+	nf.WriteVersion(VERSION_1)
+	nf.WriteFlags(CONTEXT_SEPARATOR, PAYLOAD_CONTROL, PAYLOAD_ERROR)
+	nf.WritePayloadLen(uint32(len([]byte(TestPayload))))
+	nf.WritePayload([]byte(TestPayload))
+	nf.WriteOptions(100, 10000, 100000)
+	nf.WriteCRC()
+	assert.Equal(t, true, nf.VerifyCRC())
+
+	conn, err := net.Dial("tcp", "localhost:10001")
+	assert.NoError(t, err)
+	rsend := NewSocketRelay(conn)
+	err = rsend.Send(nf)
+	assert.NoError(t, err)
+
+	accept, err := ls.Accept()
+	assert.NoError(t, err)
+	assert.NotNil(t, accept)
+
+	r := NewSocketRelay(accept)
+
+	frame := &Frame{}
+	err = r.Receive(frame)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, frame.ReadVersion(), nf.ReadVersion())
+	assert.Equal(t, frame.ReadFlags(), nf.ReadFlags())
+	assert.Equal(t, frame.ReadPayloadLen(), nf.ReadPayloadLen())
+	assert.Equal(t, true, frame.VerifyCRC())
+	assert.Equal(t, []byte(TestPayload), frame.Payload())
+	assert.Equal(t, []uint32{100, 10000, 100000}, frame.ReadOptions())
+}
+
+func TestSocketRelayNoPayload(t *testing.T) {
+	// configure and create tcp4 listener
+	ls, err := net.Listen("tcp", "localhost:12221")
+	assert.NoError(t, err)
+
+	// TEST FRAME TO SEND
+	nf := NewFrame()
+	nf.WriteVersion(VERSION_1)
+	nf.WriteFlags(CONTEXT_SEPARATOR, PAYLOAD_CONTROL, PAYLOAD_ERROR)
+	nf.WriteOptions(100, 10000, 100000)
+	nf.WriteCRC()
+	assert.Equal(t, true, nf.VerifyCRC())
+
+	conn, err := net.Dial("tcp", "localhost:12221")
+	assert.NoError(t, err)
+	rsend := NewSocketRelay(conn)
+	err = rsend.Send(nf)
+	assert.NoError(t, err)
+
+	accept, err := ls.Accept()
+	assert.NoError(t, err)
+	assert.NotNil(t, accept)
+
+	r := NewSocketRelay(accept)
+
+	frame := &Frame{}
+	err = r.Receive(frame)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, frame.ReadVersion(), nf.ReadVersion())
+	assert.Equal(t, frame.ReadFlags(), nf.ReadFlags())
+	assert.Equal(t, frame.ReadPayloadLen(), nf.ReadPayloadLen()) // should be zero, without error
+	assert.Equal(t, true, frame.VerifyCRC())
+	assert.Equal(t, []byte{}, frame.Payload()) // empty
+	assert.Equal(t, []uint32{100, 10000, 100000}, frame.ReadOptions())
+}
+
+func TestSocketRelayWrongCRC(t *testing.T) {
+	// configure and create tcp4 listener
+	ls, err := net.Listen("tcp", "localhost:13445")
+	assert.NoError(t, err)
+
+	// TEST FRAME TO SEND
+	nf := NewFrame()
+	nf.WriteVersion(VERSION_1)
+	nf.WriteFlags(CONTEXT_SEPARATOR, PAYLOAD_CONTROL, PAYLOAD_ERROR)
+	nf.WriteOptions(100, 10000, 100000)
+	nf.WriteCRC()
+	nf.header[6] = 22 // just random wrong CRC directly
+
+	conn, err := net.Dial("tcp", "localhost:13445")
+	assert.NoError(t, err)
+	_, err = conn.Write(nf.Bytes())
+	assert.NoError(t, err)
+
+	accept, err := ls.Accept()
+	assert.NoError(t, err)
+	assert.NotNil(t, accept)
+
+	r := NewSocketRelay(accept)
+
+	frame := &Frame{}
+	err = r.Receive(frame)
+	assert.Error(t, err)
+	assert.Nil(t, frame.header)
+	assert.Nil(t, frame.payload)
+}
