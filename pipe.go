@@ -41,7 +41,19 @@ func (rl *PipeRelay) Receive(frame *Frame) error {
 
 	// Read frame header
 	header := ReadHeader(hb)
-	// verify header
+	// we have options
+	if header.readHL() > 2 {
+		// we should read the options
+		optsLen := (header.readHL() - 2) * WORD
+		opts := make([]byte, optsLen)
+		_, err := rl.in.Read(opts)
+		if err != nil {
+			return errors.E(op, err)
+		}
+		header.AppendOptions(opts)
+	}
+
+	// verify header CRC
 	if header.VerifyCRC() == false {
 		return errors.E(op, errors.Str("CRC verification failed"))
 	}
@@ -55,7 +67,7 @@ func (rl *PipeRelay) Receive(frame *Frame) error {
 
 	*frame = Frame{
 		payload: pb,
-		header:  hb,
+		header:  header.header,
 	}
 
 	return nil

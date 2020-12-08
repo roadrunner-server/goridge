@@ -21,15 +21,15 @@ func ReadHeader(data []byte) *Frame {
 	if lookupTable[1] == 0 {
 		panic("should initialize lookup table")
 	}
-	_ = data[0]
-	opt := data[0] & 0x0F
-	// if more than 2, that we have options
-	if opt > 2 {
-		return &Frame{
-			header:  data[:opt*WORD],
-			payload: nil,
-		}
-	}
+	//_ = data[0]
+	//opt := data[0] & 0x0F
+	//// if more than 2, that we have options
+	//if opt > 2 {
+	//	return &Frame{
+	//		header:  data[:opt*WORD],
+	//		payload: nil,
+	//	}
+	//}
 
 	// no options
 	return &Frame{
@@ -159,6 +159,11 @@ func (f *Frame) WriteOption(options ...uint32) {
 	}
 
 	f.header = append(f.header, tmp...)
+}
+
+// AppendOptions appends options to the header
+func (f *Frame) AppendOptions(opts []byte) {
+	f.header = append(f.header, opts...)
 }
 
 // f.readHL() - 2 needed to know actual options size

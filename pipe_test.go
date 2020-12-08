@@ -25,7 +25,7 @@ func TestPipeReceive(t *testing.T) {
 		defer func() {
 			_ = pw.Close()
 		}()
-		err = relay.Send(nf)
+		err := relay.Send(nf)
 		assert.NoError(t, err)
 		_ = pw.Close()
 	}(nf)
@@ -41,6 +41,44 @@ func TestPipeReceive(t *testing.T) {
 	assert.Equal(t, frame.ReadPayloadLen(), nf.ReadPayloadLen())
 	assert.Equal(t, true, frame.VerifyCRC())
 	assert.Equal(t, []byte(TestPayload), frame.Payload())
+}
+
+func TestPipeReceiveWithOptions(t *testing.T) {
+	var err error
+	pr, pw := io.Pipe()
+
+	relay := NewPipeRelay(pr, pw)
+
+	nf := NewFrame()
+	nf.WriteVersion(VERSION_1)
+	nf.WriteFlags(CONTEXT_SEPARATOR, PAYLOAD_CONTROL, PAYLOAD_ERROR)
+	nf.WritePayloadLen(uint32(len([]byte(TestPayload))))
+	nf.WritePayload([]byte(TestPayload))
+	nf.WriteOption(100, 10000, 100000)
+	nf.WriteCRC()
+	assert.Equal(t, true, nf.VerifyCRC())
+
+	go func(frame *Frame) {
+		defer func() {
+			_ = pw.Close()
+		}()
+		err := relay.Send(nf)
+		assert.NoError(t, err)
+		_ = pw.Close()
+	}(nf)
+
+	frame := &Frame{}
+	err = relay.Receive(frame)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	assert.Equal(t, frame.ReadVersion(), nf.ReadVersion())
+	assert.Equal(t, frame.ReadFlags(), nf.ReadFlags())
+	assert.Equal(t, frame.ReadPayloadLen(), nf.ReadPayloadLen())
+	assert.Equal(t, true, frame.VerifyCRC())
+	assert.Equal(t, []byte(TestPayload), frame.Payload())
+	assert.Equal(t, []uint32{100, 10000, 100000}, frame.ReadOptions())
 }
 
 func TestPipeCRC_Failed(t *testing.T) {
@@ -62,7 +100,7 @@ func TestPipeCRC_Failed(t *testing.T) {
 		defer func() {
 			_ = pw.Close()
 		}()
-		err = relay.Send(nf)
+		err := relay.Send(nf)
 		assert.NoError(t, err)
 		_ = pw.Close()
 	}(nf)
