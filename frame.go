@@ -4,8 +4,8 @@ import (
 	"unsafe"
 )
 
-const FRAME_OPTIONS_MAX_SIZE = 40 //bytes
-const WORD = 4
+const FRAME_OPTIONS_MAX_SIZE = 40 //nolint:golint
+const WORD = 4                    //nolint:golint
 
 // Frame defines new user level package format.
 type Frame struct {
@@ -14,6 +14,28 @@ type Frame struct {
 
 	// Header
 	header []byte
+}
+
+// ReadHeader reads only header, without payload
+func ReadHeader(data []byte) *Frame {
+	if lookupTable[1] == 0 {
+		panic("should initialize lookup table")
+	}
+	//_ = data[0]
+	//opt := data[0] & 0x0F
+	//// if more than 2, that we have options
+	//if opt > 2 {
+	//	return &Frame{
+	//		header:  data[:opt*WORD],
+	//		payload: nil,
+	//	}
+	//}
+
+	// no options
+	return &Frame{
+		header:  data[:8],
+		payload: nil,
+	}
 }
 
 func ReadFrame(data []byte) *Frame {
@@ -48,6 +70,11 @@ func NewFrame() *Frame {
 	// set default header len (5)
 	f.defaultHL()
 	return f
+}
+
+// MergeHeader merge header from other frame with original payload
+func (f *Frame) MergeHeader(frame *Frame) {
+	f.header = frame.header
 }
 
 // To read version, we should return our 4 upper bits to their original place
@@ -112,7 +139,10 @@ func (f *Frame) WriteFlags(flags ...FrameFlag) {
 }
 
 // Options slice len should not be more than 10 (40 bytes)
-func (f *Frame) WriteOption(options ...uint32) {
+func (f *Frame) WriteOptions(options ...uint32) {
+	if options == nil {
+		panic("you should write at least one option (uint32)")
+	}
 	hl := f.readHL()
 	// check before writing. we can't handle more than 15*4 bytes of HL (2 for header and 12 for options)
 	if hl == 15 {
@@ -132,6 +162,11 @@ func (f *Frame) WriteOption(options ...uint32) {
 	}
 
 	f.header = append(f.header, tmp...)
+}
+
+// AppendOptions appends options to the header
+func (f *Frame) AppendOptions(opts []byte) {
+	f.header = append(f.header, opts...)
 }
 
 // f.readHL() - 2 needed to know actual options size
@@ -253,14 +288,13 @@ func (f *Frame) Payload() []byte {
 func (f *Frame) WritePayload(data []byte) {
 	f.payload = make([]byte, len(data))
 	copy(f.payload, data)
-	//f.payload = data
 }
 
 //go:nosplit
 //go:nocheckptr
 func noescape(p unsafe.Pointer) unsafe.Pointer {
 	x := uintptr(p)
-	return unsafe.Pointer(x ^ 0)
+	return unsafe.Pointer(x ^ 0) //nolint:staticcheck
 }
 
 // After reset you should write all data from the start

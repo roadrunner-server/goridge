@@ -58,7 +58,7 @@ func TestFrame_Options(t *testing.T) {
 	nf.WriteVersion(1)
 	nf.WriteFlags(CONTEXT_SEPARATOR, PAYLOAD_CONTROL)
 	nf.WritePayloadLen(uint32(len([]byte(TestPayload))))
-	nf.WriteOption(323423432)
+	nf.WriteOptions(323423432)
 
 	// test options
 	options := nf.ReadOptions()
@@ -84,7 +84,7 @@ func TestFrame_Bytes(t *testing.T) {
 	nf.WriteFlags(CONTEXT_SEPARATOR, PAYLOAD_CONTROL)
 	nf.WritePayloadLen(uint32(len([]byte(TestPayload))))
 
-	nf.WriteOption(323423432)
+	nf.WriteOptions(323423432)
 	assert.Equal(t, []uint32{323423432}, nf.ReadOptions())
 	nf.WritePayload([]byte(TestPayload))
 
