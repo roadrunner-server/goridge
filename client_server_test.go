@@ -55,35 +55,27 @@ func (s *testService) EchoBinary(msg []byte, out *[]byte) error {
 }
 func TestClientServerJSON(t *testing.T) {
 	ln, err := net.Listen("tcp", ":18935")
-	if err != nil {
-		panic(err)
-	}
+	assert.NoError(t, err)
 
 	go func() {
 		for {
-			conn, err := ln.Accept()
-			if err != nil {
-				continue
-			}
+			conn, err2 := ln.Accept()
+			assert.NoError(t, err2)
 			rpc.ServeCodec(NewCodec(conn))
 		}
 	}()
 
 	err = rpc.RegisterName("test2", new(testService))
-	if err != nil {
-		panic(err)
-	}
+	assert.NoError(t, err)
 
 	conn, err := net.Dial("tcp", ":18935")
-	if err != nil {
-		panic(err)
-	}
+	assert.NoError(t, err)
 
 	client := rpc.NewClientWithCodec(NewClientCodec(conn))
 	defer func() {
 		err := client.Close()
 		if err != nil {
-			panic(err)
+			t.Fatal(err)
 		}
 	}()
 
@@ -99,7 +91,7 @@ func TestClientServerJSON(t *testing.T) {
 	assert.Equal(t, "key", rp.Keys["value"])
 }
 
-func TestClientServer(t *testing.T) {
+func TestClientServerConcurrent(t *testing.T) {
 	ln, err := net.Listen("tcp", ":22385")
 	if err != nil {
 		panic(err)
@@ -107,30 +99,24 @@ func TestClientServer(t *testing.T) {
 
 	go func() {
 		for {
-			conn, err := ln.Accept()
-			if err != nil {
-				continue
+			conn, err2 := ln.Accept()
+			if err2 != nil {
+				t.Fatal(err)
 			}
 			rpc.ServeCodec(NewCodec(conn))
 		}
 	}()
 
 	err = rpc.RegisterName("test", new(testService))
-	if err != nil {
-		panic(err)
-	}
+	assert.NoError(t, err)
 
 	conn, err := net.Dial("tcp", ":22385")
-	if err != nil {
-		panic(err)
-	}
+	assert.NoError(t, err)
 
 	client := rpc.NewClientWithCodec(NewClientCodec(conn))
 	defer func() {
 		err := client.Close()
-		if err != nil {
-			panic(err)
-		}
+		assert.NoError(t, err)
 	}()
 
 	wg := &sync.WaitGroup{}

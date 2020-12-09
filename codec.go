@@ -150,7 +150,7 @@ func (c *Codec) ReadRequestBody(out interface{}) error {
 	flags := c.frame.ReadFlags()
 
 	if flags&byte(CODEC_JSON) != byte(0) {
-		return decodeJson(out, c.frame)
+		return decodeJSON(out, c.frame)
 	}
 
 	if flags&byte(CODEC_GOB) != byte(0) {

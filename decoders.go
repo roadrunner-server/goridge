@@ -8,7 +8,7 @@ import (
 	"github.com/vmihailenco/msgpack"
 )
 
-func decodeJson(out interface{}, frame *Frame) error {
+func decodeJSON(out interface{}, frame *Frame) error {
 	const op = errors.Op("codec: decode json")
 	opts := frame.ReadOptions()
 	if len(opts) != 2 {

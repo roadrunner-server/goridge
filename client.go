@@ -82,7 +82,7 @@ func (c *ClientCodec) ReadResponseHeader(r *rpc.Response) error {
 	}
 
 	// check for error
-	if frame.ReadFlags()&uint8(ERROR) != 0 {
+	if frame.ReadFlags()&byte(ERROR) != 0 {
 		r.Error = string(frame.Payload()[opts[1]:])
 	}
 
@@ -107,7 +107,7 @@ func (c *ClientCodec) ReadResponseBody(out interface{}) error {
 	flags := c.frame.ReadFlags()
 
 	if flags&byte(CODEC_JSON) != 0 {
-		return decodeJson(out, c.frame)
+		return decodeJSON(out, c.frame)
 	}
 
 	if flags&byte(CODEC_GOB) != 0 {
