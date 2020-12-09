@@ -9,6 +9,7 @@ import (
 
 	j "github.com/json-iterator/go"
 	"github.com/spiral/errors"
+	"github.com/vmihailenco/msgpack"
 )
 
 var json = j.ConfigCompatibleWithStandardLibrary
@@ -216,19 +217,14 @@ func decodeRaw(out interface{}, frame *Frame) error {
 	return nil
 }
 
-// TODO UNIMPLEMENTED
 func decodeMsgPack(out interface{}, frame *Frame) error {
 	const op = errors.Op("codec: decode msgpack")
-	buf := new(bytes.Buffer)
-	dec := gob.NewDecoder(buf)
 	opts := frame.ReadOptions()
 	if len(opts) != 2 {
 		return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
 	}
 	payload := frame.Payload()[opts[1]:]
-	buf.Write(payload)
-
-	return dec.Decode(out)
+	return msgpack.Unmarshal(payload, out)
 }
 
 // Close underlying socket.
