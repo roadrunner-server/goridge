@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/pkg/errors"
+	"github.com/spiral/errors"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -29,7 +29,8 @@ func (s *testService) Echo(msg string, r *string) error {
 
 // Echo returns error
 func (s *testService) EchoR(msg string, r *string) error {
-	return errors.New("echoR error")
+	*r = "error"
+	return errors.Str("echoR error")
 }
 
 // Process performs payload conversion
@@ -50,7 +51,6 @@ func (s *testService) Process(msg Payload, r *Payload) error {
 // EchoBinary work over binary data
 func (s *testService) EchoBinary(msg []byte, out *[]byte) error {
 	*out = append(*out, msg...)
-
 	return nil
 }
 
@@ -88,17 +88,73 @@ func TestClientServer(t *testing.T) {
 		}
 	}()
 
-	var (
-		rs = ""
-		//rp = Payload{}
-		rb = make([]byte, 0)
-	)
-
 	wg := &sync.WaitGroup{}
 	wg.Add(300)
-	for i := 0; i < 300; i++ {
+
+	for i := 0; i < 100; i++ {
 		go func() {
 			defer wg.Done()
+			var rp = Payload{}
+			d := client.Go("test.Process", Payload{
+				Name:  "name",
+				Value: 1000,
+				Keys:  map[string]string{"key": "value"},
+			}, &rp, nil)
+			select {
+			case reply := <-d.Done:
+				assert.Equal(t, "NAME", rp.Name)
+				assert.Equal(t, -1000, rp.Value)
+				assert.Equal(t, "key", rp.Keys["value"])
+				_ = reply
+				return
+			}
+		}()
+
+		go func() {
+			defer wg.Done()
+			var rs = ""
+			d := client.Go("test.Echo", "hello", &rs, nil)
+			select {
+			case reply := <-d.Done:
+				assert.Equal(t, "hello", rs)
+				_ = reply
+				return
+			}
+		}()
+
+		go func() {
+			defer wg.Done()
+			rs := ""
+			rb := make([]byte, 0)
+
+			a := client.Go("test.Echo", "hello", &rs, nil)
+			b := client.Go("test.EchoBinary", []byte("hello world"), &rb, nil)
+			c := client.Go("test.EchoR", "hi", &rs, nil)
+
+			for i := 0; i < 3; i++ {
+				select {
+				case reply := <-a.Done:
+					_ = reply
+					assert.Equal(t, "hello", rs)
+				case reply := <-b.Done:
+					_ = reply
+					assert.Equal(t, []byte("hello world"), rb)
+				case reply := <-c.Done:
+					assert.Error(t, reply.Error)
+				}
+			}
+
+		}()
+	}
+
+	wg.Wait()
+
+	wg2 := &sync.WaitGroup{}
+	wg2.Add(300)
+
+	for i := 0; i < 100; i++ {
+		go func() {
+			defer wg2.Done()
 			var rp = Payload{}
 			assert.NoError(t, client.Call("test.Process", Payload{
 				Name:  "name",
@@ -109,16 +165,31 @@ func TestClientServer(t *testing.T) {
 			assert.Equal(t, "NAME", rp.Name)
 			assert.Equal(t, -1000, rp.Value)
 			assert.Equal(t, "key", rp.Keys["value"])
+			return
+		}()
+
+		go func() {
+			defer wg2.Done()
+			var rs = ""
+			assert.NoError(t, client.Call("test.Echo", "hello", &rs))
+			assert.Equal(t, "hello", rs)
+			return
+		}()
+
+		go func() {
+			defer wg2.Done()
+			rs := ""
+			rb := make([]byte, 0, len("hello world"))
+			assert.NoError(t, client.Call("test.Echo", "hello", &rs))
+			assert.Equal(t, "hello", rs)
+
+			assert.NoError(t, client.Call("test.EchoBinary", []byte("hello world"), &rb))
+			assert.Equal(t, []byte("hello world"), rb)
+
+			assert.Error(t, client.Call("test.EchoR", "hi", &rs))
 		}()
 	}
 
-	wg.Wait()
+	wg2.Wait()
 
-	assert.NoError(t, client.Call("test.Echo", "hello", &rs))
-	assert.Equal(t, "hello", rs)
-
-	assert.NoError(t, client.Call("test.EchoBinary", []byte("hello world"), &rb))
-	assert.Equal(t, []byte("hello world"), rb)
-
-	assert.Error(t, client.Call("test.EchoR", "hi", &rs))
 }

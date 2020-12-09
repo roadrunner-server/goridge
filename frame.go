@@ -58,7 +58,7 @@ func NewFrame() *Frame {
 		header:  make([]byte, 8),
 		payload: make([]byte, 0, 100),
 	}
-	// set default header len (5)
+	// set default header len (2)
 	f.defaultHL()
 	return f
 }

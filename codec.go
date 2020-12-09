@@ -14,7 +14,6 @@ import (
 type Codec struct {
 	relay  Relay
 	closed bool
-	frame  *Frame
 	sync.Mutex
 }
 
@@ -30,9 +29,6 @@ func NewCodecWithRelay(relay Relay) *Codec {
 
 // ReadRequestHeader receives
 func (c *Codec) ReadRequestHeader(r *rpc.Request) error {
-	//c.Lock()
-	//defer c.Unlock()
-
 	frame := NewFrame()
 	err := c.relay.Receive(frame)
 	if err != nil {
@@ -49,18 +45,12 @@ func (c *Codec) ReadRequestHeader(r *rpc.Request) error {
 	r.Seq = uint64(opts[0])
 	r.ServiceMethod = string(frame.Payload()[0:opts[1]])
 
-	// save frame
-	c.frame = frame
-
 	return nil
 }
 
 // ReadRequestBody fetches prefixed body data and automatically unmarshal it as json. RawBody flag will populate
 // []byte lice argument for rpc method.
 func (c *Codec) ReadRequestBody(out interface{}) error {
-	//c.Lock()
-	//defer c.Unlock()
-
 	frame := NewFrame()
 	err := c.relay.Receive(frame)
 	if err != nil {
@@ -69,15 +59,12 @@ func (c *Codec) ReadRequestBody(out interface{}) error {
 
 	buf := new(bytes.Buffer)
 	dec := gob.NewDecoder(buf)
-	opts := c.frame.ReadOptions()
+	opts := frame.ReadOptions()
 	if len(opts) != 2 {
 		panic("should be 2")
 	}
-	payload := c.frame.Payload()[opts[1]:]
+	payload := frame.Payload()[opts[1]:]
 	buf.Write(payload)
-
-	// reset the frame
-	c.frame = nil
 
 	return dec.Decode(out)
 }
@@ -85,8 +72,8 @@ func (c *Codec) ReadRequestBody(out interface{}) error {
 // WriteResponse marshals response, byte slice or error to remote party.
 func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error {
 	const op = errors.Op("codec WriteResponse")
+
 	frame := NewFrame()
-	frame.WriteFlags(CONTEXT_SEPARATOR, CODEC_GOB)
 
 	// SEQ_ID + METHOD_NAME_LEN
 	frame.WriteOptions(uint32(r.Seq), uint32(len(r.ServiceMethod)))
@@ -105,6 +92,16 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error {
 
 	frame.WritePayloadLen(uint32(buf.Len()))
 	frame.WritePayload(buf.Bytes())
+
+	// if error returned, we sending it via relay and return error from WriteResponse
+	if r.Error != "" {
+		frame.WriteFlags(ERROR)
+		frame.WriteCRC()
+		_ = c.relay.Send(frame)
+		return errors.E(op, errors.Str(r.Error))
+	}
+
+	frame.WriteFlags(CONTEXT_SEPARATOR, CODEC_GOB)
 	frame.WriteCRC()
 
 	return c.relay.Send(frame)

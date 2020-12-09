@@ -65,14 +65,16 @@ func (c *ClientCodec) WriteRequest(r *rpc.Request, body interface{}) error {
 
 // ReadResponseHeader reads response from the connection.
 func (c *ClientCodec) ReadResponseHeader(r *rpc.Response) error {
-	//c.Lock()
-	//defer c.Unlock()
-
 	const op = errors.Op("client codec ReadResponseHeader")
 	frame := NewFrame()
 	err := c.relay.Receive(frame)
 	if err != nil {
 		return errors.E(op, err)
+	}
+
+	// check for error
+	if frame.ReadFlags()&uint8(ERROR) != 0 {
+		r.Error = "error from response"
 	}
 
 	if !frame.VerifyCRC() {
@@ -95,10 +97,12 @@ func (c *ClientCodec) ReadResponseHeader(r *rpc.Response) error {
 
 // ReadResponseBody response from the connection.
 func (c *ClientCodec) ReadResponseBody(out interface{}) error {
-	//c.Lock()
-	//defer c.Unlock()
-
 	const op = errors.Op("client ReadResponseBody")
+	if out == nil {
+		// reset the frame
+		c.frame = nil
+		return nil
+	}
 	buf := new(bytes.Buffer)
 	dec := gob.NewDecoder(buf)
 
@@ -117,6 +121,7 @@ func (c *ClientCodec) ReadResponseBody(out interface{}) error {
 	if err != nil {
 		return errors.E(op, err)
 	}
+	buf.Truncate(0)
 	return nil
 }
 
