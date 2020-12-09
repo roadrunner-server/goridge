@@ -1,9 +1,5 @@
 package goridge
 
-import (
-	"unsafe"
-)
-
 const FRAME_OPTIONS_MAX_SIZE = 40 //nolint:golint
 const WORD = 4                    //nolint:golint
 
@@ -282,17 +278,4 @@ func (f *Frame) Payload() []byte {
 func (f *Frame) WritePayload(data []byte) {
 	f.payload = make([]byte, len(data))
 	copy(f.payload, data)
-}
-
-//go:nosplit
-//go:nocheckptr
-func noescape(p unsafe.Pointer) unsafe.Pointer {
-	x := uintptr(p)
-	return unsafe.Pointer(x ^ 0) //nolint:staticcheck
-}
-
-// After reset you should write all data from the start
-func (f *Frame) Reset() {
-	f.header = make([]byte, 0, 8)
-	f.payload = make([]byte, 0, 100)
 }

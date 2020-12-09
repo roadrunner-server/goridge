@@ -100,9 +100,7 @@ func TestClientServerConcurrent(t *testing.T) {
 	go func() {
 		for {
 			conn, err2 := ln.Accept()
-			if err2 != nil {
-				t.Fatal(err)
-			}
+			assert.NoError(t, err2)
 			rpc.ServeCodec(NewCodec(conn))
 		}
 	}()
