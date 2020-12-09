@@ -87,7 +87,7 @@ func (c *ClientCodec) ReadResponseHeader(r *rpc.Response) error {
 	}
 
 	r.Seq = uint64(opts[0])
-	r.ServiceMethod = string(frame.Payload()[0:opts[1]])
+	r.ServiceMethod = string(frame.Payload()[:opts[1]])
 
 	return nil
 }
