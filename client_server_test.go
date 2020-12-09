@@ -53,6 +53,51 @@ func (s *testService) EchoBinary(msg []byte, out *[]byte) error {
 	*out = append(*out, msg...)
 	return nil
 }
+func TestClientServerJSON(t *testing.T) {
+	ln, err := net.Listen("tcp", ":8079")
+	if err != nil {
+		panic(err)
+	}
+
+	go func() {
+		for {
+			conn, err := ln.Accept()
+			if err != nil {
+				continue
+			}
+			rpc.ServeCodec(NewCodec(conn))
+		}
+	}()
+
+	err = rpc.RegisterName("test", new(testService))
+	if err != nil {
+		panic(err)
+	}
+
+	conn, err := net.Dial("tcp", ":8079")
+	if err != nil {
+		panic(err)
+	}
+
+	client := rpc.NewClientWithCodec(NewClientCodec(conn))
+	defer func() {
+		err := client.Close()
+		if err != nil {
+			panic(err)
+		}
+	}()
+
+	var rp = Payload{}
+	assert.NoError(t, client.Call("test.Process", Payload{
+		Name:  "name",
+		Value: 1000,
+		Keys:  map[string]string{"key": "value"},
+	}, &rp))
+
+	assert.Equal(t, "NAME", rp.Name)
+	assert.Equal(t, -1000, rp.Value)
+	assert.Equal(t, "key", rp.Keys["value"])
+}
 
 func TestClientServer(t *testing.T) {
 	ln, err := net.Listen("tcp", ":8079")
@@ -191,5 +236,4 @@ func TestClientServer(t *testing.T) {
 	}
 
 	wg2.Wait()
-
 }

@@ -117,7 +117,7 @@ func (f *Frame) defaultHL() {
 }
 
 // Flags is full 1st byte
-func (f *Frame) ReadFlags() uint8 {
+func (f *Frame) ReadFlags() byte {
 	_ = f.header[1]
 	return f.header[1]
 }

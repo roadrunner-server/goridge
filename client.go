@@ -5,7 +5,6 @@ import (
 	"encoding/gob"
 	"io"
 	"net/rpc"
-	"sync"
 
 	"github.com/spiral/errors"
 )
@@ -15,7 +14,6 @@ type ClientCodec struct {
 	relay  Relay
 	closed bool
 	frame  *Frame
-	sync.Mutex
 }
 
 // NewClientCodec initiates new server rpc codec over socket connection.
@@ -28,7 +26,13 @@ func (c *ClientCodec) WriteRequest(r *rpc.Request, body interface{}) error {
 	const op = errors.Op("client codec WriteRequest")
 
 	frame := NewFrame()
-	frame.WriteFlags(CONTEXT_SEPARATOR, CODEC_GOB)
+	defer func() {
+		// reset the frame
+		frame = nil
+	}()
+
+	frame.WriteFlags(CODEC_GOB)
+
 	// SEQ_ID + METHOD_NAME_LEN
 	frame.WriteOptions(uint32(r.Seq), uint32(len(r.ServiceMethod)))
 	frame.WriteVersion(VERSION_1)
@@ -52,13 +56,6 @@ func (c *ClientCodec) WriteRequest(r *rpc.Request, body interface{}) error {
 	if err != nil {
 		return errors.E(op, err)
 	}
-	err = c.relay.Send(frame)
-	if err != nil {
-		return errors.E(op, err)
-	}
-
-	// reset the frame
-	frame = nil
 
 	return nil
 }
@@ -97,31 +94,33 @@ func (c *ClientCodec) ReadResponseHeader(r *rpc.Response) error {
 // ReadResponseBody response from the connection.
 func (c *ClientCodec) ReadResponseBody(out interface{}) error {
 	const op = errors.Op("client ReadResponseBody")
-	if out == nil {
+	defer func() {
 		// reset the frame
 		c.frame = nil
+	}()
+	if out == nil {
 		return nil
 	}
-	buf := new(bytes.Buffer)
-	dec := gob.NewDecoder(buf)
 
-	opts := c.frame.ReadOptions()
-	if len(opts) != 2 {
-		panic("should be 2")
+	flags := c.frame.ReadFlags()
+
+	if flags&byte(CODEC_JSON) != 0 {
+		return decodeJson(out, c.frame)
 	}
 
-	payload := c.frame.Payload()[opts[1]:]
-	buf.Write(payload)
-
-	// reset the frame
-	c.frame = nil
-
-	err := dec.Decode(out)
-	if err != nil {
-		return errors.E(op, err)
+	if flags&byte(CODEC_GOB) != 0 {
+		return decodeGob(out, c.frame)
 	}
-	buf.Truncate(0)
-	return nil
+
+	if flags&byte(CODEC_RAW) != 0 {
+		return decodeRaw(out, c.frame)
+	}
+
+	if flags&byte(CODEC_MSGPACK) != 0 {
+		return decodeMsgPack(out, c.frame)
+	}
+
+	return errors.E(op, errors.Str("unknown decoder used in frame"))
 }
 
 // Close closes the client connection.
