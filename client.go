@@ -31,6 +31,7 @@ func (c *ClientCodec) WriteRequest(r *rpc.Request, body interface{}) error {
 		frame = nil
 	}()
 
+	// for golang clients use GOB
 	frame.WriteFlags(CODEC_GOB)
 
 	// SEQ_ID + METHOD_NAME_LEN
@@ -98,6 +99,7 @@ func (c *ClientCodec) ReadResponseBody(out interface{}) error {
 		// reset the frame
 		c.frame = nil
 	}()
+	// if there is no out interface to unmarshall the body, skip
 	if out == nil {
 		return nil
 	}

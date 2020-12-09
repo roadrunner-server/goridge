@@ -105,43 +105,34 @@ func (c *Codec) ReadRequestHeader(r *rpc.Request) error {
 	}
 
 	r.Seq = uint64(opts[0])
-	r.ServiceMethod = string(frame.Payload()[0:opts[1]])
+	r.ServiceMethod = string(frame.Payload()[:opts[1]])
+	c.frame = frame
+	return c.storeCodec(r, frame.ReadFlags())
+}
 
-	// TODO move to separate function
-	flags := frame.ReadFlags()
-	if flags&byte(CODEC_JSON) != byte(0) {
+func (c *Codec) storeCodec(r *rpc.Request, flag byte) error {
+	if flag&byte(CODEC_JSON) != 0 {
 		c.codec.Store(r.Seq, CODEC_JSON)
-		// save the frame
-		c.frame = frame
 		return nil
 	}
 
-	if flags&byte(CODEC_GOB) != byte(0) {
+	if flag&byte(CODEC_GOB) != 0 {
 		c.codec.Store(r.Seq, CODEC_GOB)
-		// save the frame
-		c.frame = frame
 		return nil
 	}
 
-	if flags&byte(CODEC_RAW) != byte(0) {
+	if flag&byte(CODEC_RAW) != 0 {
 		c.codec.Store(r.Seq, CODEC_RAW)
-		// save the frame
-		c.frame = frame
 		return nil
 	}
 
-	if flags&byte(CODEC_MSGPACK) != byte(0) {
+	if flag&byte(CODEC_MSGPACK) != 0 {
 		c.codec.Store(r.Seq, CODEC_MSGPACK)
-		// save the frame
-		c.frame = frame
 		return nil
 	}
 
 	// If no flags provided, store GOB
 	c.codec.Store(r.Seq, CODEC_GOB)
-	// save the frame
-	c.frame = frame
-
 	return nil
 }
 
