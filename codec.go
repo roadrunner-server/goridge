@@ -72,18 +72,35 @@ func (c *Codec) ReadRequestBody(out interface{}) error {
 // WriteResponse marshals response, byte slice or error to remote party.
 func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error {
 	const op = errors.Op("codec WriteResponse")
-
 	frame := NewFrame()
 
 	// SEQ_ID + METHOD_NAME_LEN
 	frame.WriteOptions(uint32(r.Seq), uint32(len(r.ServiceMethod)))
+	// Write protocol version
 	frame.WriteVersion(VERSION_1)
+	frame.WriteFlags(CONTEXT_SEPARATOR, CODEC_GOB)
 
 	buf := new(bytes.Buffer)
 	// writeServiceMethod to the buffer
 	buf.WriteString(r.ServiceMethod)
-	// Initialize gob
+
+	// if error returned, we sending it via relay and return error from WriteResponse
+	if r.Error != "" {
+		frame.WriteFlags(ERROR)
+		// write data to the gob
+		buf.WriteString(r.Error)
+
+		frame.WritePayloadLen(uint32(buf.Len()))
+		frame.WritePayload(buf.Bytes())
+
+		frame.WriteCRC()
+		_ = c.relay.Send(frame)
+		return errors.E(op, errors.Str(r.Error))
+	}
+
+	// Initialize gob encoder
 	enc := gob.NewEncoder(buf)
+
 	// write data to the gob
 	err := enc.Encode(body)
 	if err != nil {
@@ -93,15 +110,6 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error {
 	frame.WritePayloadLen(uint32(buf.Len()))
 	frame.WritePayload(buf.Bytes())
 
-	// if error returned, we sending it via relay and return error from WriteResponse
-	if r.Error != "" {
-		frame.WriteFlags(ERROR)
-		frame.WriteCRC()
-		_ = c.relay.Send(frame)
-		return errors.E(op, errors.Str(r.Error))
-	}
-
-	frame.WriteFlags(CONTEXT_SEPARATOR, CODEC_GOB)
 	frame.WriteCRC()
 
 	return c.relay.Send(frame)

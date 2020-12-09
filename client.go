@@ -71,26 +71,25 @@ func (c *ClientCodec) ReadResponseHeader(r *rpc.Response) error {
 	if err != nil {
 		return errors.E(op, err)
 	}
-
-	// check for error
-	if frame.ReadFlags()&uint8(ERROR) != 0 {
-		r.Error = "error from response"
-	}
-
 	if !frame.VerifyCRC() {
-		panic("CRC")
+		return errors.E(op, errors.Str("CRC verification failed"))
 	}
+
+	// save the frame after CRC verification
+	c.frame = frame
 
 	opts := frame.ReadOptions()
 	if len(opts) != 2 {
-		panic("should be 2")
+		return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
+	}
+
+	// check for error
+	if frame.ReadFlags()&uint8(ERROR) != 0 {
+		r.Error = string(frame.Payload()[opts[1]:])
 	}
 
 	r.Seq = uint64(opts[0])
 	r.ServiceMethod = string(frame.Payload()[0:opts[1]])
-
-	// save the frame
-	c.frame = frame
 
 	return nil
 }
