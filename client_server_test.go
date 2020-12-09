@@ -54,7 +54,7 @@ func (s *testService) EchoBinary(msg []byte, out *[]byte) error {
 	return nil
 }
 func TestClientServerJSON(t *testing.T) {
-	ln, err := net.Listen("tcp", ":8079")
+	ln, err := net.Listen("tcp", ":18935")
 	if err != nil {
 		panic(err)
 	}
@@ -74,7 +74,7 @@ func TestClientServerJSON(t *testing.T) {
 		panic(err)
 	}
 
-	conn, err := net.Dial("tcp", ":8079")
+	conn, err := net.Dial("tcp", ":18935")
 	if err != nil {
 		panic(err)
 	}
@@ -100,7 +100,7 @@ func TestClientServerJSON(t *testing.T) {
 }
 
 func TestClientServer(t *testing.T) {
-	ln, err := net.Listen("tcp", ":8079")
+	ln, err := net.Listen("tcp", ":22385")
 	if err != nil {
 		panic(err)
 	}
@@ -120,7 +120,7 @@ func TestClientServer(t *testing.T) {
 		panic(err)
 	}
 
-	conn, err := net.Dial("tcp", ":8079")
+	conn, err := net.Dial("tcp", ":22385")
 	if err != nil {
 		panic(err)
 	}
