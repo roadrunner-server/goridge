@@ -69,7 +69,7 @@ func TestClientServerJSON(t *testing.T) {
 		}
 	}()
 
-	err = rpc.RegisterName("test", new(testService))
+	err = rpc.RegisterName("test2", new(testService))
 	if err != nil {
 		panic(err)
 	}
@@ -88,7 +88,7 @@ func TestClientServerJSON(t *testing.T) {
 	}()
 
 	var rp = Payload{}
-	assert.NoError(t, client.Call("test.Process", Payload{
+	assert.NoError(t, client.Call("test2.Process", Payload{
 		Name:  "name",
 		Value: 1000,
 		Keys:  map[string]string{"key": "value"},
