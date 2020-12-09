@@ -14,7 +14,7 @@ func TestPipeReceive(t *testing.T) {
 
 	nf := NewFrame()
 	nf.WriteVersion(VERSION_1)
-	nf.WriteFlags(CONTEXT_SEPARATOR, PAYLOAD_CONTROL, PAYLOAD_ERROR)
+	nf.WriteFlags(CONTEXT_SEPARATOR, CODEC_GOB, CODEC_JSON)
 	nf.WritePayloadLen(uint32(len([]byte(TestPayload))))
 	nf.WritePayload([]byte(TestPayload))
 	nf.WriteCRC()
@@ -49,7 +49,7 @@ func TestPipeReceiveWithOptions(t *testing.T) {
 
 	nf := NewFrame()
 	nf.WriteVersion(VERSION_1)
-	nf.WriteFlags(CONTEXT_SEPARATOR, PAYLOAD_CONTROL, PAYLOAD_ERROR)
+	nf.WriteFlags(CONTEXT_SEPARATOR, CODEC_GOB, CODEC_JSON)
 	nf.WritePayloadLen(uint32(len([]byte(TestPayload))))
 	nf.WritePayload([]byte(TestPayload))
 	nf.WriteOptions(100, 10000, 100000)

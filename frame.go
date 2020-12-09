@@ -1,9 +1,5 @@
 package goridge
 
-import (
-	"unsafe"
-)
-
 const FRAME_OPTIONS_MAX_SIZE = 40 //nolint:golint
 const WORD = 4                    //nolint:golint
 
@@ -58,7 +54,7 @@ func NewFrame() *Frame {
 		header:  make([]byte, 8),
 		payload: make([]byte, 0, 100),
 	}
-	// set default header len (5)
+	// set default header len (2)
 	f.defaultHL()
 	return f
 }
@@ -117,7 +113,7 @@ func (f *Frame) defaultHL() {
 }
 
 // Flags is full 1st byte
-func (f *Frame) ReadFlags() uint8 {
+func (f *Frame) ReadFlags() byte {
 	_ = f.header[1]
 	return f.header[1]
 }
@@ -160,10 +156,12 @@ func (f *Frame) AppendOptions(opts []byte) {
 	f.header = append(f.header, opts...)
 }
 
+// last byte after main header and first options byte
+const lb = 8
+
 // f.readHL() - 2 needed to know actual options size
 // we know, that 2 WORDS is minimal header len
 // extra WORDS will add extra 32bits to the options (4 bytes)
-//
 func (f *Frame) ReadOptions() []uint32 {
 	// we can read options, if there are no options
 	if f.readHL() <= 2 {
@@ -183,7 +181,7 @@ func (f *Frame) ReadOptions() []uint32 {
 		// 10 14  18
 		// 11 15  19
 		// For this data, HL will be 3, optionLen will be 12 (3*4) bytes
-		options = append(options, uint32(f.header[8+i])|uint32(f.header[8+i+1])<<8|uint32(f.header[8+i+2])<<16|uint32(f.header[8+i+3])<<24)
+		options = append(options, uint32(f.header[lb+i])|uint32(f.header[lb+i+1])<<8|uint32(f.header[lb+i+2])<<16|uint32(f.header[lb+i+3])<<24)
 	}
 	return options
 }
@@ -235,6 +233,7 @@ func (f *Frame) VerifyCRC() bool {
 	_ = f.header[7]
 	crc := byte(0)
 	hl := f.readHL()
+
 	if hl > 2 {
 		for i := byte(0); i < hl*WORD; i++ {
 			// to verify, we are skipping the CRC field itself
@@ -279,17 +278,4 @@ func (f *Frame) Payload() []byte {
 func (f *Frame) WritePayload(data []byte) {
 	f.payload = make([]byte, len(data))
 	copy(f.payload, data)
-}
-
-//go:nosplit
-//go:nocheckptr
-func noescape(p unsafe.Pointer) unsafe.Pointer {
-	x := uintptr(p)
-	return unsafe.Pointer(x ^ 0) //nolint:staticcheck
-}
-
-// After reset you should write all data from the start
-func (f *Frame) Reset() {
-	f.header = make([]byte, 0, 8)
-	f.payload = make([]byte, 0, 100)
 }
