@@ -58,7 +58,7 @@ func (rl *PipeRelay) Receive(frame *Frame) error {
 
 	// read the read payload
 	pb := make([]byte, header.ReadPayloadLen())
-	_, err = rl.in.Read(pb)
+	_, err = io.ReadFull(rl.in, pb)
 	if err != nil {
 		return errors.E(op, err)
 	}

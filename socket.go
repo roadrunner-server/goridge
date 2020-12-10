@@ -57,7 +57,7 @@ func (rl *SocketRelay) Receive(frame *Frame) error {
 
 	// read the read payload
 	pb := make([]byte, header.ReadPayloadLen())
-	_, err = rl.rwc.Read(pb)
+	_, err = io.ReadFull(rl.rwc, pb)
 	if err != nil {
 		return errors.E(op, err)
 	}
