@@ -18,7 +18,7 @@ func decodeJSON(out interface{}, frame *Frame) error {
 }
 
 func decodeGob(out interface{}, frame *Frame) error {
-	const op = errors.Op("codec: decode json")
+	const op = errors.Op("codec: decode GOB")
 	buf := new(bytes.Buffer)
 	dec := gob.NewDecoder(buf)
 	opts := frame.ReadOptions()
