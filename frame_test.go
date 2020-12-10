@@ -9,8 +9,6 @@ import (
 const TestPayload = `alsdjf;lskjdgljasg;lkjsalfkjaskldjflkasjdf;lkasjfdalksdjflkajsdf;lfasdgnslsnblna;sldjjfawlkejr;lwjenlksndlfjawl;ejr;lwjelkrjaldfjl;sdjf`
 
 func TestNewFrame(t *testing.T) {
-	initLookupTable()
-
 	nf := NewFrame()
 	nf.WriteVersion(VERSION_1)
 	nf.WriteFlags(CONTEXT_SEPARATOR)
@@ -30,8 +28,6 @@ func TestNewFrame(t *testing.T) {
 }
 
 func TestFrame_VerifyCRC_Fail(t *testing.T) {
-	initLookupTable()
-
 	nf := NewFrame()
 	// this is the wrong position
 	nf.WriteCRC()
@@ -52,8 +48,6 @@ func TestFrame_VerifyCRC_Fail(t *testing.T) {
 }
 
 func TestFrame_Options(t *testing.T) {
-	initLookupTable()
-
 	nf := NewFrame()
 	nf.WriteVersion(1)
 	nf.WriteFlags(CONTEXT_SEPARATOR, CODEC_GOB)
@@ -77,8 +71,6 @@ func TestFrame_Options(t *testing.T) {
 }
 
 func TestFrame_Bytes(t *testing.T) {
-	initLookupTable()
-
 	nf := NewFrame()
 	nf.WriteVersion(1)
 	nf.WriteFlags(CONTEXT_SEPARATOR, CODEC_GOB)
@@ -101,8 +93,12 @@ func TestFrame_Bytes(t *testing.T) {
 	assert.Equal(t, []uint32{323423432}, rf.ReadOptions())
 }
 
+func TestCRC8(t *testing.T) {
+	res := crc8([]byte("hello world"))
+	assert.Equal(t, byte(208), res)
+}
+
 func BenchmarkFrame_CRC(b *testing.B) {
-	initLookupTable()
 	nf := NewFrame()
 	nf.WriteVersion(VERSION_1)
 	nf.WriteFlags(CONTEXT_SEPARATOR, CODEC_GOB)

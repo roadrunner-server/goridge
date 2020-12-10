@@ -46,7 +46,6 @@ func ReadFrame(data []byte) *Frame {
 }
 
 func NewFrame() *Frame {
-	initLookupTable()
 	if lookupTable[1] == 0 {
 		panic("should initialize lookup table")
 	}
@@ -212,16 +211,14 @@ func (f *Frame) WriteCRC() {
 	// write CRC with options
 	if f.readHL() > 2 {
 		for i := byte(0); i < hl*WORD; i++ {
-			data := f.header[i] ^ crc
-			crc = lookupTable[data]
+			crc = lookupTable[crc^f.header[i]]
 		}
 		f.header[6] = crc
 		return
 	}
 
 	for i := 0; i < 6; i++ {
-		data := f.header[i] ^ crc
-		crc = lookupTable[data]
+		crc = lookupTable[crc^f.header[i]]
 	}
 
 	f.header[6] = crc
@@ -242,15 +239,13 @@ func (f *Frame) VerifyCRC() bool {
 				crc = lookupTable[data]
 				continue
 			}
-			data := f.header[i] ^ crc
-			crc = lookupTable[data]
+			crc = lookupTable[f.header[i]^crc]
 		}
 		return crc == f.header[6]
 	}
 
 	for i := 0; i < 6; i++ {
-		data := f.header[i] ^ crc
-		crc = lookupTable[data]
+		crc = lookupTable[f.header[i]^crc]
 	}
 	return crc == f.header[6]
 }
