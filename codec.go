@@ -8,6 +8,7 @@ import (
 
 	j "github.com/json-iterator/go"
 	"github.com/spiral/errors"
+	"go.uber.org/multierr"
 )
 
 var json = j.ConfigCompatibleWithStandardLibrary
@@ -59,7 +60,7 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error {
 	// if error returned, we sending it via relay and return error from WriteResponse
 	if r.Error != "" {
 		// Append error flag
-		return c.handleError(r, frame, buf)
+		return c.handleError(r, frame, buf, errors.Str(r.Error))
 	}
 
 	flags := frame.ReadFlags()
@@ -67,28 +68,28 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error {
 	if flags&byte(CODEC_JSON) != 0 {
 		err := encodeJSON(buf, body)
 		if err != nil {
-			return c.handleError(r, frame, buf)
+			return c.handleError(r, frame, buf, err)
 		}
 	}
 
 	if flags&byte(CODEC_GOB) != 0 {
 		err := encodeGob(buf, body)
 		if err != nil {
-			return c.handleError(r, frame, buf)
+			return c.handleError(r, frame, buf, err)
 		}
 	}
 
 	if flags&byte(CODEC_RAW) != 0 {
 		err := encodeRaw(buf, body)
 		if err != nil {
-			return c.handleError(r, frame, buf)
+			return c.handleError(r, frame, buf, err)
 		}
 	}
 
 	if flags&byte(CODEC_MSGPACK) != 0 {
 		err := encodeMsgPack(buf, body)
 		if err != nil {
-			return c.handleError(r, frame, buf)
+			return c.handleError(r, frame, buf, err)
 		}
 	}
 
@@ -101,16 +102,19 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error {
 	return c.relay.Send(frame)
 }
 
-func (c *Codec) handleError(r *rpc.Response, frame *Frame, buf *bytes.Buffer) error {
+func (c *Codec) handleError(r *rpc.Response, frame *Frame, buf *bytes.Buffer, err error) error {
 	// just to be sure, remove all data from buffer and write new
 	buf.Truncate(0)
+	// write all possible errors
+	err = multierr.Append(err, errors.Str(r.Error))
 	buf.WriteString(r.ServiceMethod)
 
 	const op = errors.Op("handle codec error")
 	frame.WriteFlags(ERROR)
-	// write data to the gob
-	buf.WriteString(r.Error)
-
+	// error should be here
+	if err != nil {
+		buf.WriteString(err.Error())
+	}
 	frame.WritePayloadLen(uint32(buf.Len()))
 	frame.WritePayload(buf.Bytes())
 
