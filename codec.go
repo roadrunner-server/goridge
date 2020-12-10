@@ -80,14 +80,14 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error {
 	}
 
 	if flags&byte(CODEC_RAW) != 0 {
-		err := encodeRaw(buf, frame)
+		err := encodeRaw(buf, body)
 		if err != nil {
 			return c.handleError(r, frame, buf)
 		}
 	}
 
 	if flags&byte(CODEC_MSGPACK) != 0 {
-		err := encodeMsgPack(buf, frame)
+		err := encodeMsgPack(buf, body)
 		if err != nil {
 			return c.handleError(r, frame, buf)
 		}
