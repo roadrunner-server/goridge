@@ -35,18 +35,16 @@ func encodeGob(out io.Writer, data interface{}) error {
 
 func encodeRaw(out io.Writer, data interface{}) error {
 	const op = errors.Op("codec: encode raw")
-	switch data.(type) {
+	switch data := data.(type) {
 	case []byte:
-		b := data.([]byte)
-		_, err := out.Write(b)
+		_, err := out.Write(data)
 		if err != nil {
 			return errors.E(op, err)
 		}
 
 		return nil
 	case *[]byte:
-		b := data.(*[]byte)
-		_, err := out.Write(*b)
+		_, err := out.Write(*data)
 		if err != nil {
 			return errors.E(op, err)
 		}

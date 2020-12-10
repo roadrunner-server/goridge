@@ -54,7 +54,7 @@ func (s *testService) EchoBinary(msg []byte, out *[]byte) error {
 	return nil
 }
 func TestClientServerJSON(t *testing.T) {
-	ln, err := net.Listen("tcp", ":18935")
+	ln, err := net.Listen("tcp", "127.0.0.1:18935")
 	assert.NoError(t, err)
 
 	go func() {
@@ -68,7 +68,7 @@ func TestClientServerJSON(t *testing.T) {
 	err = rpc.RegisterName("test2", new(testService))
 	assert.NoError(t, err)
 
-	conn, err := net.Dial("tcp", ":18935")
+	conn, err := net.Dial("tcp", "127.0.0.1:18935")
 	assert.NoError(t, err)
 
 	client := rpc.NewClientWithCodec(NewClientCodec(conn))
@@ -92,7 +92,7 @@ func TestClientServerJSON(t *testing.T) {
 }
 
 func TestClientServerConcurrent(t *testing.T) {
-	ln, err := net.Listen("tcp", ":22385")
+	ln, err := net.Listen("tcp", "127.0.0.1:22385")
 	if err != nil {
 		panic(err)
 	}
@@ -108,7 +108,7 @@ func TestClientServerConcurrent(t *testing.T) {
 	err = rpc.RegisterName("test", new(testService))
 	assert.NoError(t, err)
 
-	conn, err := net.Dial("tcp", ":22385")
+	conn, err := net.Dial("tcp", "127.0.0.1:22385")
 	assert.NoError(t, err)
 
 	client := rpc.NewClientWithCodec(NewClientCodec(conn))
@@ -172,7 +172,6 @@ func TestClientServerConcurrent(t *testing.T) {
 					assert.Error(t, reply.Error)
 				}
 			}
-
 		}()
 	}
 

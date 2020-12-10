@@ -1,7 +1,7 @@
 package goridge
 
-const FRAME_OPTIONS_MAX_SIZE = 40 //nolint:golint
-const WORD = 4                    //nolint:golint
+const FRAME_OPTIONS_MAX_SIZE = 40 //nolint:stylecheck,golint
+const WORD = 4                    //nolint:stylecheck,golint
 
 // Frame defines new user level package format.
 type Frame struct {
@@ -86,7 +86,7 @@ func (f *Frame) readHL() byte {
 // we can easily apply bitwise OR and set lower 4 bits to needed hl value
 func (f *Frame) writeHl(hl byte) {
 	_ = f.header[0]
-	f.header[0] = f.header[0] | hl
+	f.header[0] |= hl
 }
 
 func (f *Frame) incrementHL() {
@@ -111,7 +111,7 @@ func (f *Frame) ReadFlags() byte {
 func (f *Frame) WriteFlags(flags ...FrameFlag) {
 	_ = f.header[1]
 	for i := 0; i < len(flags); i++ {
-		f.header[1] = f.header[1] | byte(flags[i])
+		f.header[1] |= byte(flags[i])
 	}
 }
 
@@ -123,7 +123,6 @@ func (f *Frame) WriteOptions(options ...uint32) {
 	if len(options) > 10 {
 		panic("header options limited by 40 bytes")
 	}
-
 
 	hl := f.readHL()
 	// check before writing. we can't handle more than 15*4 bytes of HL (2 for header and 12 for options)
