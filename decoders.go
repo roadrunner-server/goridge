@@ -9,7 +9,7 @@ import (
 )
 
 func decodeJSON(out interface{}, frame *Frame) error {
-	const op = errors.Op("codec: decode json")
+	const op = errors.Op("client: decode json")
 	opts := frame.ReadOptions()
 	if len(opts) != 2 {
 		return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
@@ -18,7 +18,7 @@ func decodeJSON(out interface{}, frame *Frame) error {
 }
 
 func decodeGob(out interface{}, frame *Frame) error {
-	const op = errors.Op("codec: decode GOB")
+	const op = errors.Op("client: decode GOB")
 	buf := new(bytes.Buffer)
 	dec := gob.NewDecoder(buf)
 	opts := frame.ReadOptions()
@@ -32,7 +32,7 @@ func decodeGob(out interface{}, frame *Frame) error {
 }
 
 func decodeRaw(out interface{}, frame *Frame) error {
-	const op = errors.Op("codec: decode raw")
+	const op = errors.Op("client: decode raw")
 	opts := frame.ReadOptions()
 	if len(opts) != 2 {
 		return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
@@ -48,7 +48,7 @@ func decodeRaw(out interface{}, frame *Frame) error {
 }
 
 func decodeMsgPack(out interface{}, frame *Frame) error {
-	const op = errors.Op("codec: decode msgpack")
+	const op = errors.Op("client: decode msgpack")
 	opts := frame.ReadOptions()
 	if len(opts) != 2 {
 		return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))

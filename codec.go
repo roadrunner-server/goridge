@@ -2,7 +2,6 @@ package goridge
 
 import (
 	"bytes"
-	"encoding/gob"
 	"io"
 	"net/rpc"
 	"sync"
@@ -44,6 +43,7 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error {
 	// Write protocol version
 	frame.WriteVersion(VERSION_1)
 
+	// Store response flags
 	codec, ok := c.codec.Load(r.Seq)
 	if ok == false {
 		// fallback codec
@@ -52,39 +52,72 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error {
 		frame.WriteFlags(codec.(FrameFlag))
 	}
 
+	// initialize buffer
 	buf := new(bytes.Buffer)
 	// writeServiceMethod to the buffer
 	buf.WriteString(r.ServiceMethod)
 
 	// if error returned, we sending it via relay and return error from WriteResponse
 	if r.Error != "" {
-		frame.WriteFlags(ERROR)
-		// write data to the gob
-		buf.WriteString(r.Error)
-
-		frame.WritePayloadLen(uint32(buf.Len()))
-		frame.WritePayload(buf.Bytes())
-
-		frame.WriteCRC()
-		_ = c.relay.Send(frame)
-		return errors.E(op, errors.Str(r.Error))
+		// Append error flag
+		return c.handleError(r, frame, buf)
 	}
 
-	// Initialize gob encoder
-	enc := gob.NewEncoder(buf)
+	flags := frame.ReadFlags()
 
-	// write data to the gob
-	err := enc.Encode(body)
-	if err != nil {
-		return errors.E(op, err)
+	if flags&byte(CODEC_JSON) != 0 {
+		err := encodeJSON(buf, body)
+		if err != nil {
+			return c.handleError(r, frame, buf)
+		}
 	}
 
+	if flags&byte(CODEC_GOB) != 0 {
+		err := encodeGob(buf, body)
+		if err != nil {
+			return c.handleError(r, frame, buf)
+		}
+	}
+
+	if flags&byte(CODEC_RAW) != 0 {
+		err := encodeRaw(buf, frame)
+		if err != nil {
+			return c.handleError(r, frame, buf)
+		}
+	}
+
+	if flags&byte(CODEC_MSGPACK) != 0 {
+		err := encodeMsgPack(buf, frame)
+		if err != nil {
+			return c.handleError(r, frame, buf)
+		}
+	}
+
+	// everything written correct
 	frame.WritePayloadLen(uint32(buf.Len()))
 	frame.WritePayload(buf.Bytes())
 
 	frame.WriteCRC()
 
 	return c.relay.Send(frame)
+}
+
+func (c *Codec) handleError(r *rpc.Response, frame *Frame, buf *bytes.Buffer) error {
+	// just to be sure, remove all data from buffer and write new
+	buf.Truncate(0)
+	buf.WriteString(r.ServiceMethod)
+
+	const op = errors.Op("handle codec error")
+	frame.WriteFlags(ERROR)
+	// write data to the gob
+	buf.WriteString(r.Error)
+
+	frame.WritePayloadLen(uint32(buf.Len()))
+	frame.WritePayload(buf.Bytes())
+
+	frame.WriteCRC()
+	_ = c.relay.Send(frame)
+	return errors.E(op, errors.Str(r.Error))
 }
 
 // ReadRequestHeader receives
