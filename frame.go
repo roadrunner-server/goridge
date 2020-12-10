@@ -14,9 +14,6 @@ type Frame struct {
 
 // ReadHeader reads only header, without payload
 func ReadHeader(data []byte) *Frame {
-	if lookupTable[1] == 0 {
-		panic("should initialize lookup table")
-	}
 	_ = data[7]
 	return &Frame{
 		header:  data[:8],
@@ -25,9 +22,6 @@ func ReadHeader(data []byte) *Frame {
 }
 
 func ReadFrame(data []byte) *Frame {
-	if lookupTable[1] == 0 {
-		panic("should initialize lookup table")
-	}
 	_ = data[0]
 	opt := data[0] & 0x0F
 	// if more than 2, that we have options
@@ -46,9 +40,6 @@ func ReadFrame(data []byte) *Frame {
 }
 
 func NewFrame() *Frame {
-	if lookupTable[1] == 0 {
-		panic("should initialize lookup table")
-	}
 	f := &Frame{
 		header:  make([]byte, 8),
 		payload: make([]byte, 0, 100),
@@ -127,15 +118,17 @@ func (f *Frame) WriteFlags(flags ...FrameFlag) {
 // Options slice len should not be more than 10 (40 bytes)
 func (f *Frame) WriteOptions(options ...uint32) {
 	if options == nil {
-		panic("you should write at least one option (uint32)")
+		return
 	}
+	if len(options) > 10 {
+		panic("header options limited by 40 bytes")
+	}
+
+
 	hl := f.readHL()
 	// check before writing. we can't handle more than 15*4 bytes of HL (2 for header and 12 for options)
 	if hl == 15 {
 		panic("header len could not be more than 15")
-	}
-	if len(options) > 10 {
-		panic("header options limited by 40 bytes")
 	}
 
 	tmp := make([]byte, 0, FRAME_OPTIONS_MAX_SIZE)
