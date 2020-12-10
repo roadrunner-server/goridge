@@ -13,7 +13,6 @@ type SocketRelay struct {
 
 // NewSocketRelay creates new socket based data relay.
 func NewSocketRelay(rwc io.ReadWriteCloser) Relay {
-	initLookupTable()
 	return &SocketRelay{rwc: rwc}
 }
 
