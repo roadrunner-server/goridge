@@ -35,7 +35,6 @@ func NewCodecWithRelay(relay Relay) *Codec {
 
 // WriteResponse marshals response, byte slice or error to remote party.
 func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error {
-	const op = errors.Op("codec WriteResponse")
 	frame := NewFrame()
 
 	// SEQ_ID + METHOD_NAME_LEN

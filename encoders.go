@@ -35,13 +35,26 @@ func encodeGob(out io.Writer, data interface{}) error {
 
 func encodeRaw(out io.Writer, data interface{}) error {
 	const op = errors.Op("codec: encode raw")
-	b := data.([]byte)
-	_, err := out.Write(b)
-	if err != nil {
-		return errors.E(op, err)
-	}
+	switch data.(type) {
+	case []byte:
+		b := data.([]byte)
+		_, err := out.Write(b)
+		if err != nil {
+			return errors.E(op, err)
+		}
 
-	return nil
+		return nil
+	case *[]byte:
+		b := data.(*[]byte)
+		_, err := out.Write(*b)
+		if err != nil {
+			return errors.E(op, err)
+		}
+
+		return nil
+	default:
+		return errors.E(op, errors.Str("unknown Raw payload type"))
+	}
 }
 
 func encodeMsgPack(out io.Writer, data interface{}) error {
