@@ -11,7 +11,7 @@ const TestPayload = `alsdjf;lskjdgljasg;lkjsalfkjaskldjflkasjdf;lkasjfdalksdjflk
 func TestNewFrame(t *testing.T) {
 	nf := NewFrame()
 	nf.WriteVersion(VERSION_1)
-	nf.WriteFlags(CONTEXT_SEPARATOR)
+	nf.WriteFlags(CONTROL)
 	nf.WritePayloadLen(uint32(len([]byte(TestPayload))))
 	nf.WriteCRC()
 
@@ -32,7 +32,7 @@ func TestFrame_VerifyCRC_Fail(t *testing.T) {
 	// this is the wrong position
 	nf.WriteCRC()
 	nf.WriteVersion(VERSION_1)
-	nf.WriteFlags(CONTEXT_SEPARATOR)
+	nf.WriteFlags(CONTROL)
 	nf.WritePayloadLen(uint32(len([]byte(TestPayload))))
 
 	nf.WritePayload([]byte(TestPayload))
@@ -50,7 +50,7 @@ func TestFrame_VerifyCRC_Fail(t *testing.T) {
 func TestFrame_Options(t *testing.T) {
 	nf := NewFrame()
 	nf.WriteVersion(1)
-	nf.WriteFlags(CONTEXT_SEPARATOR, CODEC_GOB)
+	nf.WriteFlags(CONTROL, CODEC_GOB)
 	nf.WritePayloadLen(uint32(len([]byte(TestPayload))))
 	nf.WriteOptions(323423432)
 
@@ -73,7 +73,7 @@ func TestFrame_Options(t *testing.T) {
 func TestFrame_Bytes(t *testing.T) {
 	nf := NewFrame()
 	nf.WriteVersion(1)
-	nf.WriteFlags(CONTEXT_SEPARATOR, CODEC_GOB)
+	nf.WriteFlags(CONTROL, CODEC_GOB)
 	nf.WritePayloadLen(uint32(len([]byte(TestPayload))))
 
 	nf.WriteOptions(323423432)
@@ -93,15 +93,19 @@ func TestFrame_Bytes(t *testing.T) {
 	assert.Equal(t, []uint32{323423432}, rf.ReadOptions())
 }
 
-func TestCRC8(t *testing.T) {
-	res := crc8([]byte("hello world"))
-	assert.Equal(t, byte(208), res)
+func BenchmarkCRC8(b *testing.B) {
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		res := crc8([]byte("hello world"))
+		_ = res
+	}
 }
 
 func BenchmarkFrame_CRC(b *testing.B) {
 	nf := NewFrame()
 	nf.WriteVersion(VERSION_1)
-	nf.WriteFlags(CONTEXT_SEPARATOR, CODEC_GOB)
+	nf.WriteFlags(CONTROL, CODEC_GOB)
 	nf.WritePayloadLen(uint32(len([]byte(TestPayload))))
 
 	b.ResetTimer()
