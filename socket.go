@@ -30,7 +30,7 @@ func (rl *SocketRelay) Send(frame *Frame) error {
 func (rl *SocketRelay) Receive(frame *Frame) error {
 	const op = errors.Op("pipes frame receive")
 	// header bytes
-	hb := make([]byte, 8, 8)
+	hb := make([]byte, 12, 12)
 	_, err := rl.rwc.Read(hb)
 	if err != nil {
 		return errors.E(op, err)
@@ -39,9 +39,9 @@ func (rl *SocketRelay) Receive(frame *Frame) error {
 	// Read frame header
 	header := ReadHeader(hb)
 	// we have options
-	if header.readHL() > 2 {
+	if header.readHL() > 3 {
 		// we should read the options
-		optsLen := (header.readHL() - 2) * WORD
+		optsLen := (header.readHL() - 3) * WORD
 		opts := make([]byte, optsLen)
 		_, err = rl.rwc.Read(opts)
 		if err != nil {
