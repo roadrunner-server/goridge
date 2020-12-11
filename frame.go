@@ -1,5 +1,7 @@
 package goridge
 
+import "hash/crc32"
+
 const FRAME_OPTIONS_MAX_SIZE = 40 //nolint:stylecheck,golint
 const WORD = 4                    //nolint:stylecheck,golint
 
@@ -14,9 +16,9 @@ type Frame struct {
 
 // ReadHeader reads only header, without payload
 func ReadHeader(data []byte) *Frame {
-	_ = data[7]
+	_ = data[11]
 	return &Frame{
-		header:  data[:8],
+		header:  data[:12],
 		payload: nil,
 	}
 }
@@ -24,24 +26,27 @@ func ReadHeader(data []byte) *Frame {
 func ReadFrame(data []byte) *Frame {
 	_ = data[0]
 	opt := data[0] & 0x0F
-	// if more than 2, that we have options
-	if opt > 2 {
+	// if more than 3, that we have options
+	if opt > 3 {
 		return &Frame{
 			header:  data[:opt*WORD],
 			payload: data[opt*WORD:],
 		}
 	}
 
-	// no options
-	return &Frame{
-		header:  data[:8],
-		payload: data[8:],
+	f := &Frame{
+		header:  data[:12],
+		payload: data[12:],
 	}
+	f.header[10] = 0
+	f.header[11] = 0
+
+	return f
 }
 
 func NewFrame() *Frame {
 	f := &Frame{
-		header:  make([]byte, 8),
+		header:  make([]byte, 12),
 		payload: make([]byte, 0, 100),
 	}
 	// set default header len (2)
@@ -99,7 +104,7 @@ func (f *Frame) incrementHL() {
 }
 func (f *Frame) defaultHL() {
 	_ = f.header[0]
-	f.writeHl(2)
+	f.writeHl(3)
 }
 
 // Flags is full 1st byte
@@ -125,7 +130,7 @@ func (f *Frame) WriteOptions(options ...uint32) {
 	}
 
 	hl := f.readHL()
-	// check before writing. we can't handle more than 15*4 bytes of HL (2 for header and 12 for options)
+	// check before writing. we can't handle more than 15*4 bytes of HL (3 for header and 12 for options)
 	if hl == 15 {
 		panic("header len could not be more than 15")
 	}
@@ -148,18 +153,18 @@ func (f *Frame) AppendOptions(opts []byte) {
 }
 
 // last byte after main header and first options byte
-const lb = 8
+const lb = 12
 
 // f.readHL() - 2 needed to know actual options size
 // we know, that 2 WORDS is minimal header len
 // extra WORDS will add extra 32bits to the options (4 bytes)
 func (f *Frame) ReadOptions() []uint32 {
 	// we can read options, if there are no options
-	if f.readHL() <= 2 {
+	if f.readHL() <= 3 {
 		return nil
 	}
 	// Get the options len
-	optionLen := f.readHL() - 2 // 2 is the default
+	optionLen := f.readHL() - 3 // 3 is the default
 	// slice in place
 	options := make([]uint32, 0, optionLen)
 
@@ -197,49 +202,23 @@ func (f *Frame) WritePayloadLen(len uint32) {
 
 // Calculating CRC and writing it to the 6th byte (7th reserved)
 func (f *Frame) WriteCRC() {
-	_ = f.header[7]
-	crc := byte(0)
-	hl := f.readHL()
-	// write CRC with options
-	if f.readHL() > 2 {
-		for i := byte(0); i < hl*WORD; i++ {
-			crc = lookupTable[crc^f.header[i]]
-		}
-		f.header[6] = crc
-		return
-	}
+	// 6 7 8 9 bytes
+	// 10, 11 reserved
+	_ = f.header[9]
 
-	for i := 0; i < 6; i++ {
-		crc = lookupTable[crc^f.header[i]]
-	}
-
-	f.header[6] = crc
+	crc := crc32.ChecksumIEEE(f.header[:6])
+	f.header[6] = byte(crc)
+	f.header[7] = byte(crc >> 8)
+	f.header[8] = byte(crc >> 16)
+	f.header[9] = byte(crc >> 24)
 }
 
 // Reading info from 6th byte and verifying it with calculated in-place. Should be equal.
 // If not - drop the frame as incorrect.
 func (f *Frame) VerifyCRC() bool {
-	_ = f.header[7]
-	crc := byte(0)
-	hl := f.readHL()
+	_ = f.header[9]
 
-	if hl > 2 {
-		for i := byte(0); i < hl*WORD; i++ {
-			// to verify, we are skipping the CRC field itself
-			if i == 6 {
-				data := 0 ^ crc
-				crc = lookupTable[data]
-				continue
-			}
-			crc = lookupTable[f.header[i]^crc]
-		}
-		return crc == f.header[6]
-	}
-
-	for i := 0; i < 6; i++ {
-		crc = lookupTable[f.header[i]^crc]
-	}
-	return crc == f.header[6]
+	return crc32.ChecksumIEEE(f.header[:6]) == uint32(f.header[6])|uint32(f.header[7])<<8|uint32(f.header[8])<<16|uint32(f.header[9])<<24
 }
 
 // Bytes returns header with payload

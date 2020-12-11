@@ -31,7 +31,7 @@ func (rl *PipeRelay) Send(frame *Frame) error {
 func (rl *PipeRelay) Receive(frame *Frame) error {
 	const op = errors.Op("pipes frame receive")
 	// header bytes
-	hb := make([]byte, 8, 8)
+	hb := make([]byte, 12, 12)
 	_, err := rl.in.Read(hb)
 	if err != nil {
 		return errors.E(op, err)
@@ -40,9 +40,9 @@ func (rl *PipeRelay) Receive(frame *Frame) error {
 	// Read frame header
 	header := ReadHeader(hb)
 	// we have options
-	if header.readHL() > 2 {
+	if header.readHL() > 3 {
 		// we should read the options
-		optsLen := (header.readHL() - 2) * WORD
+		optsLen := (header.readHL() - 3) * WORD
 		opts := make([]byte, optsLen)
 		_, err = rl.in.Read(opts)
 		if err != nil {
