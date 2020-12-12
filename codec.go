@@ -46,13 +46,17 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error {
 
 	// load and delete associated codec to not waste memory
 	// because we write it to the frame and don't need more information about it
-	codec, ok := c.codec.LoadAndDelete(r.Seq)
+	// as for go.14, Load and Delete are separate methods
+	codec, ok := c.codec.Load(r.Seq)
 	if !ok {
 		// fallback codec
 		frame.WriteFlags(CODEC_GOB)
 	} else {
 		frame.WriteFlags(codec.(FrameFlag))
 	}
+
+	// delete the key
+	c.codec.Delete(r.Seq)
 
 	// initialize buffer
 	buf := new(bytes.Buffer)
