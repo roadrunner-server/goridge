@@ -24,7 +24,6 @@ func NewClientCodec(rwc io.ReadWriteCloser) *ClientCodec {
 // WriteRequest writes request to the connection. Sequential.
 func (c *ClientCodec) WriteRequest(r *rpc.Request, body interface{}) error {
 	const op = errors.Op("client codec WriteRequest")
-
 	frame := NewFrame()
 	defer func() {
 		// reset the frame
@@ -57,7 +56,6 @@ func (c *ClientCodec) WriteRequest(r *rpc.Request, body interface{}) error {
 	if err != nil {
 		return errors.E(op, err)
 	}
-
 	return nil
 }
 

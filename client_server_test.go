@@ -129,26 +129,19 @@ func TestClientServerConcurrent(t *testing.T) {
 				Value: 1000,
 				Keys:  map[string]string{"key": "value"},
 			}, &rp, nil)
-			select {
-			case reply := <-d.Done:
-				assert.Equal(t, "NAME", rp.Name)
-				assert.Equal(t, -1000, rp.Value)
-				assert.Equal(t, "key", rp.Keys["value"])
-				_ = reply
-				return
-			}
+
+			<-d.Done
+			assert.Equal(t, "NAME", rp.Name)
+			assert.Equal(t, -1000, rp.Value)
+			assert.Equal(t, "key", rp.Keys["value"])
 		}()
 
 		go func() {
 			defer wg.Done()
 			var rs = ""
 			d := client.Go("test.Echo", "hello", &rs, nil)
-			select {
-			case reply := <-d.Done:
-				assert.Equal(t, "hello", rs)
-				_ = reply
-				return
-			}
+			<-d.Done
+			assert.Equal(t, "hello", rs)
 		}()
 
 		go func() {
@@ -193,7 +186,6 @@ func TestClientServerConcurrent(t *testing.T) {
 			assert.Equal(t, "NAME", rp.Name)
 			assert.Equal(t, -1000, rp.Value)
 			assert.Equal(t, "key", rp.Keys["value"])
-			return
 		}()
 
 		go func() {
@@ -201,7 +193,6 @@ func TestClientServerConcurrent(t *testing.T) {
 			var rs = ""
 			assert.NoError(t, client.Call("test.Echo", "hello", &rs))
 			assert.Equal(t, "hello", rs)
-			return
 		}()
 
 		go func() {

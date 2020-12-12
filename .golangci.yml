@@ -8,12 +8,12 @@ linters:
     - deadcode
     - depguard
     - dogsled
-    #    - dupl
+    - dupl
     - errcheck
     - exhaustive
     #    - funlen
     - gochecknoinits
-    #    - goconst
+    - goconst
     - gocritic
     - gocyclo
     - gofmt
@@ -22,7 +22,7 @@ linters:
     #    - gomnd
     - goprintffuncname
     - gosec
-    #    - gosimple
+    - gosimple
     - govet
     - ineffassign
     - interfacer
@@ -39,7 +39,7 @@ linters:
     - typecheck
     - unconvert
     #    - unparam
-    #    - unused
+    - unused
     - varcheck
     - whitespace
 

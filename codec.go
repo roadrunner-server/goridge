@@ -45,7 +45,7 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error {
 
 	// Store response flags
 	codec, ok := c.codec.Load(r.Seq)
-	if ok == false {
+	if !ok {
 		// fallback codec
 		frame.WriteFlags(CODEC_GOB)
 	} else {

@@ -28,46 +28,7 @@ func (rl *SocketRelay) Send(frame *Frame) error {
 
 // Receive data from the underlying process and returns associated prefix or error.
 func (rl *SocketRelay) Receive(frame *Frame) error {
-	const op = errors.Op("pipes frame receive")
-	// header bytes
-	hb := make([]byte, 12, 12)
-	_, err := rl.rwc.Read(hb)
-	if err != nil {
-		return errors.E(op, err)
-	}
-
-	// Read frame header
-	header := ReadHeader(hb)
-	// we have options
-	if header.readHL() > 3 {
-		// we should read the options
-		optsLen := (header.readHL() - 3) * WORD
-		opts := make([]byte, optsLen)
-		_, err = rl.rwc.Read(opts)
-		if err != nil {
-			return errors.E(op, err)
-		}
-		header.AppendOptions(opts)
-	}
-
-	// verify header CRC
-	if header.VerifyCRC() == false {
-		return errors.E(op, errors.Str("CRC verification failed"))
-	}
-
-	// read the read payload
-	pb := make([]byte, header.ReadPayloadLen())
-	_, err = io.ReadFull(rl.rwc, pb)
-	if err != nil {
-		return errors.E(op, err)
-	}
-
-	*frame = Frame{
-		payload: pb,
-		header:  header.header,
-	}
-
-	return nil
+	return receiveFrame(rl.rwc, frame)
 }
 
 // Close the connection.
