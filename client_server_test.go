@@ -1,6 +1,7 @@
 package goridge
 
 import (
+	"crypto/rand"
 	"net"
 	"net/rpc"
 	"strings"
@@ -120,51 +121,54 @@ func TestClientServerConcurrent(t *testing.T) {
 	wg := &sync.WaitGroup{}
 	wg.Add(300)
 
+	// this test uses random inputs
 	for i := 0; i < 100; i++ {
 		go func() {
 			defer wg.Done()
 			var rp = Payload{}
-			d := client.Go("test.Process", Payload{
-				Name:  "name",
+			b := make([]byte, 15)
+			_, err := rand.Read(b)
+			assert.NoError(t, err)
+
+			<-client.Go("test.Process", Payload{
+				Name:  string(b),
 				Value: 1000,
-				Keys:  map[string]string{"key": "value"},
-			}, &rp, nil)
+				Keys:  map[string]string{"key": string(b)},
+			}, &rp, nil).Done
 
-			<-d.Done
-			assert.Equal(t, "NAME", rp.Name)
+			assert.Equal(t, strings.ToUpper(string(b)), rp.Name)
 			assert.Equal(t, -1000, rp.Value)
-			assert.Equal(t, "key", rp.Keys["value"])
+			assert.Equal(t, "key", rp.Keys[string(b)])
 		}()
 
 		go func() {
-			defer wg.Done()
 			var rs = ""
-			d := client.Go("test.Echo", "hello", &rs, nil)
-			<-d.Done
-			assert.Equal(t, "hello", rs)
+			b := make([]byte, 15)
+			_, err := rand.Read(b)
+			assert.NoError(t, err)
+			<-client.Go("test.Echo", string(b), &rs, nil).Done
+			assert.Equal(t, string(b), rs)
+			wg.Done()
 		}()
 
 		go func() {
-			defer wg.Done()
 			rs := ""
 			rb := make([]byte, 0)
 
-			a := client.Go("test.Echo", "hello", &rs, nil)
+			r := make([]byte, 15)
+			_, err := rand.Read(r)
+			assert.NoError(t, err)
+			a := client.Go("test.Echo", string(r), &rs, nil)
 			b := client.Go("test.EchoBinary", []byte("hello world"), &rb, nil)
 			c := client.Go("test.EchoR", "hi", &rs, nil)
 
-			for i := 0; i < 3; i++ {
-				select {
-				case reply := <-a.Done:
-					_ = reply
-					assert.Equal(t, "hello", rs)
-				case reply := <-b.Done:
-					_ = reply
-					assert.Equal(t, []byte("hello world"), rb)
-				case reply := <-c.Done:
-					assert.Error(t, reply.Error)
-				}
-			}
+			<-a.Done
+			assert.Equal(t, string(r), rs)
+			<-b.Done
+			assert.Equal(t, []byte("hello world"), rb)
+			resC := <-c.Done
+			assert.Error(t, resC.Error)
+			wg.Done()
 		}()
 	}
 
@@ -177,33 +181,46 @@ func TestClientServerConcurrent(t *testing.T) {
 		go func() {
 			defer wg2.Done()
 			var rp = Payload{}
+			b := make([]byte, 15)
+			_, err := rand.Read(b)
+			assert.NoError(t, err)
+
 			assert.NoError(t, client.Call("test.Process", Payload{
-				Name:  "name",
+				Name:  string(b),
 				Value: 1000,
-				Keys:  map[string]string{"key": "value"},
+				Keys:  map[string]string{"key": string(b)},
 			}, &rp))
 
-			assert.Equal(t, "NAME", rp.Name)
+			assert.Equal(t, strings.ToUpper(string(b)), rp.Name)
 			assert.Equal(t, -1000, rp.Value)
-			assert.Equal(t, "key", rp.Keys["value"])
+			assert.Equal(t, "key", rp.Keys[string(b)])
 		}()
 
 		go func() {
 			defer wg2.Done()
 			var rs = ""
-			assert.NoError(t, client.Call("test.Echo", "hello", &rs))
-			assert.Equal(t, "hello", rs)
+			r := make([]byte, 15)
+			_, err := rand.Read(r)
+			assert.NoError(t, err)
+
+			assert.NoError(t, client.Call("test.Echo", string(r), &rs))
+			assert.Equal(t, string(r), rs)
 		}()
 
 		go func() {
 			defer wg2.Done()
 			rs := ""
 			rb := make([]byte, 0, len("hello world"))
-			assert.NoError(t, client.Call("test.Echo", "hello", &rs))
-			assert.Equal(t, "hello", rs)
 
-			assert.NoError(t, client.Call("test.EchoBinary", []byte("hello world"), &rb))
-			assert.Equal(t, []byte("hello world"), rb)
+			r := make([]byte, 15)
+			_, err := rand.Read(r)
+			assert.NoError(t, err)
+
+			assert.NoError(t, client.Call("test.Echo", string(r), &rs))
+			assert.Equal(t, string(r), rs)
+
+			assert.NoError(t, client.Call("test.EchoBinary", r, &rb))
+			assert.Equal(t, r, rb)
 
 			assert.Error(t, client.Call("test.EchoR", "hi", &rs))
 		}()
