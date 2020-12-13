@@ -104,23 +104,18 @@ func (c *ClientCodec) ReadResponseBody(out interface{}) error {
 
 	flags := c.frame.ReadFlags()
 
-	if flags&byte(CODEC_JSON) != 0 {
+	switch {
+	case flags&byte(CODEC_JSON) != 0:
 		return decodeJSON(out, c.frame)
-	}
-
-	if flags&byte(CODEC_GOB) != 0 {
+	case flags&byte(CODEC_GOB) != 0:
 		return decodeGob(out, c.frame)
-	}
-
-	if flags&byte(CODEC_RAW) != 0 {
+	case flags&byte(CODEC_RAW) != 0:
 		return decodeRaw(out, c.frame)
-	}
-
-	if flags&byte(CODEC_MSGPACK) != 0 {
+	case flags&byte(CODEC_MSGPACK) != 0:
 		return decodeMsgPack(out, c.frame)
+	default:
+		return errors.E(op, errors.Str("unknown decoder used in frame"))
 	}
-
-	return errors.E(op, errors.Str("unknown decoder used in frame"))
 }
 
 // Close closes the client connection.

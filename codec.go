@@ -79,48 +79,40 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error {
 		if err != nil {
 			return c.handleError(r, frame, buf, err)
 		}
-		// everything written correct
-		frame.WritePayloadLen(uint32(buf.Len()))
-		frame.WritePayload(buf.Bytes())
-
-		frame.WriteCRC()
-		return c.relay.Send(frame)
+		// send buffer
+		return c.sendBuf(frame, buf)
 	case flags&byte(CODEC_MSGPACK) != 0:
 		err := encodeMsgPack(buf, body)
 		if err != nil {
 			return c.handleError(r, frame, buf, err)
 		}
-		// everything written correct
-		frame.WritePayloadLen(uint32(buf.Len()))
-		frame.WritePayload(buf.Bytes())
-
-		frame.WriteCRC()
-		return c.relay.Send(frame)
+		// send buffer
+		return c.sendBuf(frame, buf)
 	case flags&byte(CODEC_RAW) != 0:
 		err := encodeRaw(buf, body)
 		if err != nil {
 			return c.handleError(r, frame, buf, err)
 		}
-		// everything written correct
-		frame.WritePayloadLen(uint32(buf.Len()))
-		frame.WritePayload(buf.Bytes())
-
-		frame.WriteCRC()
-		return c.relay.Send(frame)
+		// send buffer
+		return c.sendBuf(frame, buf)
 	case flags&byte(CODEC_GOB) != 0:
 		err := encodeGob(buf, body)
 		if err != nil {
 			return c.handleError(r, frame, buf, err)
 		}
-		// everything written correct
-		frame.WritePayloadLen(uint32(buf.Len()))
-		frame.WritePayload(buf.Bytes())
-
-		frame.WriteCRC()
-		return c.relay.Send(frame)
+		// send buffer
+		return c.sendBuf(frame, buf)
 	default:
-		return errors.E(op, errors.Str("unknown codec"))
+		return c.handleError(r, frame, buf, errors.E(op, errors.Str("unknown codec")))
 	}
+}
+
+func (c *Codec) sendBuf(frame *Frame, buf *bytes.Buffer) error {
+	frame.WritePayloadLen(uint32(buf.Len()))
+	frame.WritePayload(buf.Bytes())
+
+	frame.WriteCRC()
+	return c.relay.Send(frame)
 }
 
 func (c *Codec) handleError(r *rpc.Response, frame *Frame, buf *bytes.Buffer, err error) error {
