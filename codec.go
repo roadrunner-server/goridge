@@ -136,7 +136,14 @@ func (c *Codec) handleError(r *rpc.Response, frame *Frame, buf *bytes.Buffer, er
 	return errors.E(op, errors.Str(r.Error))
 }
 
-// ReadRequestHeader receives
+// ReadRequestHeader receives frame with options
+// options should have 2 values
+// [0] - integer, sequence ID
+// [1] - integer, offset for method name
+// For example:
+// 15Test.Payload
+// SEQ_ID: 15
+// METHOD_LEN: 11 and we take 11bytes from the payload as method name
 func (c *Codec) ReadRequestHeader(r *rpc.Request) error {
 	const op = errors.Op("codec: read request header")
 	frame := NewFrame()
