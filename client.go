@@ -41,18 +41,20 @@ func (c *ClientCodec) WriteRequest(r *rpc.Request, body interface{}) error {
 	// writeServiceMethod to the buffer
 	buf.WriteString(r.ServiceMethod)
 	// Initialize gob
-	enc := gob.NewEncoder(buf)
-	// write data to the gob
-	err := enc.Encode(body)
-	if err != nil {
-		return errors.E(op, err)
+	if body != nil {
+		enc := gob.NewEncoder(buf)
+		// write data to the gob
+		err := enc.Encode(body)
+		if err != nil {
+			return errors.E(op, err)
+		}
 	}
 
 	frame.WritePayloadLen(uint32(buf.Len()))
 	frame.WritePayload(buf.Bytes())
 	frame.WriteCRC()
 
-	err = c.relay.Send(frame)
+	err := c.relay.Send(frame)
 	if err != nil {
 		return errors.E(op, err)
 	}
