@@ -1,14 +1,15 @@
-package goridge
+package rpc
 
 import (
 	"bytes"
 	"encoding/gob"
 
 	"github.com/spiral/errors"
+	"github.com/spiral/goridge/v3/pkg/frame"
 	"github.com/vmihailenco/msgpack"
 )
 
-func decodeJSON(out interface{}, frame *Frame) error {
+func decodeJSON(out interface{}, frame *frame.Frame) error {
 	const op = errors.Op("client: decode json")
 	opts := frame.ReadOptions()
 	if len(opts) != 2 {
@@ -21,7 +22,7 @@ func decodeJSON(out interface{}, frame *Frame) error {
 	return json.Unmarshal(payload, out)
 }
 
-func decodeGob(out interface{}, frame *Frame) error {
+func decodeGob(out interface{}, frame *frame.Frame) error {
 	const op = errors.Op("client: decode GOB")
 	opts := frame.ReadOptions()
 	if len(opts) != 2 {
@@ -39,7 +40,7 @@ func decodeGob(out interface{}, frame *Frame) error {
 	return dec.Decode(out)
 }
 
-func decodeRaw(out interface{}, frame *Frame) error {
+func decodeRaw(out interface{}, frame *frame.Frame) error {
 	const op = errors.Op("client: decode raw")
 	opts := frame.ReadOptions()
 	if len(opts) != 2 {
@@ -58,7 +59,7 @@ func decodeRaw(out interface{}, frame *Frame) error {
 	return nil
 }
 
-func decodeMsgPack(out interface{}, frame *Frame) error {
+func decodeMsgPack(out interface{}, frame *frame.Frame) error {
 	const op = errors.Op("client: decode msgpack")
 	opts := frame.ReadOptions()
 	if len(opts) != 2 {

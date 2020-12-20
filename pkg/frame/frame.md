@@ -17,7 +17,7 @@
 Overlapping flags are just bit flags. They might be combined with bitwise OR and checked with bitwise AND. Non-overlapping flags
    can't be used with other flags. In means, that if you have non-overlapping flag in 1-st byte, you can't use other flags.
    
-3. `(2, 3, 4, 5)` bytes contain payload length and presented by unsigned long 32bit integer (up to 4Gb in payload).
+3. `(2, 3, 4, 5)` bytes contain payload length and represented by unsigned long 32bit integer (up to 4Gb in payload).
 4. `(6, 7, 8, 9)` bytes contain header `CRC32` checksum. CRC32 calculated only for `0-5` (including) bytes.
 5. `(10, 11)` bytes are padding and currently reserved for future use. For example as `sequence Id` for async operations.
 6. `(12..52)` bytes contain options. Options are optional. As an example of usage, in `goridge` in case of pipes or sockets

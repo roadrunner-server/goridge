@@ -1,4 +1,4 @@
-package goridge
+package rpc
 
 import (
 	"bytes"
@@ -8,6 +8,9 @@ import (
 
 	j "github.com/json-iterator/go"
 	"github.com/spiral/errors"
+	"github.com/spiral/goridge/v3/interfaces/relay"
+	"github.com/spiral/goridge/v3/pkg/frame"
+	"github.com/spiral/goridge/v3/pkg/socket"
 	"go.uber.org/multierr"
 )
 
@@ -15,44 +18,44 @@ var json = j.ConfigCompatibleWithStandardLibrary
 
 // Codec represent net/rpc bridge over Goridge socket relay.
 type Codec struct {
-	relay  Relay
+	relay  relay.Relay
 	closed bool
-	frame  *Frame
+	frame  *frame.Frame
 	codec  sync.Map
 }
 
 // NewCodec initiates new server rpc codec over socket connection.
 func NewCodec(rwc io.ReadWriteCloser) *Codec {
 	return &Codec{
-		relay: NewSocketRelay(rwc),
+		relay: socket.NewSocketRelay(rwc),
 		codec: sync.Map{},
 	}
 }
 
 // NewCodecWithRelay initiates new server rpc codec with a relay of choice.
-func NewCodecWithRelay(relay Relay) *Codec {
+func NewCodecWithRelay(relay relay.Relay) *Codec {
 	return &Codec{relay: relay}
 }
 
 // WriteResponse marshals response, byte slice or error to remote party.
 func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error {
 	const op = errors.Op("codec: write response")
-	frame := NewFrame()
+	fr := frame.NewFrame()
 
 	// SEQ_ID + METHOD_NAME_LEN
-	frame.WriteOptions(uint32(r.Seq), uint32(len(r.ServiceMethod)))
+	fr.WriteOptions(uint32(r.Seq), uint32(len(r.ServiceMethod)))
 	// Write protocol version
-	frame.WriteVersion(VERSION_1)
+	fr.WriteVersion(frame.VERSION_1)
 
 	// load and delete associated codec to not waste memory
-	// because we write it to the frame and don't need more information about it
+	// because we write it to the fr and don't need more information about it
 	// as for go.14, Load and Delete are separate methods
 	codec, ok := c.codec.Load(r.Seq)
 	if !ok {
 		// fallback codec
-		frame.WriteFlags(CODEC_GOB)
+		fr.WriteFlags(frame.CODEC_GOB)
 	} else {
-		frame.WriteFlags(codec.(FrameFlag))
+		fr.WriteFlags(codec.(frame.FrameFlag))
 	}
 
 	// delete the key
@@ -66,48 +69,48 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error {
 	// if error returned, we sending it via relay and return error from WriteResponse
 	if r.Error != "" {
 		// Append error flag
-		return c.handleError(r, frame, buf, errors.Str(r.Error))
+		return c.handleError(r, fr, buf, errors.Str(r.Error))
 	}
 
 	// read flag previously written
 	// TODO might be better to save it to local variable
-	flags := frame.ReadFlags()
+	flags := fr.ReadFlags()
 
 	switch {
-	case flags&byte(CODEC_JSON) != 0:
+	case flags&byte(frame.CODEC_JSON) != 0:
 		err := encodeJSON(buf, body)
 		if err != nil {
-			return c.handleError(r, frame, buf, err)
+			return c.handleError(r, fr, buf, err)
 		}
 		// send buffer
-		return c.sendBuf(frame, buf)
-	case flags&byte(CODEC_MSGPACK) != 0:
+		return c.sendBuf(fr, buf)
+	case flags&byte(frame.CODEC_MSGPACK) != 0:
 		err := encodeMsgPack(buf, body)
 		if err != nil {
-			return c.handleError(r, frame, buf, err)
+			return c.handleError(r, fr, buf, err)
 		}
 		// send buffer
-		return c.sendBuf(frame, buf)
-	case flags&byte(CODEC_RAW) != 0:
+		return c.sendBuf(fr, buf)
+	case flags&byte(frame.CODEC_RAW) != 0:
 		err := encodeRaw(buf, body)
 		if err != nil {
-			return c.handleError(r, frame, buf, err)
+			return c.handleError(r, fr, buf, err)
 		}
 		// send buffer
-		return c.sendBuf(frame, buf)
-	case flags&byte(CODEC_GOB) != 0:
+		return c.sendBuf(fr, buf)
+	case flags&byte(frame.CODEC_GOB) != 0:
 		err := encodeGob(buf, body)
 		if err != nil {
-			return c.handleError(r, frame, buf, err)
+			return c.handleError(r, fr, buf, err)
 		}
 		// send buffer
-		return c.sendBuf(frame, buf)
+		return c.sendBuf(fr, buf)
 	default:
-		return c.handleError(r, frame, buf, errors.E(op, errors.Str("unknown codec")))
+		return c.handleError(r, fr, buf, errors.E(op, errors.Str("unknown codec")))
 	}
 }
 
-func (c *Codec) sendBuf(frame *Frame, buf *bytes.Buffer) error {
+func (c *Codec) sendBuf(frame *frame.Frame, buf *bytes.Buffer) error {
 	frame.WritePayloadLen(uint32(buf.Len()))
 	frame.WritePayload(buf.Bytes())
 
@@ -115,7 +118,7 @@ func (c *Codec) sendBuf(frame *Frame, buf *bytes.Buffer) error {
 	return c.relay.Send(frame)
 }
 
-func (c *Codec) handleError(r *rpc.Response, frame *Frame, buf *bytes.Buffer, err error) error {
+func (c *Codec) handleError(r *rpc.Response, fr *frame.Frame, buf *bytes.Buffer, err error) error {
 	// just to be sure, remove all data from buffer and write new
 	buf.Truncate(0)
 	// write all possible errors
@@ -123,16 +126,16 @@ func (c *Codec) handleError(r *rpc.Response, frame *Frame, buf *bytes.Buffer, er
 	buf.WriteString(r.ServiceMethod)
 
 	const op = errors.Op("handle codec error")
-	frame.WriteFlags(ERROR)
+	fr.WriteFlags(frame.ERROR)
 	// error should be here
 	if err != nil {
 		buf.WriteString(err.Error())
 	}
-	frame.WritePayloadLen(uint32(buf.Len()))
-	frame.WritePayload(buf.Bytes())
+	fr.WritePayloadLen(uint32(buf.Len()))
+	fr.WritePayload(buf.Bytes())
 
-	frame.WriteCRC()
-	_ = c.relay.Send(frame)
+	fr.WriteCRC()
+	_ = c.relay.Send(fr)
 	return errors.E(op, errors.Str(r.Error))
 }
 
@@ -146,7 +149,7 @@ func (c *Codec) handleError(r *rpc.Response, frame *Frame, buf *bytes.Buffer, er
 // METHOD_LEN: 12 and we take 12 bytes from the payload as method name
 func (c *Codec) ReadRequestHeader(r *rpc.Request) error {
 	const op = errors.Op("codec: read request header")
-	frame := NewFrame()
+	frame := frame.NewFrame()
 	err := c.relay.Receive(frame)
 	if err != nil {
 		return err
@@ -167,16 +170,16 @@ func (c *Codec) ReadRequestHeader(r *rpc.Request) error {
 
 func (c *Codec) storeCodec(r *rpc.Request, flag byte) error {
 	switch {
-	case flag&byte(CODEC_JSON) != 0:
-		c.codec.Store(r.Seq, CODEC_JSON)
-	case flag&byte(CODEC_RAW) != 0:
-		c.codec.Store(r.Seq, CODEC_RAW)
-	case flag&byte(CODEC_MSGPACK) != 0:
-		c.codec.Store(r.Seq, CODEC_MSGPACK)
-	case flag&byte(CODEC_GOB) != 0:
-		c.codec.Store(r.Seq, CODEC_GOB)
+	case flag&byte(frame.CODEC_JSON) != 0:
+		c.codec.Store(r.Seq, frame.CODEC_JSON)
+	case flag&byte(frame.CODEC_RAW) != 0:
+		c.codec.Store(r.Seq, frame.CODEC_RAW)
+	case flag&byte(frame.CODEC_MSGPACK) != 0:
+		c.codec.Store(r.Seq, frame.CODEC_MSGPACK)
+	case flag&byte(frame.CODEC_GOB) != 0:
+		c.codec.Store(r.Seq, frame.CODEC_GOB)
 	default:
-		c.codec.Store(r.Seq, CODEC_GOB)
+		c.codec.Store(r.Seq, frame.CODEC_GOB)
 	}
 
 	return nil
@@ -197,13 +200,13 @@ func (c *Codec) ReadRequestBody(out interface{}) error {
 	flags := c.frame.ReadFlags()
 
 	switch {
-	case flags&byte(CODEC_JSON) != 0:
+	case flags&byte(frame.CODEC_JSON) != 0:
 		return decodeJSON(out, c.frame)
-	case flags&byte(CODEC_GOB) != 0:
+	case flags&byte(frame.CODEC_GOB) != 0:
 		return decodeGob(out, c.frame)
-	case flags&byte(CODEC_RAW) != 0:
+	case flags&byte(frame.CODEC_RAW) != 0:
 		return decodeRaw(out, c.frame)
-	case flags&byte(CODEC_MSGPACK) != 0:
+	case flags&byte(frame.CODEC_MSGPACK) != 0:
 		return decodeMsgPack(out, c.frame)
 	default:
 		return errors.E(op, errors.Str("unknown decoder used in frame"))

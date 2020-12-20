@@ -1,4 +1,4 @@
-package goridge
+package frame
 
 import (
 	"hash/crc32"

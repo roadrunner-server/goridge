@@ -1,23 +1,26 @@
-package goridge
+package socket
 
 import (
 	"io"
 
 	"github.com/spiral/errors"
+	"github.com/spiral/goridge/v3/interfaces/relay"
+	"github.com/spiral/goridge/v3/internal"
+	"github.com/spiral/goridge/v3/pkg/frame"
 )
 
 // SocketRelay communicates with underlying process using sockets (TPC or Unix).
-type SocketRelay struct {
+type Relay struct {
 	rwc io.ReadWriteCloser
 }
 
 // NewSocketRelay creates new socket based data relay.
-func NewSocketRelay(rwc io.ReadWriteCloser) Relay {
-	return &SocketRelay{rwc: rwc}
+func NewSocketRelay(rwc io.ReadWriteCloser) relay.Relay {
+	return &Relay{rwc: rwc}
 }
 
 // Send signed (prefixed) data to PHP process.
-func (rl *SocketRelay) Send(frame *Frame) error {
+func (rl *Relay) Send(frame *frame.Frame) error {
 	const op = errors.Op("pipes frame send")
 	_, err := rl.rwc.Write(frame.Bytes())
 	if err != nil {
@@ -27,11 +30,11 @@ func (rl *SocketRelay) Send(frame *Frame) error {
 }
 
 // Receive data from the underlying process and returns associated prefix or error.
-func (rl *SocketRelay) Receive(frame *Frame) error {
-	return receiveFrame(rl.rwc, frame)
+func (rl *Relay) Receive(frame *frame.Frame) error {
+	return internal.ReceiveFrame(rl.rwc, frame)
 }
 
 // Close the connection.
-func (rl *SocketRelay) Close() error {
+func (rl *Relay) Close() error {
 	return rl.rwc.Close()
 }

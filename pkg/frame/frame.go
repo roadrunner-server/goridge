@@ -1,4 +1,4 @@
-package goridge
+package frame
 
 import "hash/crc32"
 
@@ -55,8 +55,11 @@ func NewFrame() *Frame {
 }
 
 // MergeHeader merge header from other frame with original payload
-func (f *Frame) MergeHeader(frame *Frame) {
-	f.header = frame.header
+func From(header []byte, payload []byte) *Frame {
+	return &Frame{
+		payload: payload,
+		header:  header,
+	}
 }
 
 // To read version, we should return our 4 upper bits to their original place
@@ -81,7 +84,7 @@ func (f *Frame) WriteVersion(version Version) {
 // The lower 4 bits of the 0th octet occupies our header len data.
 // We should erase upper 4 bits, which contain information about Version
 // To erase, we applying bitwise AND to the upper 4 bits and returning result
-func (f *Frame) readHL() byte {
+func (f *Frame) ReadHL() byte {
 	_ = f.header[0]
 	// 0101_1111         0000_1111
 	return f.header[0] & 0x0F
@@ -96,7 +99,7 @@ func (f *Frame) writeHl(hl byte) {
 
 func (f *Frame) incrementHL() {
 	_ = f.header[0]
-	hl := f.readHL()
+	hl := f.ReadHL()
 	if hl > 15 {
 		panic("header len should be less than 15")
 	}
@@ -129,7 +132,7 @@ func (f *Frame) WriteOptions(options ...uint32) {
 		panic("header options limited by 40 bytes")
 	}
 
-	hl := f.readHL()
+	hl := f.ReadHL()
 	// check before writing. we can't handle more than 15*4 bytes of HL (3 for header and 12 for options)
 	if hl == 15 {
 		panic("header len could not be more than 15")
@@ -160,11 +163,11 @@ const lb = 12
 // extra WORDS will add extra 32bits to the options (4 bytes)
 func (f *Frame) ReadOptions() []uint32 {
 	// we can read options, if there are no options
-	if f.readHL() <= 3 {
+	if f.ReadHL() <= 3 {
 		return nil
 	}
 	// Get the options len
-	optionLen := f.readHL() - 3 // 3 is the default
+	optionLen := f.ReadHL() - 3 // 3 is the default
 	// slice in place
 	options := make([]uint32, 0, optionLen)
 

@@ -1,12 +1,13 @@
-package goridge
+package internal
 
 import (
 	"io"
 
 	"github.com/spiral/errors"
+	"github.com/spiral/goridge/v3/pkg/frame"
 )
 
-func receiveFrame(relay io.Reader, frame *Frame) error {
+func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 	const op = errors.Op("pipes frame receive")
 	// header bytes
 	hb := make([]byte, 12)
@@ -16,11 +17,11 @@ func receiveFrame(relay io.Reader, frame *Frame) error {
 	}
 
 	// Read frame header
-	header := ReadHeader(hb)
+	header := frame.ReadHeader(hb)
 	// we have options
-	if header.readHL() > 3 {
+	if header.ReadHL() > 3 {
 		// we should read the options
-		optsLen := (header.readHL() - 3) * WORD
+		optsLen := (header.ReadHL() - 3) * frame.WORD
 		opts := make([]byte, optsLen)
 		_, err := io.ReadFull(relay, opts)
 		if err != nil {
@@ -41,10 +42,7 @@ func receiveFrame(relay io.Reader, frame *Frame) error {
 		return errors.E(op, err)
 	}
 
-	*frame = Frame{
-		payload: pb,
-		header:  header.header,
-	}
+	*fr = *frame.From(header.Header(), pb)
 
 	return nil
 }

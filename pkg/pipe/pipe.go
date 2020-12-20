@@ -1,25 +1,28 @@
-package goridge
+package pipe
 
 import (
 	"io"
 
 	"github.com/spiral/errors"
+	"github.com/spiral/goridge/v3/interfaces/relay"
+	"github.com/spiral/goridge/v3/internal"
+	"github.com/spiral/goridge/v3/pkg/frame"
 )
 
 // PipeRelay communicate with underlying process using standard streams (STDIN, STDOUT). Attention, use TCP alternative for
 // Windows as more reliable option. This relay closes automatically with the process.
-type PipeRelay struct {
+type Relay struct {
 	in  io.ReadCloser
 	out io.WriteCloser
 }
 
 // NewPipeRelay creates new pipe based data relay.
-func NewPipeRelay(in io.ReadCloser, out io.WriteCloser) Relay {
-	return &PipeRelay{in: in, out: out}
+func NewPipeRelay(in io.ReadCloser, out io.WriteCloser) relay.Relay {
+	return &Relay{in: in, out: out}
 }
 
 // Send signed (prefixed) data to underlying process.
-func (rl *PipeRelay) Send(frame *Frame) error {
+func (rl *Relay) Send(frame *frame.Frame) error {
 	const op = errors.Op("pipes frame send")
 	_, err := rl.out.Write(frame.Bytes())
 	if err != nil {
@@ -28,11 +31,11 @@ func (rl *PipeRelay) Send(frame *Frame) error {
 	return nil
 }
 
-func (rl *PipeRelay) Receive(frame *Frame) error {
-	return receiveFrame(rl.in, frame)
+func (rl *Relay) Receive(frame *frame.Frame) error {
+	return internal.ReceiveFrame(rl.in, frame)
 }
 
 // Close the connection. Pipes are closed automatically with the underlying process.
-func (rl *PipeRelay) Close() error {
+func (rl *Relay) Close() error {
 	return nil
 }

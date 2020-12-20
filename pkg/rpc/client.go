@@ -1,4 +1,4 @@
-package goridge
+package rpc
 
 import (
 	"bytes"
@@ -7,35 +7,38 @@ import (
 	"net/rpc"
 
 	"github.com/spiral/errors"
+	relay2 "github.com/spiral/goridge/v3/interfaces/relay"
+	"github.com/spiral/goridge/v3/pkg/frame"
+	"github.com/spiral/goridge/v3/pkg/socket"
 )
 
 // ClientCodec is codec for goridge connection.
 type ClientCodec struct {
-	relay  Relay
+	relay  relay2.Relay
 	closed bool
-	frame  *Frame
+	frame  *frame.Frame
 }
 
 // NewClientCodec initiates new server rpc codec over socket connection.
 func NewClientCodec(rwc io.ReadWriteCloser) *ClientCodec {
-	return &ClientCodec{relay: NewSocketRelay(rwc)}
+	return &ClientCodec{relay: socket.NewSocketRelay(rwc)}
 }
 
 // WriteRequest writes request to the connection. Sequential.
 func (c *ClientCodec) WriteRequest(r *rpc.Request, body interface{}) error {
 	const op = errors.Op("client codec WriteRequest")
-	frame := NewFrame()
+	fr := frame.NewFrame()
 	defer func() {
-		// reset the frame
-		frame = nil
+		// reset the fr
+		fr = nil
 	}()
 
 	// for golang clients use GOB
-	frame.WriteFlags(CODEC_GOB)
+	fr.WriteFlags(frame.CODEC_GOB)
 
 	// SEQ_ID + METHOD_NAME_LEN
-	frame.WriteOptions(uint32(r.Seq), uint32(len(r.ServiceMethod)))
-	frame.WriteVersion(VERSION_1)
+	fr.WriteOptions(uint32(r.Seq), uint32(len(r.ServiceMethod)))
+	fr.WriteVersion(frame.VERSION_1)
 
 	buf := new(bytes.Buffer)
 	// writeServiceMethod to the buffer
@@ -50,11 +53,11 @@ func (c *ClientCodec) WriteRequest(r *rpc.Request, body interface{}) error {
 		}
 	}
 
-	frame.WritePayloadLen(uint32(buf.Len()))
-	frame.WritePayload(buf.Bytes())
-	frame.WriteCRC()
+	fr.WritePayloadLen(uint32(buf.Len()))
+	fr.WritePayload(buf.Bytes())
+	fr.WriteCRC()
 
-	err := c.relay.Send(frame)
+	err := c.relay.Send(fr)
 	if err != nil {
 		return errors.E(op, err)
 	}
@@ -64,30 +67,30 @@ func (c *ClientCodec) WriteRequest(r *rpc.Request, body interface{}) error {
 // ReadResponseHeader reads response from the connection.
 func (c *ClientCodec) ReadResponseHeader(r *rpc.Response) error {
 	const op = errors.Op("client codec ReadResponseHeader")
-	frame := NewFrame()
-	err := c.relay.Receive(frame)
+	fr := frame.NewFrame()
+	err := c.relay.Receive(fr)
 	if err != nil {
 		return errors.E(op, err)
 	}
-	if !frame.VerifyCRC() {
+	if !fr.VerifyCRC() {
 		return errors.E(op, errors.Str("CRC verification failed"))
 	}
 
-	// save the frame after CRC verification
-	c.frame = frame
+	// save the fr after CRC verification
+	c.frame = fr
 
-	opts := frame.ReadOptions()
+	opts := fr.ReadOptions()
 	if len(opts) != 2 {
 		return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
 	}
 
 	// check for error
-	if frame.ReadFlags()&byte(ERROR) != 0 {
-		r.Error = string(frame.Payload()[opts[1]:])
+	if fr.ReadFlags()&byte(frame.ERROR) != 0 {
+		r.Error = string(fr.Payload()[opts[1]:])
 	}
 
 	r.Seq = uint64(opts[0])
-	r.ServiceMethod = string(frame.Payload()[:opts[1]])
+	r.ServiceMethod = string(fr.Payload()[:opts[1]])
 
 	return nil
 }
@@ -107,13 +110,13 @@ func (c *ClientCodec) ReadResponseBody(out interface{}) error {
 	flags := c.frame.ReadFlags()
 
 	switch {
-	case flags&byte(CODEC_JSON) != 0:
+	case flags&byte(frame.CODEC_JSON) != 0:
 		return decodeJSON(out, c.frame)
-	case flags&byte(CODEC_GOB) != 0:
+	case flags&byte(frame.CODEC_GOB) != 0:
 		return decodeGob(out, c.frame)
-	case flags&byte(CODEC_RAW) != 0:
+	case flags&byte(frame.CODEC_RAW) != 0:
 		return decodeRaw(out, c.frame)
-	case flags&byte(CODEC_MSGPACK) != 0:
+	case flags&byte(frame.CODEC_MSGPACK) != 0:
 		return decodeMsgPack(out, c.frame)
 	default:
 		return errors.E(op, errors.Str("unknown decoder used in frame"))

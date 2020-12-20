@@ -1,4 +1,4 @@
-package goridge
+package rpc
 
 import (
 	"encoding/gob"
