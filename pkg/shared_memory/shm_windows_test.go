@@ -1,6 +1,6 @@
 // +build windows
 
-package shared_memory
+package shared_memory //nolint:golint
 
 import (
 	"testing"

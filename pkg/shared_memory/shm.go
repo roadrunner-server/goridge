@@ -1,4 +1,4 @@
-package shared_memory
+package shared_memory //nolint:golint,stylecheck
 
 // SharedMemory interface represents shared memory segment
 type SharedMemory interface {

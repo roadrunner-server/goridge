@@ -55,7 +55,7 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error {
 		// fallback codec
 		fr.WriteFlags(frame.CODEC_GOB)
 	} else {
-		fr.WriteFlags(codec.(frame.FrameFlag))
+		fr.WriteFlags(codec.(frame.Flag))
 	}
 
 	// delete the key

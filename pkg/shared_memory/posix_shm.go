@@ -1,6 +1,6 @@
 // +build linux
 
-package shared_memory
+package shared_memory //nolint:golint,stylecheck
 
 import (
 	"errors"
@@ -15,31 +15,31 @@ type Flag int
 // https://github.com/torvalds/linux/blob/master/include/uapi/linux/ipc.h
 const (
 	/* resource get request flags */
-	IPC_CREAT  Flag = 00001000 /* create if key is nonexistent */
-	IPC_EXCL   Flag = 00002000 /* fail if key exists */
-	IPC_NOWAIT Flag = 00004000 /* return error on wait */
+	IPC_CREAT  Flag = 00001000 /* create if key is nonexistent */ //nolint:golint,stylecheck
+	IPC_EXCL   Flag = 00002000 /* fail if key exists */           //nolint:golint,stylecheck
+	IPC_NOWAIT Flag = 00004000 /* return error on wait */         //nolint:golint,stylecheck
 
 	/* Permission flag for shmget.  */
-	SHM_R Flag = 0400 /* or S_IRUGO from <linux/stat.h> */
-	SHM_W Flag = 0200 /* or S_IWUGO from <linux/stat.h> */
+	SHM_R Flag = 0400 /* or S_IRUGO from <linux/stat.h> */ //nolint:golint,stylecheck
+	SHM_W Flag = 0200 /* or S_IWUGO from <linux/stat.h> */ //nolint:golint,stylecheck
 
 	/* Flags for `shmat'.  */
-	SHM_RDONLY Flag = 010000 /* attach read-only else read-write */
-	SHM_RND    Flag = 020000 /* round attach address to SHMLBA */
+	SHM_RDONLY Flag = 010000 /* attach read-only else read-write */ //nolint:golint,stylecheck
+	SHM_RND    Flag = 020000 /* round attach address to SHMLBA */   //nolint:golint,stylecheck
 
 	/* Commands for `shmctl'.  */
-	SHM_REMAP Flag = 040000  /* take-over region on attach */
-	SHM_EXEC  Flag = 0100000 /* execution access */
+	SHM_REMAP Flag = 040000  /* take-over region on attach */ //nolint:golint,stylecheck
+	SHM_EXEC  Flag = 0100000 /* execution access */           //nolint:golint,stylecheck
 
-	SHM_LOCK   Flag = 11 /* lock segment (root only) */
-	SHM_UNLOCK Flag = 12 /* unlock segment (root only) */
+	SHM_LOCK   Flag = 11 /* lock segment (root only) */   //nolint:golint,stylecheck
+	SHM_UNLOCK Flag = 12 /* unlock segment (root only) */ //nolint:golint,stylecheck
 )
 
 const (
-	S_IRUSR = 0400         /* Read by owner.  */
-	S_IWUSR = 0200         /* Write by owner.  */
-	S_IRGRP = S_IRUSR >> 3 /* Read by group.  */
-	S_IWGRP = S_IWUSR >> 3 /* Write by group.  */
+	S_IRUSR = 0400         /* Read by owner.  */  //nolint:golint,stylecheck
+	S_IWUSR = 0200         /* Write by owner.  */ //nolint:golint,stylecheck
+	S_IRGRP = S_IRUSR >> 3 /* Read by group.  */  //nolint:golint,stylecheck
+	S_IWGRP = S_IWUSR >> 3 /* Write by group.  */ //nolint:golint,stylecheck
 )
 
 type SharedMemorySegment struct {
@@ -87,7 +87,7 @@ func NewSharedMemorySegment(key int, size uint, permission int, flags ...Flag) (
 		size:    size,
 		flags:   flgs,
 		address: id,
-		data:    make([]byte, int(size), int(size)),
+		data:    make([]byte, int(size)),
 	}
 
 	// construct slice from memory segment
@@ -104,7 +104,7 @@ func NewSharedMemorySegment(key int, size uint, permission int, flags ...Flag) (
 // AttachToShmSegment used to attach to the existing shared memory segment by shared memory ID. Shared memory ID can be known or you find it
 // by typing the following command: ipcs -m --human.
 // If there is no such shm segment by shmId, the error will be shown.
-func AttachToShmSegment(shmId int, size uint, permission int) (*SharedMemorySegment, error) {
+func AttachToShmSegment(shmID int, size uint, permission int) (*SharedMemorySegment, error) {
 	// OR (bitwise) flags
 	var flgs Flag
 	flgs = flgs | IPC_CREAT | IPC_EXCL
@@ -115,7 +115,7 @@ func AttachToShmSegment(shmId int, size uint, permission int) (*SharedMemorySegm
 		flgs |= 0600 // default permission
 	}
 
-	shmAddr, _, errno := syscall.RawSyscall(syscall.SYS_SHMAT, uintptr(shmId), uintptr(0), uintptr(flgs))
+	shmAddr, _, errno := syscall.RawSyscall(syscall.SYS_SHMAT, uintptr(shmID), uintptr(0), uintptr(flgs))
 	if errno != 0 {
 		return nil, errors.New(errno.Error())
 	}
@@ -123,8 +123,8 @@ func AttachToShmSegment(shmId int, size uint, permission int) (*SharedMemorySegm
 	segment := &SharedMemorySegment{
 		size:    size,
 		flags:   flgs,
-		address: uintptr(shmId),
-		data:    make([]byte, 0, 0),
+		address: uintptr(shmID),
+		data:    make([]byte, 0),
 	}
 
 	// construct slice from memory segment

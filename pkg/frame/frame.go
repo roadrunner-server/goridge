@@ -116,7 +116,7 @@ func (f *Frame) ReadFlags() byte {
 	return f.header[1]
 }
 
-func (f *Frame) WriteFlags(flags ...FrameFlag) {
+func (f *Frame) WriteFlags(flags ...Flag) {
 	_ = f.header[1]
 	for i := 0; i < len(flags); i++ {
 		f.header[1] |= byte(flags[i])

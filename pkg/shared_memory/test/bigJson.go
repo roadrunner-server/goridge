@@ -1,6 +1,6 @@
 package test
 
-const BigJson string = `
+const BigJSON string = `
 [
   {
     "_id": "5f5dede990d99f59de6da15a",

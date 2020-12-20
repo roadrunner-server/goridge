@@ -1,6 +1,6 @@
 // +build windows
 
-package shared_memory
+package shared_memory //nolint:golint
 
 import (
 	"errors"
@@ -63,19 +63,19 @@ func CreateSharedMemory(key string, size uint) (SharedMemory, error) {
 	return segment, nil
 }
 
-func (s *SharedMemorySegment) Write(data []byte) {
+func (shm *SharedMemorySegment) Write(data []byte) {
 	srcLen := len(data)
-	dstLen := len(s.data)
+	dstLen := len(shm.data)
 
 	if srcLen > dstLen {
 		panic("can't write more than source len")
 	}
 
-	s.writeBuffer(data, s.data)
+	shm.writeBuffer(data, shm.data)
 }
 
 // src -> dst
-func (s *SharedMemorySegment) writeBuffer(src []byte, dst []byte) {
+func (shm *SharedMemorySegment) writeBuffer(src []byte, dst []byte) {
 	copy(dst, src)
 }
 
