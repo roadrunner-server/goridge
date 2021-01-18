@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+### v3.0.0 (18.01.2021)
+- New protocol (pkg/frame/frame.md)
+- Various payloads support: msgpack, raw bytes, JSON, gob.
+- New repo architecture.
+- Shared memory [alfa].
+
 ### v2.4.6 (21.10.2020)
 - Remove RawMessage check for the payload (@wolfy-j)
 - golang version in go.mod bumped to 1.15
