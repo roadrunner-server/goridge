@@ -1,90 +1,80 @@
 name: CI
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+    branches:
+      # Branches from forks have the form 'user:branch-name' so we only run
+      # this job on pull_request events for branches that look like fork
+      # branches. Without this we would end up running this job twice for non
+      # forked PRs, once for the push and then once for opening the PR.
+      - '**:**'
 
 jobs:
   build:
-    name: Build (PHP ${{ matrix.php }}, Go ${{ matrix.go }}, OS ${{ matrix.os }})
+    name: Build (Go ${{ matrix.go }} OS ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     strategy:
       fail-fast: false
       matrix:
-        php: [7.2, 7.3, 7.4]
-        go: [1.14, 1.15]
-        os: [ubuntu-latest]
-    env:
-      GO111MODULE: on
+        go: [ 1.14, 1.15 ]
+        os: [ ubuntu-latest, windows-latest, macos-latest ]
     steps:
       - name: Set up Go ${{ matrix.go }}
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@v2
         with:
           go-version: ${{ matrix.go }}
 
-      - name: Set up PHP ${{ matrix.php }}
-        uses: shivammathur/setup-php@v1
-        with:
-          php-version: ${{ matrix.php }}
-          extensions: dom
-          coverage: xdebug
-
       - name: Check out code
         uses: actions/checkout@v2
+
+      - name: Init Go modules Cache # Docs: <https://git.io/JfAKn#go---modules>
+        uses: actions/cache@v2
         with:
-          fetch-depth: 1
-
-      - name: Show versions
-        run: php -v ; composer -V ; go version
-
-      - name: Syntax check only (lint)
-        run: find ./src/ -name "*.php" -print0 | xargs -0 -n1 -P8 php -l
-
-      - name: Get Composer Cache Directory # Docs: <https://github.com/actions/cache/blob/master/examples.md#php---composer>
-        id: composer-cache
-        run: echo "::set-output name=dir::$(composer config cache-files-dir)"
-
-      - name: Cache dependencies # Docs: <https://github.com/actions/cache/blob/master/examples.md#php---composer>
-        uses: actions/cache@v1
-        with:
-          path: ${{ steps.composer-cache.outputs.dir }}
-          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.json') }}
-          restore-keys: ${{ runner.os }}-composer-
-
-      - name: Install Composer dependencies
-        run: composer install --prefer-dist --no-interaction --no-suggest # --prefer-source
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: ${{ runner.os }}-go-
 
       - name: Install Go dependencies
         run: go mod download
 
-      - name: Run tests
-        run: |
-          composer update
-          docker-compose -f ./tests/docker-compose.yml up -d
-          vendor_php/bin/phpunit --coverage-clover=coverage.xml
-          go test -v -race -cover -coverprofile=goridge.txt -covermode=atomic
 
-      - name: Run code coverage
-        env:
-          CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      - name: Run golang tests on Windows without codecov
+        if: ${{ matrix.os == 'windows-latest' }}
         run: |
-          if [[ "$CODECOV_TOKEN" != "" ]]; then
-            curl https://codecov.io/bash -o codecov-bash
-            chmod +x codecov-bash
-            ./codecov-bash -f goridge.txt
-          fi
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v1
+          go test -v -race -tags=debug ./pkg/frame
+          go test -v -race -tags=debug ./pkg/pipe
+          go test -v -race -tags=debug ./pkg/rpc
+          go test -v -race -tags=debug ./pkg/socket
+
+
+      - name: Run golang tests on MacOS or Linux with codecov
+        if: ${{ matrix.os != 'windows-latest' }}
+        run: |
+          mkdir ./coverage-ci
+          go test -v -race -cover -tags=debug -coverpkg=./... -coverprofile=./coverage-ci/frame.txt -covermode=atomic ./pkg/frame
+          go test -v -race -cover -tags=debug -coverpkg=./... -coverprofile=./coverage-ci/pipe.txt -covermode=atomic ./pkg/pipe
+          go test -v -race -cover -tags=debug -coverpkg=./... -coverprofile=./coverage-ci/rpc.txt -covermode=atomic ./pkg/rpc
+          go test -v -race -cover -tags=debug -coverpkg=./... -coverprofile=./coverage-ci/socket.txt -covermode=atomic ./pkg/socket
+          cat ./coverage-ci/*.txt > ./coverage-ci/summary.txt
+
+      - uses: codecov/codecov-action@v1 # Docs: <https://github.com/codecov/codecov-action>
+        if: ${{ matrix.os != 'windows-latest' }}
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage.xml
+          file: ./coverage-ci/summary.txt
+          fail_ci_if_error: false
 
-  golangci-check:
-    name: runner / golangci-lint
+  golangci-lint:
+    name: Golang-CI (lint)
     runs-on: ubuntu-latest
     steps:
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v1
-      - name: golangci-lint
-        uses: reviewdog/action-golangci-lint@v1
-        with:
-          github_token: ${{ secrets.github_token }}
+      - name: Check out code
+        uses: actions/checkout@v2
 
+      - name: Run linter
+        uses: golangci/golangci-lint-action@v2 # Action page: <https://github.com/golangci/golangci-lint-action>
+        with:
+          version: v1.35 # without patch version
+          only-new-issues: false # show only new issues if it's a pull request
