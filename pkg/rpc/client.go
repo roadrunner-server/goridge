@@ -7,14 +7,14 @@ import (
 	"net/rpc"
 
 	"github.com/spiral/errors"
-	relay2 "github.com/spiral/goridge/v3/interfaces/relay"
+	"github.com/spiral/goridge/v3/interfaces/relay"
 	"github.com/spiral/goridge/v3/pkg/frame"
 	"github.com/spiral/goridge/v3/pkg/socket"
 )
 
 // ClientCodec is codec for goridge connection.
 type ClientCodec struct {
-	relay  relay2.Relay
+	relay  relay.Relay
 	closed bool
 	frame  *frame.Frame
 }
