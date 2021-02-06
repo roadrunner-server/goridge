@@ -39,23 +39,8 @@ Features
 Installation
 ------------
 
-Just import `gordge` to your package and run `go mod download`:
-
 ```go
-import (
-	"github.com/spiral/goridge/v3"
-)
-```
-And add it to your `go.mod`
-
-```go
-module github.com/spiral/roadrunner/v2
-
-go 1.15
-
-require (
-	github.com/spiral/goridge/v3 v3.0.0
-)
+GO111MODULE=on go get github.com/spiral/goridge/v3
 ```
 
 ### Sample of usage
