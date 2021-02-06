@@ -4,7 +4,6 @@ import (
 	"io"
 
 	"github.com/spiral/errors"
-	"github.com/spiral/goridge/v3/interfaces/relay"
 	"github.com/spiral/goridge/v3/internal"
 	"github.com/spiral/goridge/v3/pkg/frame"
 )
@@ -15,7 +14,7 @@ type Relay struct {
 }
 
 // NewSocketRelay creates new socket based data relay.
-func NewSocketRelay(rwc io.ReadWriteCloser) relay.Relay {
+func NewSocketRelay(rwc io.ReadWriteCloser) *Relay {
 	return &Relay{rwc: rwc}
 }
 

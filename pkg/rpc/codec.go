@@ -8,8 +8,8 @@ import (
 
 	j "github.com/json-iterator/go"
 	"github.com/spiral/errors"
-	"github.com/spiral/goridge/v3/interfaces/relay"
 	"github.com/spiral/goridge/v3/pkg/frame"
+	"github.com/spiral/goridge/v3/pkg/relay"
 	"github.com/spiral/goridge/v3/pkg/socket"
 	"go.uber.org/multierr"
 )
