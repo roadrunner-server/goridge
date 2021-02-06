@@ -39,10 +39,26 @@ Features
 Installation
 ------------
 
+Just import `gordge` to your package and run `go mod download`:
+
+```go
+import (
+	"github.com/spiral/goridge/v3"
+)
 ```
-$ go get -u github.com/spiral/goridge/v3
+And add it to your `go.mod`
+
+```go
+module github.com/spiral/roadrunner/v2
+
+go 1.15
+
+require (
+	github.com/spiral/goridge/v3 v3.0.0
+)
 ```
 
+### Sample of usage
 ```go
 package main
 
@@ -51,7 +67,7 @@ import (
 	"net"
 	"net/rpc"
 
-	"github.com/spiral/goridge/v3"
+	goridgeRpc "github.com/spiral/goridge/v3/pkg/rpc"
 )
 
 type App struct{}
@@ -74,7 +90,8 @@ func main() {
 		if err != nil {
 			continue
 		}
-		go rpc.ServeCodec(goridge.NewCodec(conn))
+		_ = conn
+		go rpc.ServeCodec(goridgeRpc.NewCodec(conn))
 	}
 }
 ```
