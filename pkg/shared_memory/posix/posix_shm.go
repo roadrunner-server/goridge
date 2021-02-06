@@ -1,6 +1,6 @@
 // +build linux
 
-package posix //nolint:golint,stylecheck
+package posix
 
 import (
 	"errors"
