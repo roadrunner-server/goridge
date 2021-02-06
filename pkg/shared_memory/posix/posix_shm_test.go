@@ -1,6 +1,6 @@
 // +build linux
 
-package shared_memory //nolint:golint,stylecheck
+package posix //nolint:golint,stylecheck
 
 import (
 	"testing"

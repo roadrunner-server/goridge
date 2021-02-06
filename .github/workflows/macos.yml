@@ -1,4 +1,4 @@
-name: CI
+name: MacOS
 
 on:
   push:
@@ -12,14 +12,14 @@ on:
 
 jobs:
   build:
-    name: Build (Go ${{ matrix.go }} OS ${{ matrix.os }})
+    name: Tests [Go ${{ matrix.go }} OS ${{ matrix.os }}]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20
     strategy:
-      fail-fast: false
+      fail-fast: true
       matrix:
         go: [ 1.14, 1.15 ]
-        os: [ ubuntu-latest, windows-latest, macos-latest ]
+        os: [ macos-latest ]
     steps:
       - name: Set up Go ${{ matrix.go }}
         uses: actions/setup-go@v2
@@ -39,18 +39,7 @@ jobs:
       - name: Install Go dependencies
         run: go mod download
 
-
-      - name: Run golang tests on Windows without codecov
-        if: ${{ matrix.os == 'windows-latest' }}
-        run: |
-          go test -v -race -tags=debug ./pkg/frame
-          go test -v -race -tags=debug ./pkg/pipe
-          go test -v -race -tags=debug ./pkg/rpc
-          go test -v -race -tags=debug ./pkg/socket
-
-
-      - name: Run golang tests on MacOS or Linux with codecov
-        if: ${{ matrix.os != 'windows-latest' }}
+      - name: Run golang tests on MacOS
         run: |
           mkdir ./coverage-ci
           go test -v -race -cover -tags=debug -coverpkg=./... -coverprofile=./coverage-ci/frame.txt -covermode=atomic ./pkg/frame
@@ -58,23 +47,3 @@ jobs:
           go test -v -race -cover -tags=debug -coverpkg=./... -coverprofile=./coverage-ci/rpc.txt -covermode=atomic ./pkg/rpc
           go test -v -race -cover -tags=debug -coverpkg=./... -coverprofile=./coverage-ci/socket.txt -covermode=atomic ./pkg/socket
           cat ./coverage-ci/*.txt > ./coverage-ci/summary.txt
-
-      - uses: codecov/codecov-action@v1 # Docs: <https://github.com/codecov/codecov-action>
-        if: ${{ matrix.os != 'windows-latest' }}
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./coverage-ci/summary.txt
-          fail_ci_if_error: false
-
-  golangci-lint:
-    name: Golang-CI (lint)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v2
-
-      - name: Run linter
-        uses: golangci/golangci-lint-action@v2 # Action page: <https://github.com/golangci/golangci-lint-action>
-        with:
-          version: v1.35 # without patch version
-          only-new-issues: false # show only new issues if it's a pull request

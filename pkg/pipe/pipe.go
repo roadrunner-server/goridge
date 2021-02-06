@@ -4,7 +4,6 @@ import (
 	"io"
 
 	"github.com/spiral/errors"
-	"github.com/spiral/goridge/v3/interfaces/relay"
 	"github.com/spiral/goridge/v3/internal"
 	"github.com/spiral/goridge/v3/pkg/frame"
 )
@@ -17,7 +16,7 @@ type Relay struct {
 }
 
 // NewPipeRelay creates new pipe based data relay.
-func NewPipeRelay(in io.ReadCloser, out io.WriteCloser) relay.Relay {
+func NewPipeRelay(in io.ReadCloser, out io.WriteCloser) *Relay {
 	return &Relay{in: in, out: out}
 }
 

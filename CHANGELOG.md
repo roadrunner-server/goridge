@@ -1,6 +1,12 @@
 CHANGELOG
 =========
 
+### v3.0.1 (06.02.2021)
+- Move relay interface to the pkg folder.
+- Separate CI into Linux, MacOS, Windows and Linters.
+- Add PR template.
+- Add dependabot.
+
 ### v3.0.0 (18.01.2021)
 - New protocol (pkg/frame/frame.md)
 - Various payloads support: msgpack, raw bytes, JSON, gob.

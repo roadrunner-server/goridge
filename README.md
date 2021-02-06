@@ -2,7 +2,10 @@ High-performance PHP-to-Golang IPC bridge
 =================================================
 [![Latest Stable Version](https://poser.pugx.org/spiral/goridge/v/stable)](https://packagist.org/packages/spiral/goridge)
 [![GoDoc](https://godoc.org/github.com/spiral/goridge?status.svg)](https://godoc.org/github.com/spiral/goridge)
-![CI](https://github.com/spiral/goridge/workflows/CI/badge.svg)
+![Linux](https://github.com/spiral/goridge/workflows/Linux/badge.svg)
+![macOS](https://github.com/spiral/goridge/workflows/MacOS/badge.svg)
+![Windows](https://github.com/spiral/goridge/workflows/Windows/badge.svg)
+![Linters](https://github.com/spiral/goridge/workflows/Linters/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/spiral/goridge)](https://goreportcard.com/report/github.com/spiral/goridge)
 [![Codecov](https://codecov.io/gh/spiral/goridge/branch/master/graph/badge.svg)](https://codecov.io/gh/spiral/goridge/)
 <a href="https://discord.gg/TFeEmCs"><img src="https://img.shields.io/badge/discord-chat-magenta.svg"></a>
