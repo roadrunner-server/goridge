@@ -1,11 +1,12 @@
 package main
 
 import (
-	"github.com/spiral/goridge"
 	"net"
 	"net/rpc"
-	"strings"
 	"os"
+	"strings"
+
+	"github.com/spiral/goridge"
 )
 
 type Service struct{}
