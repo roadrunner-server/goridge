@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/spiral/goridge"
 	"log"
 	"net"
 	"net/rpc"
+
+	"github.com/spiral/goridge"
 )
 
 type App struct{}
