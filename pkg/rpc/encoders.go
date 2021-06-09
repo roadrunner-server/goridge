@@ -4,6 +4,7 @@ import (
 	"encoding/gob"
 	"io"
 
+	json "github.com/json-iterator/go"
 	"github.com/spiral/errors"
 	"github.com/vmihailenco/msgpack"
 	"google.golang.org/protobuf/proto"

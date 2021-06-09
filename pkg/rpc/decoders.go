@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/gob"
 
+	json "github.com/json-iterator/go"
 	"github.com/spiral/errors"
 	"github.com/spiral/goridge/v3/pkg/frame"
 	"github.com/vmihailenco/msgpack"

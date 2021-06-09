@@ -6,15 +6,12 @@ import (
 	"net/rpc"
 	"sync"
 
-	j "github.com/json-iterator/go"
 	"github.com/spiral/errors"
 	"github.com/spiral/goridge/v3/pkg/frame"
 	"github.com/spiral/goridge/v3/pkg/relay"
 	"github.com/spiral/goridge/v3/pkg/socket"
 	"go.uber.org/multierr"
 )
-
-var json = j.ConfigCompatibleWithStandardLibrary
 
 // Codec represent net/rpc bridge over Goridge socket relay.
 type Codec struct {
@@ -38,7 +35,7 @@ func NewCodecWithRelay(relay relay.Relay) *Codec {
 }
 
 // WriteResponse marshals response, byte slice or error to remote party.
-func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error {
+func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error { //nolint:funlen
 	const op = errors.Op("codec: write response")
 	fr := frame.NewFrame()
 

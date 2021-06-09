@@ -58,24 +58,26 @@ func (c *ClientCodec) WriteRequest(r *rpc.Request,
 
 	// writeServiceMethod to the buffer
 	buf.WriteString(r.ServiceMethod)
+	// use fallback as gob
+	fr.WriteFlags(frame.CODEC_GOB)
 
-	// check if message is PROTO
-	if m, ok := body.(proto.Message); ok {
-		fr.WriteFlags(frame.CODEC_PROTO)
-		b, err := proto.Marshal(m)
-		if err != nil {
-			return errors.E(op, err)
-		}
-		buf.Write(b)
-	} else {
-		// use fallback as gob
-		fr.WriteFlags(frame.CODEC_GOB)
-
-		enc := gob.NewEncoder(buf)
-		// write data to the gob
-		err := enc.Encode(body)
-		if err != nil {
-			return errors.E(op, err)
+	if body != nil {
+		switch m := body.(type) {
+		// check if message is PROTO
+		case proto.Message:
+			fr.WriteFlags(frame.CODEC_PROTO)
+			b, err := proto.Marshal(m)
+			if err != nil {
+				return errors.E(op, err)
+			}
+			buf.Write(b)
+		default:
+			enc := gob.NewEncoder(buf)
+			// write data to the gob
+			err := enc.Encode(body)
+			if err != nil {
+				return errors.E(op, err)
+			}
 		}
 	}
 
