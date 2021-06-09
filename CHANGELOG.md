@@ -1,6 +1,15 @@
 CHANGELOG
 =========
 
+v3.1.0 (09.06.2021)
+-------------------
+
+## 👀 New:
+
+- ✏️ Add support for the `PROTOBUF` in the RPC.
+
+---
+
 ### v3.0.1 (06.02.2021)
 
 - Move relay interface to the pkg folder.
