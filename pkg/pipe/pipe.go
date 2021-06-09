@@ -8,7 +8,7 @@ import (
 	"github.com/spiral/goridge/v3/pkg/frame"
 )
 
-// PipeRelay communicate with underlying process using standard streams (STDIN, STDOUT). Attention, use TCP alternative for
+// Relay ... PipeRelay communicate with underlying process using standard streams (STDIN, STDOUT). Attention, use TCP alternative for
 // Windows as more reliable option. This relay closes automatically with the process.
 type Relay struct {
 	in  io.ReadCloser

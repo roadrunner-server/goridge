@@ -2,8 +2,11 @@ package frame
 
 import "hash/crc32"
 
-const FRAME_OPTIONS_MAX_SIZE = 40 //nolint:stylecheck,golint
-const WORD = 4                    //nolint:stylecheck,golint
+// OptionsMaxSize represents header's options maximum size
+const OptionsMaxSize = 40
+
+// WORD represents 32bit word
+const WORD = 4
 
 // Frame defines new user level package format.
 type Frame struct {
@@ -54,7 +57,7 @@ func NewFrame() *Frame {
 	return f
 }
 
-// MergeHeader merge header from other frame with original payload
+// From .. MergeHeader merge header from other frame with original payload
 func From(header []byte, payload []byte) *Frame {
 	return &Frame{
 		payload: payload,
@@ -62,13 +65,14 @@ func From(header []byte, payload []byte) *Frame {
 	}
 }
 
-// To read version, we should return our 4 upper bits to their original place
+// ReadVersion .. To read version, we should return our 4 upper bits to their original place
 // 1111_0000 -> 0000_1111 (15)
 func (f *Frame) ReadVersion() byte {
 	_ = f.header[0]
 	return f.header[0] >> 4
 }
 
+// WriteVersion ..
 // To write version, we should made the following:
 // 1. For example we have version 15 it's 0000_1111 (1 byte)
 // 2. We should shift 4 lower bits to upper and write that to the 0th byte
@@ -81,6 +85,7 @@ func (f *Frame) WriteVersion(version Version) {
 	f.header[0] = byte(version)<<4 | f.header[0]
 }
 
+// ReadHL ..
 // The lower 4 bits of the 0th octet occupies our header len data.
 // We should erase upper 4 bits, which contain information about Version
 // To erase, we applying bitwise AND to the upper 4 bits and returning result
@@ -110,19 +115,21 @@ func (f *Frame) defaultHL() {
 	f.writeHl(3)
 }
 
+// ReadFlags ..
 // Flags is full 1st byte
 func (f *Frame) ReadFlags() byte {
 	_ = f.header[1]
 	return f.header[1]
 }
 
-func (f *Frame) WriteFlags(flags ...Flag) {
+func (f *Frame) WriteFlags(flags ...byte) {
 	_ = f.header[1]
 	for i := 0; i < len(flags); i++ {
-		f.header[1] |= byte(flags[i])
+		f.header[1] |= flags[i]
 	}
 }
 
+// WriteOptions ..
 // Options slice len should not be more than 10 (40 bytes)
 func (f *Frame) WriteOptions(options ...uint32) {
 	if options == nil {
@@ -138,7 +145,7 @@ func (f *Frame) WriteOptions(options ...uint32) {
 		panic("header len could not be more than 15")
 	}
 
-	tmp := make([]byte, 0, FRAME_OPTIONS_MAX_SIZE)
+	tmp := make([]byte, 0, OptionsMaxSize)
 	for i := 0; i < len(options); i++ {
 		tmp = append(tmp, byte(options[i]))
 		tmp = append(tmp, byte(options[i]>>8))
@@ -158,6 +165,7 @@ func (f *Frame) AppendOptions(opts []byte) {
 // last byte after main header and first options byte
 const lb = 12
 
+// ReadOptions ...
 // f.readHL() - 2 needed to know actual options size
 // we know, that 2 WORDS is minimal header len
 // extra WORDS will add extra 32bits to the options (4 bytes)
@@ -185,6 +193,7 @@ func (f *Frame) ReadOptions() []uint32 {
 	return options
 }
 
+// ReadPayloadLen ..
 // LE format used to write Payload
 // Using 4 bytes (2,3,4,5 bytes in the header)
 func (f *Frame) ReadPayloadLen() uint32 {
@@ -193,6 +202,7 @@ func (f *Frame) ReadPayloadLen() uint32 {
 	return uint32(f.header[2]) | uint32(f.header[3])<<8 | uint32(f.header[4])<<16 | uint32(f.header[5])<<24
 }
 
+// WritePayloadLen ..
 // LE format used to write Payload
 // Using 4 bytes (2,3,4,5 bytes in the header)
 func (f *Frame) WritePayloadLen(len uint32) {
@@ -203,6 +213,7 @@ func (f *Frame) WritePayloadLen(len uint32) {
 	f.header[5] = byte(len >> 24)
 }
 
+// WriteCRC ..
 // Calculating CRC and writing it to the 6th byte (7th reserved)
 func (f *Frame) WriteCRC() {
 	// 6 7 8 9 bytes
@@ -216,6 +227,7 @@ func (f *Frame) WriteCRC() {
 	f.header[9] = byte(crc >> 24)
 }
 
+// VerifyCRC ..
 // Reading info from 6th byte and verifying it with calculated in-place. Should be equal.
 // If not - drop the frame as incorrect.
 func (f *Frame) VerifyCRC() bool {
@@ -243,7 +255,7 @@ func (f *Frame) Payload() []byte {
 	return f.payload
 }
 
-//
+// WritePayload .. writes payload
 func (f *Frame) WritePayload(data []byte) {
 	f.payload = make([]byte, len(data))
 	copy(f.payload, data)

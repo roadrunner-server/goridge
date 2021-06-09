@@ -12,7 +12,7 @@ import (
 )
 
 func decodeJSON(out interface{}, frame *frame.Frame) error {
-	const op = errors.Op("client: decode json")
+	const op = errors.Op("goridge_decode_json")
 	opts := frame.ReadOptions()
 	if len(opts) != 2 {
 		return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
@@ -25,7 +25,7 @@ func decodeJSON(out interface{}, frame *frame.Frame) error {
 }
 
 func decodeGob(out interface{}, frame *frame.Frame) error {
-	const op = errors.Op("client: decode GOB")
+	const op = errors.Op("goridge_decode_gob")
 	opts := frame.ReadOptions()
 	if len(opts) != 2 {
 		return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
@@ -43,7 +43,7 @@ func decodeGob(out interface{}, frame *frame.Frame) error {
 }
 
 func decodeProto(out interface{}, frame *frame.Frame) error {
-	const op = errors.Op("client: decode PROTO")
+	const op = errors.Op("goridge_decode_proto")
 	opts := frame.ReadOptions()
 	if len(opts) != 2 {
 		return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
@@ -62,7 +62,7 @@ func decodeProto(out interface{}, frame *frame.Frame) error {
 }
 
 func decodeRaw(out interface{}, frame *frame.Frame) error {
-	const op = errors.Op("client: decode raw")
+	const op = errors.Op("goridge_decode_raw")
 	opts := frame.ReadOptions()
 	if len(opts) != 2 {
 		return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
@@ -81,7 +81,7 @@ func decodeRaw(out interface{}, frame *frame.Frame) error {
 }
 
 func decodeMsgPack(out interface{}, frame *frame.Frame) error {
-	const op = errors.Op("client: decode msgpack")
+	const op = errors.Op("goridge_decodemsgpack")
 	opts := frame.ReadOptions()
 	if len(opts) != 2 {
 		return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))

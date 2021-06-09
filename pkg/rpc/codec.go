@@ -36,7 +36,7 @@ func NewCodecWithRelay(relay relay.Relay) *Codec {
 
 // WriteResponse marshals response, byte slice or error to remote party.
 func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error { //nolint:funlen
-	const op = errors.Op("codec: write response")
+	const op = errors.Op("goridge_write_response")
 	fr := frame.NewFrame()
 
 	// SEQ_ID + METHOD_NAME_LEN
@@ -52,7 +52,7 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error { //nolin
 		// fallback codec
 		fr.WriteFlags(frame.CODEC_GOB)
 	} else {
-		fr.WriteFlags(codec.(frame.Flag))
+		fr.WriteFlags(codec.(byte))
 	}
 
 	// delete the key
@@ -74,35 +74,35 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error { //nolin
 	flags := fr.ReadFlags()
 
 	switch {
-	case flags&byte(frame.CODEC_RAW) != 0:
+	case flags&frame.CODEC_RAW != 0:
 		err := encodeRaw(buf, body)
 		if err != nil {
 			return c.handleError(r, fr, buf, err)
 		}
 		// send buffer
 		return c.sendBuf(fr, buf)
-	case flags&byte(frame.CODEC_PROTO) != 0:
+	case flags&frame.CODEC_PROTO != 0:
 		err := encodeProto(buf, body)
 		if err != nil {
 			return c.handleError(r, fr, buf, err)
 		}
 		// send buffer
 		return c.sendBuf(fr, buf)
-	case flags&byte(frame.CODEC_JSON) != 0:
+	case flags&frame.CODEC_JSON != 0:
 		err := encodeJSON(buf, body)
 		if err != nil {
 			return c.handleError(r, fr, buf, err)
 		}
 		// send buffer
 		return c.sendBuf(fr, buf)
-	case flags&byte(frame.CODEC_MSGPACK) != 0:
+	case flags&frame.CODEC_MSGPACK != 0:
 		err := encodeMsgPack(buf, body)
 		if err != nil {
 			return c.handleError(r, fr, buf, err)
 		}
 		// send buffer
 		return c.sendBuf(fr, buf)
-	case flags&byte(frame.CODEC_GOB) != 0:
+	case flags&frame.CODEC_GOB != 0:
 		err := encodeGob(buf, body)
 		if err != nil {
 			return c.handleError(r, fr, buf, err)
@@ -152,7 +152,7 @@ func (c *Codec) handleError(r *rpc.Response, fr *frame.Frame, buf *bytes.Buffer,
 // SEQ_ID: 15
 // METHOD_LEN: 12 and we take 12 bytes from the payload as method name
 func (c *Codec) ReadRequestHeader(r *rpc.Request) error {
-	const op = errors.Op("codec: read request header")
+	const op = errors.Op("goridge_read_request_header")
 	f := frame.NewFrame()
 	err := c.relay.Receive(f)
 	if err != nil {
@@ -174,15 +174,15 @@ func (c *Codec) ReadRequestHeader(r *rpc.Request) error {
 
 func (c *Codec) storeCodec(r *rpc.Request, flag byte) error {
 	switch {
-	case flag&byte(frame.CODEC_PROTO) != 0:
+	case flag&frame.CODEC_PROTO != 0:
 		c.codec.Store(r.Seq, frame.CODEC_PROTO)
-	case flag&byte(frame.CODEC_JSON) != 0:
+	case flag&frame.CODEC_JSON != 0:
 		c.codec.Store(r.Seq, frame.CODEC_JSON)
-	case flag&byte(frame.CODEC_RAW) != 0:
+	case flag&frame.CODEC_RAW != 0:
 		c.codec.Store(r.Seq, frame.CODEC_RAW)
-	case flag&byte(frame.CODEC_MSGPACK) != 0:
+	case flag&frame.CODEC_MSGPACK != 0:
 		c.codec.Store(r.Seq, frame.CODEC_MSGPACK)
-	case flag&byte(frame.CODEC_GOB) != 0:
+	case flag&frame.CODEC_GOB != 0:
 		c.codec.Store(r.Seq, frame.CODEC_GOB)
 	default:
 		c.codec.Store(r.Seq, frame.CODEC_GOB)
@@ -194,7 +194,7 @@ func (c *Codec) storeCodec(r *rpc.Request, flag byte) error {
 // ReadRequestBody fetches prefixed body data and automatically unmarshal it as json. RawBody flag will populate
 // []byte lice argument for rpc method.
 func (c *Codec) ReadRequestBody(out interface{}) error {
-	const op = errors.Op("codec read request body")
+	const op = errors.Op("goridge_read_request_body")
 	if out == nil {
 		return nil
 	}
@@ -206,15 +206,15 @@ func (c *Codec) ReadRequestBody(out interface{}) error {
 	flags := c.frame.ReadFlags()
 
 	switch {
-	case flags&byte(frame.CODEC_PROTO) != 0:
+	case flags&frame.CODEC_PROTO != 0:
 		return decodeProto(out, c.frame)
-	case flags&byte(frame.CODEC_JSON) != 0:
+	case flags&frame.CODEC_JSON != 0:
 		return decodeJSON(out, c.frame)
-	case flags&byte(frame.CODEC_GOB) != 0:
+	case flags&frame.CODEC_GOB != 0:
 		return decodeGob(out, c.frame)
-	case flags&byte(frame.CODEC_RAW) != 0:
+	case flags&frame.CODEC_RAW != 0:
 		return decodeRaw(out, c.frame)
-	case flags&byte(frame.CODEC_MSGPACK) != 0:
+	case flags&frame.CODEC_MSGPACK != 0:
 		return decodeMsgPack(out, c.frame)
 	default:
 		return errors.E(op, errors.Str("unknown decoder used in frame"))

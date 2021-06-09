@@ -30,7 +30,7 @@ func (s *testService) Echo(msg string, r *string) error {
 }
 
 // Echo returns error
-func (s *testService) EchoR(msg string, r *string) error {
+func (s *testService) EchoR(_ string, r *string) error {
 	*r = "error"
 	return errors.Str("echoR error")
 }

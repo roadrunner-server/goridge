@@ -11,7 +11,7 @@ import (
 )
 
 func encodeJSON(out io.Writer, data interface{}) error {
-	const op = errors.Op("codec: encode json")
+	const op = errors.Op("goridge_encode_json")
 
 	res, err := json.Marshal(data)
 	if err != nil {
@@ -25,7 +25,7 @@ func encodeJSON(out io.Writer, data interface{}) error {
 }
 
 func encodeGob(out io.Writer, data interface{}) error {
-	const op = errors.Op("codec: encode GOB")
+	const op = errors.Op("goridge_encode_gob")
 
 	dec := gob.NewEncoder(out)
 	err := dec.Encode(data)
@@ -36,7 +36,7 @@ func encodeGob(out io.Writer, data interface{}) error {
 }
 
 func encodeProto(out io.Writer, data interface{}) error {
-	const op = errors.Op("codec: encode PROTO")
+	const op = errors.Op("goridge_encode_proto")
 
 	d, err := proto.Marshal(data.(proto.Message))
 	if err != nil {
@@ -51,7 +51,7 @@ func encodeProto(out io.Writer, data interface{}) error {
 }
 
 func encodeRaw(out io.Writer, data interface{}) error {
-	const op = errors.Op("codec: encode raw")
+	const op = errors.Op("goridge_encode_raw")
 	switch data := data.(type) {
 	case []byte:
 		_, err := out.Write(data)
@@ -73,7 +73,7 @@ func encodeRaw(out io.Writer, data interface{}) error {
 }
 
 func encodeMsgPack(out io.Writer, data interface{}) error {
-	const op = errors.Op("codec: encode msgpack")
+	const op = errors.Op("goridge_encode_msgpack")
 	b, err := msgpack.Marshal(data)
 	if err != nil {
 		return errors.E(op, err)
