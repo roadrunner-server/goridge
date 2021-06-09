@@ -117,7 +117,7 @@ func (c *ClientCodec) ReadResponseHeader(r *rpc.Response) error {
 	}
 
 	// check for error
-	if fr.ReadFlags()&byte(frame.ERROR) != 0 {
+	if fr.ReadFlags()&frame.ERROR != 0 {
 		r.Error = string(fr.Payload()[opts[1]:])
 	}
 
@@ -142,15 +142,15 @@ func (c *ClientCodec) ReadResponseBody(out interface{}) error {
 	flags := c.frame.ReadFlags()
 
 	switch {
-	case flags&byte(frame.CODEC_PROTO) != 0:
+	case flags&frame.CODEC_PROTO != 0:
 		return decodeProto(out, c.frame)
-	case flags&byte(frame.CODEC_JSON) != 0:
+	case flags&frame.CODEC_JSON != 0:
 		return decodeJSON(out, c.frame)
-	case flags&byte(frame.CODEC_GOB) != 0:
+	case flags&frame.CODEC_GOB != 0:
 		return decodeGob(out, c.frame)
-	case flags&byte(frame.CODEC_RAW) != 0:
+	case flags&frame.CODEC_RAW != 0:
 		return decodeRaw(out, c.frame)
-	case flags&byte(frame.CODEC_MSGPACK) != 0:
+	case flags&frame.CODEC_MSGPACK != 0:
 		return decodeMsgPack(out, c.frame)
 	default:
 		return errors.E(op, errors.Str("unknown decoder used in frame"))
