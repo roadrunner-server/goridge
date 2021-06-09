@@ -9,4 +9,5 @@ require (
 	github.com/vmihailenco/msgpack v4.0.4+incompatible
 	go.uber.org/multierr v1.6.0
 	google.golang.org/appengine v1.6.7 // indirect
+	google.golang.org/protobuf v1.26.0
 )

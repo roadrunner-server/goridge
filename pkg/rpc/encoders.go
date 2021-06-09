@@ -6,6 +6,7 @@ import (
 
 	"github.com/spiral/errors"
 	"github.com/vmihailenco/msgpack"
+	"google.golang.org/protobuf/proto"
 )
 
 func encodeJSON(out io.Writer, data interface{}) error {
@@ -27,6 +28,21 @@ func encodeGob(out io.Writer, data interface{}) error {
 
 	dec := gob.NewEncoder(out)
 	err := dec.Encode(data)
+	if err != nil {
+		return errors.E(op, err)
+	}
+	return nil
+}
+
+func encodeProto(out io.Writer, data interface{}) error {
+	const op = errors.Op("codec: encode PROTO")
+
+	d, err := proto.Marshal(data.(proto.Message))
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	_, err = out.Write(d)
 	if err != nil {
 		return errors.E(op, err)
 	}

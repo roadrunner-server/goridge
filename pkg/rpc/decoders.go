@@ -7,6 +7,7 @@ import (
 	"github.com/spiral/errors"
 	"github.com/spiral/goridge/v3/pkg/frame"
 	"github.com/vmihailenco/msgpack"
+	"google.golang.org/protobuf/proto"
 )
 
 func decodeJSON(out interface{}, frame *frame.Frame) error {
@@ -38,6 +39,25 @@ func decodeGob(out interface{}, frame *frame.Frame) error {
 	buf.Write(payload)
 
 	return dec.Decode(out)
+}
+
+func decodeProto(out interface{}, frame *frame.Frame) error {
+	const op = errors.Op("client: decode PROTO")
+	opts := frame.ReadOptions()
+	if len(opts) != 2 {
+		return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
+	}
+	payload := frame.Payload()[opts[1]:]
+	if len(payload) == 0 {
+		return nil
+	}
+
+	err := proto.Unmarshal(payload, out.(proto.Message))
+	if err != nil {
+		return errors.E(op, err)
+	}
+
+	return nil
 }
 
 func decodeRaw(out interface{}, frame *frame.Frame) error {

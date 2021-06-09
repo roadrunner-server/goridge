@@ -5,15 +5,19 @@ import (
 	"encoding/gob"
 	"io"
 	"net/rpc"
+	"sync"
 
 	"github.com/spiral/errors"
 	"github.com/spiral/goridge/v3/pkg/frame"
 	"github.com/spiral/goridge/v3/pkg/relay"
 	"github.com/spiral/goridge/v3/pkg/socket"
+	"google.golang.org/protobuf/proto"
 )
 
 // ClientCodec is codec for goridge connection.
 type ClientCodec struct {
+	// bytes sync.Pool
+	bPool  sync.Pool
 	relay  relay.Relay
 	closed bool
 	frame  *frame.Frame
@@ -21,11 +25,26 @@ type ClientCodec struct {
 
 // NewClientCodec initiates new server rpc codec over socket connection.
 func NewClientCodec(rwc io.ReadWriteCloser) *ClientCodec {
-	return &ClientCodec{relay: socket.NewSocketRelay(rwc)}
+	return &ClientCodec{
+		bPool: sync.Pool{New: func() interface{} {
+			return new(bytes.Buffer)
+		}},
+		relay: socket.NewSocketRelay(rwc),
+	}
+}
+
+func (c *ClientCodec) get() *bytes.Buffer {
+	return c.bPool.Get().(*bytes.Buffer)
+}
+
+func (c *ClientCodec) put(b *bytes.Buffer) {
+	b.Reset()
+	c.bPool.Put(b)
 }
 
 // WriteRequest writes request to the connection. Sequential.
-func (c *ClientCodec) WriteRequest(r *rpc.Request, body interface{}) error {
+func (c *ClientCodec) WriteRequest(r *rpc.Request,
+	body interface{}) error {
 	const op = errors.Op("client codec WriteRequest")
 	fr := frame.NewFrame()
 	defer func() {
@@ -33,18 +52,25 @@ func (c *ClientCodec) WriteRequest(r *rpc.Request, body interface{}) error {
 		fr = nil
 	}()
 
-	// for golang clients use GOB
-	fr.WriteFlags(frame.CODEC_GOB)
+	// if body is proto message, use proto codec
+	buf := c.get()
+	defer c.put(buf)
 
-	// SEQ_ID + METHOD_NAME_LEN
-	fr.WriteOptions(uint32(r.Seq), uint32(len(r.ServiceMethod)))
-	fr.WriteVersion(frame.VERSION_1)
-
-	buf := new(bytes.Buffer)
 	// writeServiceMethod to the buffer
 	buf.WriteString(r.ServiceMethod)
-	// Initialize gob
-	if body != nil {
+
+	// check if message is PROTO
+	if m, ok := body.(proto.Message); ok {
+		fr.WriteFlags(frame.CODEC_PROTO)
+		b, err := proto.Marshal(m)
+		if err != nil {
+			return errors.E(op, err)
+		}
+		buf.Write(b)
+	} else {
+		// use fallback as gob
+		fr.WriteFlags(frame.CODEC_GOB)
+
 		enc := gob.NewEncoder(buf)
 		// write data to the gob
 		err := enc.Encode(body)
@@ -52,6 +78,10 @@ func (c *ClientCodec) WriteRequest(r *rpc.Request, body interface{}) error {
 			return errors.E(op, err)
 		}
 	}
+
+	// SEQ_ID + METHOD_NAME_LEN
+	fr.WriteOptions(uint32(r.Seq), uint32(len(r.ServiceMethod)))
+	fr.WriteVersion(frame.VERSION_1)
 
 	fr.WritePayloadLen(uint32(buf.Len()))
 	fr.WritePayload(buf.Bytes())
@@ -110,6 +140,8 @@ func (c *ClientCodec) ReadResponseBody(out interface{}) error {
 	flags := c.frame.ReadFlags()
 
 	switch {
+	case flags&byte(frame.CODEC_PROTO) != 0:
+		return decodeProto(out, c.frame)
 	case flags&byte(frame.CODEC_JSON) != 0:
 		return decodeJSON(out, c.frame)
 	case flags&byte(frame.CODEC_GOB) != 0:
