@@ -23,7 +23,7 @@ func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 		// we should read the options
 		optsLen := (header.ReadHL() - 3) * frame.WORD
 		opts := make([]byte, optsLen)
-		_, err := io.ReadFull(relay, opts)
+		_, err = io.ReadFull(relay, opts)
 		if err != nil {
 			return errors.E(op, err)
 		}

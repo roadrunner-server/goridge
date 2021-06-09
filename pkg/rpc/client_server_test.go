@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/spiral/errors"
+	"github.com/spiral/goridge/v3/test"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -54,8 +55,61 @@ func (s *testService) EchoBinary(msg []byte, out *[]byte) error {
 	*out = append(*out, msg...)
 	return nil
 }
-func TestClientServerJSON(t *testing.T) {
+
+// Test Proto
+func (s *testService) ProtoMessage(payload *test.Payload, item *test.Item) error {
+	(*item).Key = payload.Items[0].Key
+	return nil
+}
+
+func TestClientServerProto(t *testing.T) {
 	ln, err := net.Listen("tcp", "127.0.0.1:18935")
+	assert.NoError(t, err)
+
+	go func() {
+		for {
+			conn, err2 := ln.Accept()
+			assert.NoError(t, err2)
+			rpc.ServeCodec(NewCodec(conn))
+		}
+	}()
+
+	err = rpc.RegisterName("test123", new(testService))
+	assert.NoError(t, err)
+
+	conn, err := net.Dial("tcp", "127.0.0.1:18935")
+	assert.NoError(t, err)
+
+	client := rpc.NewClientWithCodec(NewClientCodec(conn))
+	defer func() {
+		err := client.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	keysP := &test.Payload{
+		Storage: "memory-rr",
+		Items: []*test.Item{
+			{
+				Key: "a",
+			},
+			{
+				Key: "b",
+			},
+			{
+				Key: "c",
+			},
+		},
+	}
+
+	item := &test.Item{}
+	assert.NoError(t, client.Call("test123.ProtoMessage", keysP, item))
+	assert.Equal(t, "a", item.Key)
+}
+
+func TestClientServerJSON(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:18936")
 	assert.NoError(t, err)
 
 	go func() {
@@ -69,7 +123,7 @@ func TestClientServerJSON(t *testing.T) {
 	err = rpc.RegisterName("test2", new(testService))
 	assert.NoError(t, err)
 
-	conn, err := net.Dial("tcp", "127.0.0.1:18935")
+	conn, err := net.Dial("tcp", "127.0.0.1:18936")
 	assert.NoError(t, err)
 
 	client := rpc.NewClientWithCodec(NewClientCodec(conn))

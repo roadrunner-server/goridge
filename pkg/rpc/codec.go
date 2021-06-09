@@ -6,15 +6,12 @@ import (
 	"net/rpc"
 	"sync"
 
-	j "github.com/json-iterator/go"
 	"github.com/spiral/errors"
 	"github.com/spiral/goridge/v3/pkg/frame"
 	"github.com/spiral/goridge/v3/pkg/relay"
 	"github.com/spiral/goridge/v3/pkg/socket"
 	"go.uber.org/multierr"
 )
-
-var json = j.ConfigCompatibleWithStandardLibrary
 
 // Codec represent net/rpc bridge over Goridge socket relay.
 type Codec struct {
@@ -38,7 +35,7 @@ func NewCodecWithRelay(relay relay.Relay) *Codec {
 }
 
 // WriteResponse marshals response, byte slice or error to remote party.
-func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error {
+func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error { //nolint:funlen
 	const op = errors.Op("codec: write response")
 	fr := frame.NewFrame()
 
@@ -77,6 +74,20 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error {
 	flags := fr.ReadFlags()
 
 	switch {
+	case flags&byte(frame.CODEC_RAW) != 0:
+		err := encodeRaw(buf, body)
+		if err != nil {
+			return c.handleError(r, fr, buf, err)
+		}
+		// send buffer
+		return c.sendBuf(fr, buf)
+	case flags&byte(frame.CODEC_PROTO) != 0:
+		err := encodeProto(buf, body)
+		if err != nil {
+			return c.handleError(r, fr, buf, err)
+		}
+		// send buffer
+		return c.sendBuf(fr, buf)
 	case flags&byte(frame.CODEC_JSON) != 0:
 		err := encodeJSON(buf, body)
 		if err != nil {
@@ -86,13 +97,6 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error {
 		return c.sendBuf(fr, buf)
 	case flags&byte(frame.CODEC_MSGPACK) != 0:
 		err := encodeMsgPack(buf, body)
-		if err != nil {
-			return c.handleError(r, fr, buf, err)
-		}
-		// send buffer
-		return c.sendBuf(fr, buf)
-	case flags&byte(frame.CODEC_RAW) != 0:
-		err := encodeRaw(buf, body)
 		if err != nil {
 			return c.handleError(r, fr, buf, err)
 		}
@@ -149,27 +153,29 @@ func (c *Codec) handleError(r *rpc.Response, fr *frame.Frame, buf *bytes.Buffer,
 // METHOD_LEN: 12 and we take 12 bytes from the payload as method name
 func (c *Codec) ReadRequestHeader(r *rpc.Request) error {
 	const op = errors.Op("codec: read request header")
-	frame := frame.NewFrame()
-	err := c.relay.Receive(frame)
+	f := frame.NewFrame()
+	err := c.relay.Receive(f)
 	if err != nil {
 		return err
 	}
 
 	// opts[0] sequence ID
 	// opts[1] service method name offset from payload in bytes
-	opts := frame.ReadOptions()
+	opts := f.ReadOptions()
 	if len(opts) != 2 {
 		return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
 	}
 
 	r.Seq = uint64(opts[0])
-	r.ServiceMethod = string(frame.Payload()[:opts[1]])
-	c.frame = frame
-	return c.storeCodec(r, frame.ReadFlags())
+	r.ServiceMethod = string(f.Payload()[:opts[1]])
+	c.frame = f
+	return c.storeCodec(r, f.ReadFlags())
 }
 
 func (c *Codec) storeCodec(r *rpc.Request, flag byte) error {
 	switch {
+	case flag&byte(frame.CODEC_PROTO) != 0:
+		c.codec.Store(r.Seq, frame.CODEC_PROTO)
 	case flag&byte(frame.CODEC_JSON) != 0:
 		c.codec.Store(r.Seq, frame.CODEC_JSON)
 	case flag&byte(frame.CODEC_RAW) != 0:
@@ -200,6 +206,8 @@ func (c *Codec) ReadRequestBody(out interface{}) error {
 	flags := c.frame.ReadFlags()
 
 	switch {
+	case flags&byte(frame.CODEC_PROTO) != 0:
+		return decodeProto(out, c.frame)
 	case flags&byte(frame.CODEC_JSON) != 0:
 		return decodeJSON(out, c.frame)
 	case flags&byte(frame.CODEC_GOB) != 0:

@@ -11,7 +11,7 @@ const (
 	CODEC_MSGPACK Flag = 0x10 //nolint:stylecheck,golint
 	CODEC_GOB     Flag = 0x20 //nolint:stylecheck,golint
 	ERROR         Flag = 0x40 //nolint:stylecheck,golint
-	RESERVED1     Flag = 0x80
+	CODEC_PROTO   Flag = 0x80 //nolint:stylecheck,golint
 )
 
 // COMPLEX flags can't be used with Byte flags, because it's value more than 128

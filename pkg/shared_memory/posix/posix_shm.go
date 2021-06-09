@@ -156,7 +156,7 @@ func (s *SharedMemorySegment) writeBuffer(src []byte, dst []byte) {
 	copy(dst, src)
 }
 
-// Clear by behaviour is similar to the std::memset(..., 0, ...)
+// Clear by behavior is similar to the std::memset(..., 0, ...)
 func (s *SharedMemorySegment) Clear() {
 	for i := 0; i < len(s.data); i++ {
 		s.data[i] = 0
