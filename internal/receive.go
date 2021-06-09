@@ -8,7 +8,7 @@ import (
 )
 
 func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
-	const op = errors.Op("pipes frame receive")
+	const op = errors.Op("goridge_frame_receive")
 	// header bytes
 	hb := make([]byte, 12)
 	_, err := io.ReadFull(relay, hb)

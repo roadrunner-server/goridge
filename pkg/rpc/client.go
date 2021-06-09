@@ -45,7 +45,7 @@ func (c *ClientCodec) put(b *bytes.Buffer) {
 // WriteRequest writes request to the connection. Sequential.
 func (c *ClientCodec) WriteRequest(r *rpc.Request,
 	body interface{}) error {
-	const op = errors.Op("client codec WriteRequest")
+	const op = errors.Op("goridge_write_request")
 	fr := frame.NewFrame()
 	defer func() {
 		// reset the fr

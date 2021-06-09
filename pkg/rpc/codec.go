@@ -36,7 +36,7 @@ func NewCodecWithRelay(relay relay.Relay) *Codec {
 
 // WriteResponse marshals response, byte slice or error to remote party.
 func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error { //nolint:funlen
-	const op = errors.Op("codec: write response")
+	const op = errors.Op("goridge_write_response")
 	fr := frame.NewFrame()
 
 	// SEQ_ID + METHOD_NAME_LEN
@@ -152,7 +152,7 @@ func (c *Codec) handleError(r *rpc.Response, fr *frame.Frame, buf *bytes.Buffer,
 // SEQ_ID: 15
 // METHOD_LEN: 12 and we take 12 bytes from the payload as method name
 func (c *Codec) ReadRequestHeader(r *rpc.Request) error {
-	const op = errors.Op("codec: read request header")
+	const op = errors.Op("goridge_read_request_header")
 	f := frame.NewFrame()
 	err := c.relay.Receive(f)
 	if err != nil {
@@ -194,7 +194,7 @@ func (c *Codec) storeCodec(r *rpc.Request, flag byte) error {
 // ReadRequestBody fetches prefixed body data and automatically unmarshal it as json. RawBody flag will populate
 // []byte lice argument for rpc method.
 func (c *Codec) ReadRequestBody(out interface{}) error {
-	const op = errors.Op("codec read request body")
+	const op = errors.Op("goridge_read_request_body")
 	if out == nil {
 		return nil
 	}

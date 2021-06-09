@@ -8,7 +8,7 @@ import (
 	"github.com/spiral/goridge/v3/pkg/frame"
 )
 
-// SocketRelay communicates with underlying process using sockets (TPC or Unix).
+// Relay communicates with underlying process using sockets (TPC or Unix).
 type Relay struct {
 	rwc io.ReadWriteCloser
 }
