@@ -26,6 +26,9 @@ func ReadHeader(data []byte) *Frame {
 	}
 }
 
+// ReadFrame produces Frame from the RAW bytes
+// first 12 bytes will be a header
+// the rest - payload
 func ReadFrame(data []byte) *Frame {
 	_ = data[0]
 	opt := data[0] & 0x0F
@@ -47,6 +50,7 @@ func ReadFrame(data []byte) *Frame {
 	return f
 }
 
+// NewFrame initializes new frame with 12-byte header and 100-byte reserved space for the payload
 func NewFrame() *Frame {
 	f := &Frame{
 		header:  make([]byte, 12),
@@ -67,6 +71,7 @@ func From(header []byte, payload []byte) *Frame {
 
 // ReadVersion .. To read version, we should return our 4 upper bits to their original place
 // 1111_0000 -> 0000_1111 (15)
+//go:inline
 func (f *Frame) ReadVersion() byte {
 	_ = f.header[0]
 	return f.header[0] >> 4
@@ -77,6 +82,7 @@ func (f *Frame) ReadVersion() byte {
 // 1. For example we have version 15 it's 0000_1111 (1 byte)
 // 2. We should shift 4 lower bits to upper and write that to the 0th byte
 // 3. The 0th byte should become 1111_0000, but it's not 240, it's only 15, because version only 4 bits len
+//go:inline
 func (f *Frame) WriteVersion(version Version) {
 	_ = f.header[0]
 	if version > 15 {
@@ -89,6 +95,7 @@ func (f *Frame) WriteVersion(version Version) {
 // The lower 4 bits of the 0th octet occupies our header len data.
 // We should erase upper 4 bits, which contain information about Version
 // To erase, we applying bitwise AND to the upper 4 bits and returning result
+//go:inline
 func (f *Frame) ReadHL() byte {
 	_ = f.header[0]
 	// 0101_1111         0000_1111
@@ -97,11 +104,13 @@ func (f *Frame) ReadHL() byte {
 
 // Writing HL is very simple. Since we are using lower 4 bits
 // we can easily apply bitwise OR and set lower 4 bits to needed hl value
+//go:inline
 func (f *Frame) writeHl(hl byte) {
 	_ = f.header[0]
 	f.header[0] |= hl
 }
 
+//go:inline
 func (f *Frame) incrementHL() {
 	_ = f.header[0]
 	hl := f.ReadHL()
@@ -110,6 +119,8 @@ func (f *Frame) incrementHL() {
 	}
 	f.header[0] = f.header[0] | hl + 1
 }
+
+//go:inline
 func (f *Frame) defaultHL() {
 	_ = f.header[0]
 	f.writeHl(3)
@@ -117,6 +128,7 @@ func (f *Frame) defaultHL() {
 
 // ReadFlags ..
 // Flags is full 1st byte
+//go:inline
 func (f *Frame) ReadFlags() byte {
 	_ = f.header[1]
 	return f.header[1]
@@ -158,6 +170,7 @@ func (f *Frame) WriteOptions(options ...uint32) {
 }
 
 // AppendOptions appends options to the header
+//go:inline
 func (f *Frame) AppendOptions(opts []byte) {
 	f.header = append(f.header, opts...)
 }
@@ -196,6 +209,7 @@ func (f *Frame) ReadOptions() []uint32 {
 // ReadPayloadLen ..
 // LE format used to write Payload
 // Using 4 bytes (2,3,4,5 bytes in the header)
+//go:inline
 func (f *Frame) ReadPayloadLen() uint32 {
 	// 2,3,4,5
 	_ = f.header[5]
@@ -205,6 +219,7 @@ func (f *Frame) ReadPayloadLen() uint32 {
 // WritePayloadLen ..
 // LE format used to write Payload
 // Using 4 bytes (2,3,4,5 bytes in the header)
+//go:inline
 func (f *Frame) WritePayloadLen(len uint32) {
 	_ = f.header[5]
 	f.header[2] = byte(len)

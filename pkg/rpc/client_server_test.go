@@ -11,6 +11,7 @@ import (
 	"github.com/spiral/errors"
 	"github.com/spiral/goridge/v3/test"
 	"github.com/stretchr/testify/assert"
+	"google.golang.org/protobuf/proto"
 )
 
 // testService sample
@@ -106,6 +107,56 @@ func TestClientServerProto(t *testing.T) {
 	item := &test.Item{}
 	assert.NoError(t, client.Call("test123.ProtoMessage", keysP, item))
 	assert.Equal(t, "a", item.Key)
+}
+
+func TestClientServerProtoError(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:18321")
+	assert.NoError(t, err)
+
+	go func() {
+		for {
+			conn, err2 := ln.Accept()
+			assert.NoError(t, err2)
+			rpc.ServeCodec(NewCodec(conn))
+		}
+	}()
+
+	err = rpc.RegisterName("testError", new(testService))
+	assert.NoError(t, err)
+
+	conn, err := net.Dial("tcp", "127.0.0.1:18321")
+	assert.NoError(t, err)
+
+	client := rpc.NewClientWithCodec(NewClientCodec(conn))
+	defer func() {
+		err := client.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	keysP := &test.Payload{
+		Storage: "memory-rr",
+		Items: []*test.Item{
+			{
+				Key: "a",
+			},
+			{
+				Key: "b",
+			},
+			{
+				Key: "c",
+			},
+		},
+	}
+
+	keys, err := proto.Marshal(keysP)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	item := &test.Item{}
+	assert.Error(t, client.Call("testError.ProtoMessage", keys, item))
 }
 
 func TestClientServerJSON(t *testing.T) {

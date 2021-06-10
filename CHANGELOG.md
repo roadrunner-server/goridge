@@ -1,6 +1,25 @@
 CHANGELOG
 =========
 
+v3.1.2 (10.06.2021)
+-------------------
+
+## 🩹 Fixes:
+
+- 🐛 Fix: Bug with incorrect proto interface casting which leads to a panic.
+
+---
+
+v3.1.1 (09.06.2021)
+-------------------
+
+## 🚀 New:
+
+- ✏️ Standardise error operations in the whole project.
+- ✏️ Remove `frame` to `byte` type aliasing in hot paths.
+
+---
+
 v3.1.0 (09.06.2021)
 -------------------
 

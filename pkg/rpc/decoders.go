@@ -53,12 +53,17 @@ func decodeProto(out interface{}, frame *frame.Frame) error {
 		return nil
 	}
 
-	err := proto.Unmarshal(payload, out.(proto.Message))
-	if err != nil {
-		return errors.E(op, err)
+	// check if the out message is a correct proto.Message
+	// instead send an error
+	if pOut, ok := out.(proto.Message); ok {
+		err := proto.Unmarshal(payload, pOut)
+		if err != nil {
+			return errors.E(op, err)
+		}
+		return nil
 	}
 
-	return nil
+	return errors.E(op, errors.Str("message type is not a proto"))
 }
 
 func decodeRaw(out interface{}, frame *frame.Frame) error {
