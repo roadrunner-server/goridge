@@ -98,7 +98,7 @@ func (c *ClientCodec) WriteRequest(r *rpc.Request,
 
 // ReadResponseHeader reads response from the connection.
 func (c *ClientCodec) ReadResponseHeader(r *rpc.Response) error {
-	const op = errors.Op("client codec ReadResponseHeader")
+	const op = errors.Op("client_read_response_header")
 	fr := frame.NewFrame()
 	err := c.relay.Receive(fr)
 	if err != nil {
@@ -129,7 +129,7 @@ func (c *ClientCodec) ReadResponseHeader(r *rpc.Response) error {
 
 // ReadResponseBody response from the connection.
 func (c *ClientCodec) ReadResponseBody(out interface{}) error {
-	const op = errors.Op("client ReadResponseBody")
+	const op = errors.Op("client_read_response_body")
 	defer func() {
 		// reset the frame
 		c.frame = nil

@@ -114,6 +114,7 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error { //nolin
 	}
 }
 
+//go:inline
 func (c *Codec) sendBuf(frame *frame.Frame, buf *bytes.Buffer) error {
 	frame.WritePayloadLen(uint32(buf.Len()))
 	frame.WritePayload(buf.Bytes())
@@ -172,6 +173,7 @@ func (c *Codec) ReadRequestHeader(r *rpc.Request) error {
 	return c.storeCodec(r, f.ReadFlags())
 }
 
+//go:inline
 func (c *Codec) storeCodec(r *rpc.Request, flag byte) error {
 	switch {
 	case flag&frame.CODEC_PROTO != 0:
