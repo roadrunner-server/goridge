@@ -44,6 +44,9 @@ func client() {
 	}
 
 	conn, err := net.Dial("tcp", "127.0.0.1:18321")
+	if err != nil {
+		panic(err)
+	}
 
 	client := rpc.NewClientWithCodec(goridgeRpc.NewClientCodec(conn))
 	defer func() {

@@ -5,6 +5,7 @@ run:
   skip-dirs:
     - .github
     - .git
+    - benchmarks
   skip-files:
     - pkg/frame/frame_test.go
     - pkg/pipe/pipe_test.go
