@@ -17,7 +17,9 @@ import (
 // ClientCodec is codec for goridge connection.
 type ClientCodec struct {
 	// bytes sync.Pool
-	bPool  sync.Pool
+	bPool sync.Pool
+	fPool sync.Pool
+
 	relay  relay.Relay
 	closed bool
 	frame  *frame.Frame
@@ -29,6 +31,11 @@ func NewClientCodec(rwc io.ReadWriteCloser) *ClientCodec {
 		bPool: sync.Pool{New: func() interface{} {
 			return new(bytes.Buffer)
 		}},
+
+		fPool: sync.Pool{New: func() interface{} {
+			return frame.NewFrame()
+		}},
+
 		relay: socket.NewSocketRelay(rwc),
 	}
 }
@@ -42,17 +49,25 @@ func (c *ClientCodec) put(b *bytes.Buffer) {
 	c.bPool.Put(b)
 }
 
+func (c *ClientCodec) getFrame() *frame.Frame {
+	return c.fPool.Get().(*frame.Frame)
+}
+
+func (c *ClientCodec) putFrame(f *frame.Frame) {
+	f.Reset()
+	c.fPool.Put(f)
+}
+
 // WriteRequest writes request to the connection. Sequential.
 func (c *ClientCodec) WriteRequest(r *rpc.Request,
 	body interface{}) error {
 	const op = errors.Op("goridge_write_request")
-	fr := frame.NewFrame()
-	defer func() {
-		// reset the fr
-		fr = nil
-	}()
 
-	// if body is proto message, use proto codec
+	// get a frame from the pool
+	fr := c.getFrame()
+	defer c.putFrame(fr)
+
+	// get a buffer from the pool
 	buf := c.get()
 	defer c.put(buf)
 
@@ -62,6 +77,7 @@ func (c *ClientCodec) WriteRequest(r *rpc.Request,
 	fr.WriteFlags(frame.CODEC_GOB)
 
 	if body != nil {
+		// if body is proto message, use proto codec
 		switch m := body.(type) {
 		// check if message is PROTO
 		case proto.Message:
@@ -99,7 +115,10 @@ func (c *ClientCodec) WriteRequest(r *rpc.Request,
 // ReadResponseHeader reads response from the connection.
 func (c *ClientCodec) ReadResponseHeader(r *rpc.Response) error {
 	const op = errors.Op("client_read_response_header")
-	fr := frame.NewFrame()
+
+	// get a frame from sync.Pool
+	fr := c.getFrame()
+
 	err := c.relay.Receive(fr)
 	if err != nil {
 		return errors.E(op, err)
@@ -130,10 +149,9 @@ func (c *ClientCodec) ReadResponseHeader(r *rpc.Response) error {
 // ReadResponseBody response from the connection.
 func (c *ClientCodec) ReadResponseBody(out interface{}) error {
 	const op = errors.Op("client_read_response_body")
-	defer func() {
-		// reset the frame
-		c.frame = nil
-	}()
+
+	// put frame after response was sent
+	defer c.putFrame(c.frame)
 	// if there is no out interface to unmarshall the body, skip
 	if out == nil {
 		return nil

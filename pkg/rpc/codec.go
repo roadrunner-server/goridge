@@ -19,6 +19,9 @@ type Codec struct {
 	closed bool
 	frame  *frame.Frame
 	codec  sync.Map
+
+	bPool sync.Pool
+	fPool sync.Pool
 }
 
 // NewCodec initiates new server rpc codec over socket connection.
@@ -26,6 +29,14 @@ func NewCodec(rwc io.ReadWriteCloser) *Codec {
 	return &Codec{
 		relay: socket.NewSocketRelay(rwc),
 		codec: sync.Map{},
+
+		bPool: sync.Pool{New: func() interface{} {
+			return new(bytes.Buffer)
+		}},
+
+		fPool: sync.Pool{New: func() interface{} {
+			return frame.NewFrame()
+		}},
 	}
 }
 
@@ -34,10 +45,29 @@ func NewCodecWithRelay(relay relay.Relay) *Codec {
 	return &Codec{relay: relay}
 }
 
+func (c *Codec) get() *bytes.Buffer {
+	return c.bPool.Get().(*bytes.Buffer)
+}
+
+func (c *Codec) put(b *bytes.Buffer) {
+	b.Reset()
+	c.bPool.Put(b)
+}
+
+func (c *Codec) getFrame() *frame.Frame {
+	return c.fPool.Get().(*frame.Frame)
+}
+
+func (c *Codec) putFrame(f *frame.Frame) {
+	f.Reset()
+	c.fPool.Put(f)
+}
+
 // WriteResponse marshals response, byte slice or error to remote party.
 func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error { //nolint:funlen
 	const op = errors.Op("goridge_write_response")
-	fr := frame.NewFrame()
+	fr := c.getFrame()
+	defer c.putFrame(fr)
 
 	// SEQ_ID + METHOD_NAME_LEN
 	fr.WriteOptions(uint32(r.Seq), uint32(len(r.ServiceMethod)))
@@ -59,7 +89,9 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error { //nolin
 	c.codec.Delete(r.Seq)
 
 	// initialize buffer
-	buf := new(bytes.Buffer)
+	buf := c.get()
+	defer c.put(buf)
+
 	// writeServiceMethod to the buffer
 	buf.WriteString(r.ServiceMethod)
 
@@ -154,7 +186,8 @@ func (c *Codec) handleError(r *rpc.Response, fr *frame.Frame, buf *bytes.Buffer,
 // METHOD_LEN: 12 and we take 12 bytes from the payload as method name
 func (c *Codec) ReadRequestHeader(r *rpc.Request) error {
 	const op = errors.Op("goridge_read_request_header")
-	f := frame.NewFrame()
+	f := c.getFrame()
+
 	err := c.relay.Receive(f)
 	if err != nil {
 		return err
@@ -201,9 +234,7 @@ func (c *Codec) ReadRequestBody(out interface{}) error {
 		return nil
 	}
 
-	defer func() {
-		c.frame = nil
-	}()
+	defer c.putFrame(c.frame)
 
 	flags := c.frame.ReadFlags()
 

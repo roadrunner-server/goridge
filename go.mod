@@ -1,6 +1,6 @@
 module github.com/spiral/goridge/v3
 
-go 1.15
+go 1.16
 
 require (
 	github.com/json-iterator/go v1.1.11

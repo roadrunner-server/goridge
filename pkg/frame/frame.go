@@ -1,6 +1,8 @@
 package frame
 
-import "hash/crc32"
+import (
+	"hash/crc32"
+)
 
 // OptionsMaxSize represents header's options maximum size
 const OptionsMaxSize = 40
@@ -39,7 +41,6 @@ func ReadFrame(data []byte) *Frame {
 			payload: data[opt*WORD:],
 		}
 	}
-
 	f := &Frame{
 		header:  data[:12],
 		payload: data[12:],
@@ -260,11 +261,13 @@ func (f *Frame) Bytes() []byte {
 }
 
 // Header returns frame header
+//go:inline
 func (f *Frame) Header() []byte {
 	return f.header
 }
 
 // Payload returns frame payload without header
+//go:inline
 func (f *Frame) Payload() []byte {
 	// start from the 1st (staring from 0) byte
 	return f.payload
@@ -274,4 +277,12 @@ func (f *Frame) Payload() []byte {
 func (f *Frame) WritePayload(data []byte) {
 	f.payload = make([]byte, len(data))
 	copy(f.payload, data)
+}
+
+// Reset a frame
+func (f *Frame) Reset() {
+	f.header = make([]byte, 12)
+	f.payload = make([]byte, 0, 100)
+
+	f.defaultHL()
 }

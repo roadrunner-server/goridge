@@ -1,6 +1,15 @@
 CHANGELOG
 =========
 
+v3.1.3 (11.06.2021)
+-------------------
+
+## 🩹 Fixes:
+
+- 🐛 Fix: Performance optimization fixes [PR](https://github.com/spiral/goridge/pull/127)
+
+---
+
 v3.1.2 (10.06.2021)
 -------------------
 
