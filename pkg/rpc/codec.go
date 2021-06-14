@@ -10,7 +10,6 @@ import (
 	"github.com/spiral/goridge/v3/pkg/frame"
 	"github.com/spiral/goridge/v3/pkg/relay"
 	"github.com/spiral/goridge/v3/pkg/socket"
-	"go.uber.org/multierr"
 )
 
 // Codec represent net/rpc bridge over Goridge socket relay.
@@ -98,7 +97,7 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error { //nolin
 	// if error returned, we sending it via relay and return error from WriteResponse
 	if r.Error != "" {
 		// Append error flag
-		return c.handleError(r, fr, buf, errors.Str(r.Error))
+		return c.handleError(r, fr, r.Error)
 	}
 
 	// read flag previously written
@@ -109,40 +108,40 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error { //nolin
 	case flags&frame.CODEC_RAW != 0:
 		err := encodeRaw(buf, body)
 		if err != nil {
-			return c.handleError(r, fr, buf, err)
+			return c.handleError(r, fr, err.Error())
 		}
 		// send buffer
 		return c.sendBuf(fr, buf)
 	case flags&frame.CODEC_PROTO != 0:
 		err := encodeProto(buf, body)
 		if err != nil {
-			return c.handleError(r, fr, buf, err)
+			return c.handleError(r, fr, err.Error())
 		}
 		// send buffer
 		return c.sendBuf(fr, buf)
 	case flags&frame.CODEC_JSON != 0:
 		err := encodeJSON(buf, body)
 		if err != nil {
-			return c.handleError(r, fr, buf, err)
+			return c.handleError(r, fr, err.Error())
 		}
 		// send buffer
 		return c.sendBuf(fr, buf)
 	case flags&frame.CODEC_MSGPACK != 0:
 		err := encodeMsgPack(buf, body)
 		if err != nil {
-			return c.handleError(r, fr, buf, err)
+			return c.handleError(r, fr, err.Error())
 		}
 		// send buffer
 		return c.sendBuf(fr, buf)
 	case flags&frame.CODEC_GOB != 0:
 		err := encodeGob(buf, body)
 		if err != nil {
-			return c.handleError(r, fr, buf, err)
+			return c.handleError(r, fr, err.Error())
 		}
 		// send buffer
 		return c.sendBuf(fr, buf)
 	default:
-		return c.handleError(r, fr, buf, errors.E(op, errors.Str("unknown codec")))
+		return c.handleError(r, fr, errors.E(op, errors.Str("unknown codec")).Error())
 	}
 }
 
@@ -155,18 +154,18 @@ func (c *Codec) sendBuf(frame *frame.Frame, buf *bytes.Buffer) error {
 	return c.relay.Send(frame)
 }
 
-func (c *Codec) handleError(r *rpc.Response, fr *frame.Frame, buf *bytes.Buffer, err error) error {
-	// just to be sure, remove all data from buffer and write new
-	buf.Truncate(0)
+func (c *Codec) handleError(r *rpc.Response, fr *frame.Frame, err string) error {
+	buf := c.get()
+	defer c.put(buf)
+
 	// write all possible errors
-	err = multierr.Append(err, errors.Str(r.Error))
 	buf.WriteString(r.ServiceMethod)
 
 	const op = errors.Op("handle codec error")
 	fr.WriteFlags(frame.ERROR)
 	// error should be here
-	if err != nil {
-		buf.WriteString(err.Error())
+	if err != "" {
+		buf.WriteString(err)
 	}
 	fr.WritePayloadLen(uint32(buf.Len()))
 	fr.WritePayload(buf.Bytes())

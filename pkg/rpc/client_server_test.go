@@ -197,6 +197,37 @@ func TestClientServerJSON(t *testing.T) {
 	assert.Equal(t, "key", rp.Keys["value"])
 }
 
+func TestClientServerError(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:12336")
+	assert.NoError(t, err)
+
+	go func() {
+		for {
+			conn, err2 := ln.Accept()
+			assert.NoError(t, err2)
+			rpc.ServeCodec(NewCodec(conn))
+		}
+	}()
+
+	err = rpc.RegisterName("testError2", new(testService))
+	assert.NoError(t, err)
+
+	conn, err := net.Dial("tcp", "127.0.0.1:12336")
+	assert.NoError(t, err)
+
+	client := rpc.NewClientWithCodec(NewClientCodec(conn))
+	defer func() {
+		err := client.Close()
+		if err != nil {
+			t.Fatal(err)
+		}
+	}()
+
+	err = client.Call("unknown", nil, nil)
+	assert.Error(t, err)
+	assert.Equal(t, "rpc: service/method request ill-formed: unknown", err.Error())
+}
+
 func TestClientServerConcurrent(t *testing.T) {
 	ln, err := net.Listen("tcp", "127.0.0.1:22385")
 	if err != nil {

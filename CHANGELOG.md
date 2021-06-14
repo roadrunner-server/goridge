@@ -1,6 +1,15 @@
 CHANGELOG
 =========
 
+v3.1.4 (14.06.2021)
+-------------------
+
+## 🩹 Fixes:
+
+- 🐛 Fix: Duplicated RPC error message: [PR](https://github.com/spiral/goridge/pull/129)
+
+---
+
 v3.1.3 (11.06.2021)
 -------------------
 
