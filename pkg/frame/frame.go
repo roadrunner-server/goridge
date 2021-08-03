@@ -32,7 +32,7 @@ func ReadHeader(data []byte) *Frame {
 // first 12 bytes will be a header
 // the rest - payload
 func ReadFrame(data []byte) *Frame {
-	_ = data[0]
+	_ = data[11]
 	opt := data[0] & 0x0F
 	// if more than 3, that we have options
 	if opt > 3 {
@@ -45,8 +45,8 @@ func ReadFrame(data []byte) *Frame {
 		header:  data[:12],
 		payload: data[12:],
 	}
-	f.header[10] = 0
-	f.header[11] = 0
+
+	f.header[10], f.header[11] = 0, 0
 
 	return f
 }
@@ -98,7 +98,6 @@ func (f *Frame) WriteVersion(version Version) {
 // To erase, we applying bitwise AND to the upper 4 bits and returning result
 //go:inline
 func (f *Frame) ReadHL() byte {
-	_ = f.header[0]
 	// 0101_1111         0000_1111
 	return f.header[0] & 0x0F
 }
@@ -107,13 +106,11 @@ func (f *Frame) ReadHL() byte {
 // we can easily apply bitwise OR and set lower 4 bits to needed hl value
 //go:inline
 func (f *Frame) writeHl(hl byte) {
-	_ = f.header[0]
 	f.header[0] |= hl
 }
 
 //go:inline
 func (f *Frame) incrementHL() {
-	_ = f.header[0]
 	hl := f.ReadHL()
 	if hl > 15 {
 		panic("header len should be less than 15")
@@ -123,7 +120,6 @@ func (f *Frame) incrementHL() {
 
 //go:inline
 func (f *Frame) defaultHL() {
-	_ = f.header[0]
 	f.writeHl(3)
 }
 
@@ -131,12 +127,10 @@ func (f *Frame) defaultHL() {
 // Flags is full 1st byte
 //go:inline
 func (f *Frame) ReadFlags() byte {
-	_ = f.header[1]
 	return f.header[1]
 }
 
 func (f *Frame) WriteFlags(flags ...byte) {
-	_ = f.header[1]
 	for i := 0; i < len(flags); i++ {
 		f.header[1] |= flags[i]
 	}
@@ -176,34 +170,39 @@ func (f *Frame) AppendOptions(opts []byte) {
 	f.header = append(f.header, opts...)
 }
 
-// last byte after main header and first options byte
-const lb = 12
-
 // ReadOptions ...
 // f.readHL() - 2 needed to know actual options size
 // we know, that 2 WORDS is minimal header len
 // extra WORDS will add extra 32bits to the options (4 bytes)
-func (f *Frame) ReadOptions() []uint32 {
+func (f *Frame) ReadOptions(header []byte) []uint32 {
 	// we can read options, if there are no options
 	if f.ReadHL() <= 3 {
 		return nil
 	}
+
+	// last byte after main header and first options byte
+	const lb = 12
+
 	// Get the options len
 	optionLen := f.ReadHL() - 3 // 3 is the default
 	// slice in place
-	options := make([]uint32, 0, optionLen)
+	options := make([]uint32, optionLen)
 
 	// Options starting from 8-th byte
 	// we should scan with 4 byte window (32bit, WORD)
-	for i := byte(0); i < optionLen*WORD; i += WORD {
+	for i, j := byte(0), 0; i < optionLen*WORD; i, j = i+WORD, j+1 {
 		// for example
 		// 8  12  16
 		// 9  13  17
 		// 10 14  18
 		// 11 15  19
 		// For this data, HL will be 3, optionLen will be 12 (3*4) bytes
-		options = append(options, uint32(f.header[lb+i])|uint32(f.header[lb+i+1])<<8|uint32(f.header[lb+i+2])<<16|uint32(f.header[lb+i+3])<<24)
+		options[j] |= uint32(header[lb+i])
+		options[j] |= uint32(header[lb+i+1]) << 8
+		options[j] |= uint32(header[lb+i+2]) << 16
+		options[j] |= uint32(header[lb+i+3]) << 24
 	}
+
 	return options
 }
 
@@ -221,35 +220,35 @@ func (f *Frame) ReadPayloadLen() uint32 {
 // LE format used to write Payload
 // Using 4 bytes (2,3,4,5 bytes in the header)
 //go:inline
-func (f *Frame) WritePayloadLen(len uint32) {
-	_ = f.header[5]
-	f.header[2] = byte(len)
-	f.header[3] = byte(len >> 8)
-	f.header[4] = byte(len >> 16)
-	f.header[5] = byte(len >> 24)
+func (f *Frame) WritePayloadLen(data []byte, len uint32) {
+	_ = data[5]
+	data[2] = byte(len)
+	data[3] = byte(len >> 8)
+	data[4] = byte(len >> 16)
+	data[5] = byte(len >> 24)
 }
 
 // WriteCRC ..
 // Calculating CRC and writing it to the 6th byte (7th reserved)
-func (f *Frame) WriteCRC() {
+func (f *Frame) WriteCRC(header []byte) {
 	// 6 7 8 9 bytes
 	// 10, 11 reserved
-	_ = f.header[9]
+	_ = header[9]
 
-	crc := crc32.ChecksumIEEE(f.header[:6])
-	f.header[6] = byte(crc)
-	f.header[7] = byte(crc >> 8)
-	f.header[8] = byte(crc >> 16)
-	f.header[9] = byte(crc >> 24)
+	crc := crc32.ChecksumIEEE(header[:6])
+	header[6] = byte(crc)
+	header[7] = byte(crc >> 8)
+	header[8] = byte(crc >> 16)
+	header[9] = byte(crc >> 24)
 }
 
 // VerifyCRC ..
 // Reading info from 6th byte and verifying it with calculated in-place. Should be equal.
 // If not - drop the frame as incorrect.
-func (f *Frame) VerifyCRC() bool {
-	_ = f.header[9]
+func (f *Frame) VerifyCRC(header []byte) bool {
+	_ = header[9]
 
-	return crc32.ChecksumIEEE(f.header[:6]) == uint32(f.header[6])|uint32(f.header[7])<<8|uint32(f.header[8])<<16|uint32(f.header[9])<<24
+	return crc32.ChecksumIEEE(header[:6]) == uint32(header[6])|uint32(header[7])<<8|uint32(header[8])<<16|uint32(header[9])<<24
 }
 
 // Bytes returns header with payload

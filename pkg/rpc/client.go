@@ -101,9 +101,9 @@ func (c *ClientCodec) WriteRequest(r *rpc.Request,
 	fr.WriteOptions(uint32(r.Seq), uint32(len(r.ServiceMethod)))
 	fr.WriteVersion(frame.VERSION_1)
 
-	fr.WritePayloadLen(uint32(buf.Len()))
+	fr.WritePayloadLen(fr.Header(), uint32(buf.Len()))
 	fr.WritePayload(buf.Bytes())
-	fr.WriteCRC()
+	fr.WriteCRC(fr.Header())
 
 	err := c.relay.Send(fr)
 	if err != nil {
@@ -123,14 +123,14 @@ func (c *ClientCodec) ReadResponseHeader(r *rpc.Response) error {
 	if err != nil {
 		return errors.E(op, err)
 	}
-	if !fr.VerifyCRC() {
+	if !fr.VerifyCRC(fr.Header()) {
 		return errors.E(op, errors.Str("CRC verification failed"))
 	}
 
-	// save the fr after CRC verification
+	// save the frame after CRC verification
 	c.frame = fr
 
-	opts := fr.ReadOptions()
+	opts := fr.ReadOptions(fr.Header())
 	if len(opts) != 2 {
 		return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
 	}

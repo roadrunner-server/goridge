@@ -31,7 +31,7 @@ func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 	}
 
 	// verify header CRC
-	if !header.VerifyCRC() {
+	if !header.VerifyCRC(header.Header()) {
 		return errors.E(op, errors.Str("CRC verification failed"))
 	}
 

@@ -19,10 +19,10 @@ func TestSocketRelay(t *testing.T) {
 	nf := frame.NewFrame()
 	nf.WriteVersion(frame.VERSION_1)
 	nf.WriteFlags(frame.CONTROL, frame.CODEC_GOB, frame.CODEC_JSON)
-	nf.WritePayloadLen(uint32(len([]byte(TestPayload))))
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
 	nf.WritePayload([]byte(TestPayload))
-	nf.WriteCRC()
-	assert.Equal(t, true, nf.VerifyCRC())
+	nf.WriteCRC(nf.Header())
+	assert.Equal(t, true, nf.VerifyCRC(nf.Header()))
 
 	conn, err := net.Dial("tcp", "localhost:10002")
 	assert.NoError(t, err)
@@ -45,7 +45,7 @@ func TestSocketRelay(t *testing.T) {
 	assert.Equal(t, fr.ReadVersion(), nf.ReadVersion())
 	assert.Equal(t, fr.ReadFlags(), nf.ReadFlags())
 	assert.Equal(t, fr.ReadPayloadLen(), nf.ReadPayloadLen())
-	assert.Equal(t, true, fr.VerifyCRC())
+	assert.Equal(t, true, fr.VerifyCRC(fr.Header()))
 	assert.Equal(t, []byte(TestPayload), fr.Payload())
 }
 
@@ -58,11 +58,11 @@ func TestSocketRelayOptions(t *testing.T) {
 	nf := frame.NewFrame()
 	nf.WriteVersion(frame.VERSION_1)
 	nf.WriteFlags(frame.CONTROL, frame.CODEC_GOB, frame.CODEC_JSON)
-	nf.WritePayloadLen(uint32(len([]byte(TestPayload))))
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
 	nf.WritePayload([]byte(TestPayload))
 	nf.WriteOptions(100, 10000, 100000)
-	nf.WriteCRC()
-	assert.Equal(t, true, nf.VerifyCRC())
+	nf.WriteCRC(nf.Header())
+	assert.Equal(t, true, nf.VerifyCRC(nf.Header()))
 
 	conn, err := net.Dial("tcp", "localhost:10001")
 	assert.NoError(t, err)
@@ -85,9 +85,9 @@ func TestSocketRelayOptions(t *testing.T) {
 	assert.Equal(t, fr.ReadVersion(), nf.ReadVersion())
 	assert.Equal(t, fr.ReadFlags(), nf.ReadFlags())
 	assert.Equal(t, fr.ReadPayloadLen(), nf.ReadPayloadLen())
-	assert.Equal(t, true, fr.VerifyCRC())
+	assert.Equal(t, true, fr.VerifyCRC(fr.Header()))
 	assert.Equal(t, []byte(TestPayload), fr.Payload())
-	assert.Equal(t, []uint32{100, 10000, 100000}, fr.ReadOptions())
+	assert.Equal(t, []uint32{100, 10000, 100000}, fr.ReadOptions(fr.Header()))
 }
 
 func TestSocketRelayNoPayload(t *testing.T) {
@@ -100,8 +100,8 @@ func TestSocketRelayNoPayload(t *testing.T) {
 	nf.WriteVersion(frame.VERSION_1)
 	nf.WriteFlags(frame.CONTROL, frame.CODEC_GOB, frame.CODEC_JSON)
 	nf.WriteOptions(100, 10000, 100000)
-	nf.WriteCRC()
-	assert.Equal(t, true, nf.VerifyCRC())
+	nf.WriteCRC(nf.Header())
+	assert.Equal(t, true, nf.VerifyCRC(nf.Header()))
 
 	conn, err := net.Dial("tcp", "localhost:12221")
 	assert.NoError(t, err)
@@ -124,9 +124,9 @@ func TestSocketRelayNoPayload(t *testing.T) {
 	assert.Equal(t, fr.ReadVersion(), nf.ReadVersion())
 	assert.Equal(t, fr.ReadFlags(), nf.ReadFlags())
 	assert.Equal(t, fr.ReadPayloadLen(), nf.ReadPayloadLen()) // should be zero, without error
-	assert.Equal(t, true, fr.VerifyCRC())
+	assert.Equal(t, true, fr.VerifyCRC(fr.Header()))
 	assert.Equal(t, []byte{}, fr.Payload()) // empty
-	assert.Equal(t, []uint32{100, 10000, 100000}, fr.ReadOptions())
+	assert.Equal(t, []uint32{100, 10000, 100000}, fr.ReadOptions(fr.Header()))
 }
 
 func TestSocketRelayWrongCRC(t *testing.T) {
@@ -139,7 +139,7 @@ func TestSocketRelayWrongCRC(t *testing.T) {
 	nf.WriteVersion(frame.VERSION_1)
 	nf.WriteFlags(frame.CONTROL, frame.CODEC_GOB, frame.CODEC_JSON)
 	nf.WriteOptions(100, 10000, 100000)
-	nf.WriteCRC()
+	nf.WriteCRC(nf.Header())
 	nf.Header()[6] = 22 // just random wrong CRC directly
 
 	conn, err := net.Dial("tcp", "localhost:13445")
