@@ -1,6 +1,19 @@
 CHANGELOG
 =========
 
+v3.2.0 (-.08.2021)
+-------------------
+
+## 🚀 New:
+
+- ✏️ 50% reduce bound checks in the frame's operations. [PR](https://github.com/spiral/goridge/pull/143)
+
+## 🔨 BC:
+
+- 💔 Frame now for the internal (but public) operations receive additional `[]byte` slice to skip bound checks.
+
+---
+
 v3.1.4 (14.06.2021)
 -------------------
 
