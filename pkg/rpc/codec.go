@@ -147,10 +147,10 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error { //nolin
 
 //go:inline
 func (c *Codec) sendBuf(frame *frame.Frame, buf *bytes.Buffer) error {
-	frame.WritePayloadLen(uint32(buf.Len()))
+	frame.WritePayloadLen(frame.Header(), uint32(buf.Len()))
 	frame.WritePayload(buf.Bytes())
 
-	frame.WriteCRC()
+	frame.WriteCRC(frame.Header())
 	return c.relay.Send(frame)
 }
 
@@ -167,10 +167,10 @@ func (c *Codec) handleError(r *rpc.Response, fr *frame.Frame, err string) error 
 	if err != "" {
 		buf.WriteString(err)
 	}
-	fr.WritePayloadLen(uint32(buf.Len()))
+	fr.WritePayloadLen(fr.Header(), uint32(buf.Len()))
 	fr.WritePayload(buf.Bytes())
 
-	fr.WriteCRC()
+	fr.WriteCRC(fr.Header())
 	_ = c.relay.Send(fr)
 	return errors.E(op, errors.Str(r.Error))
 }
@@ -194,7 +194,7 @@ func (c *Codec) ReadRequestHeader(r *rpc.Request) error {
 
 	// opts[0] sequence ID
 	// opts[1] service method name offset from payload in bytes
-	opts := f.ReadOptions()
+	opts := f.ReadOptions(f.Header())
 	if len(opts) != 2 {
 		return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
 	}
