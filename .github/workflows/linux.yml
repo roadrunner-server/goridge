@@ -2,13 +2,18 @@ name: Linux
 
 on:
   push:
-  pull_request:
     branches:
-      # Branches from forks have the form 'user:branch-name' so we only run
-      # this job on pull_request events for branches that look like fork
-      # branches. Without this we would end up running this job twice for non
-      # forked PRs, once for the push and then once for opening the PR.
-      - '**:**'
+      - master
+      - beta
+      - stable
+    tags-ignore:
+      - '**'
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+
 
 jobs:
   build:
@@ -18,8 +23,8 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        go: [ 1.14, 1.15 ]
-        os: [ ubuntu-20.04]
+        go: [ 1.16 ]
+        os: [ ubuntu-20.04 ]
     steps:
       - name: Set up Go ${{ matrix.go }}
         uses: actions/setup-go@v2
@@ -48,7 +53,7 @@ jobs:
           go test -v -race -cover -tags=debug -coverpkg=./... -coverprofile=./coverage-ci/socket.txt -covermode=atomic ./pkg/socket
           cat ./coverage-ci/*.txt > ./coverage-ci/summary.txt
 
-      - uses: codecov/codecov-action@v1 # Docs: <https://github.com/codecov/codecov-action>
+      - uses: codecov/codecov-action@v2 # Docs: <https://github.com/codecov/codecov-action>
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage-ci/summary.txt
