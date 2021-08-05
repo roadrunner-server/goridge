@@ -17,7 +17,7 @@ func TestSocketRelay(t *testing.T) {
 
 	// TEST FRAME TO SEND
 	nf := frame.NewFrame()
-	nf.WriteVersion(frame.VERSION_1)
+	nf.WriteVersion(nf.Header(), frame.VERSION_1)
 	nf.WriteFlags(frame.CONTROL, frame.CODEC_GOB, frame.CODEC_JSON)
 	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
 	nf.WritePayload([]byte(TestPayload))
@@ -36,15 +36,15 @@ func TestSocketRelay(t *testing.T) {
 
 	r := NewSocketRelay(accept)
 
-	fr := &frame.Frame{}
+	fr := frame.NewFrame()
 	err = r.Receive(fr)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, fr.ReadVersion(), nf.ReadVersion())
+	assert.Equal(t, fr.ReadVersion(fr.Header()), nf.ReadVersion(nf.Header()))
 	assert.Equal(t, fr.ReadFlags(), nf.ReadFlags())
-	assert.Equal(t, fr.ReadPayloadLen(), nf.ReadPayloadLen())
+	assert.Equal(t, fr.ReadPayloadLen(fr.Header()), nf.ReadPayloadLen(nf.Header()))
 	assert.Equal(t, true, fr.VerifyCRC(fr.Header()))
 	assert.Equal(t, []byte(TestPayload), fr.Payload())
 }
@@ -56,11 +56,11 @@ func TestSocketRelayOptions(t *testing.T) {
 
 	// TEST FRAME TO SEND
 	nf := frame.NewFrame()
-	nf.WriteVersion(frame.VERSION_1)
+	nf.WriteVersion(nf.Header(), frame.VERSION_1)
 	nf.WriteFlags(frame.CONTROL, frame.CODEC_GOB, frame.CODEC_JSON)
 	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
 	nf.WritePayload([]byte(TestPayload))
-	nf.WriteOptions(100, 10000, 100000)
+	nf.WriteOptions(nf.HeaderPtr(), 100, 10000, 100000)
 	nf.WriteCRC(nf.Header())
 	assert.Equal(t, true, nf.VerifyCRC(nf.Header()))
 
@@ -76,15 +76,15 @@ func TestSocketRelayOptions(t *testing.T) {
 
 	r := NewSocketRelay(accept)
 
-	fr := &frame.Frame{}
+	fr := frame.NewFrame()
 	err = r.Receive(fr)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, fr.ReadVersion(), nf.ReadVersion())
+	assert.Equal(t, fr.ReadVersion(fr.Header()), nf.ReadVersion(nf.Header()))
 	assert.Equal(t, fr.ReadFlags(), nf.ReadFlags())
-	assert.Equal(t, fr.ReadPayloadLen(), nf.ReadPayloadLen())
+	assert.Equal(t, fr.ReadPayloadLen(fr.Header()), nf.ReadPayloadLen(nf.Header()))
 	assert.Equal(t, true, fr.VerifyCRC(fr.Header()))
 	assert.Equal(t, []byte(TestPayload), fr.Payload())
 	assert.Equal(t, []uint32{100, 10000, 100000}, fr.ReadOptions(fr.Header()))
@@ -97,9 +97,9 @@ func TestSocketRelayNoPayload(t *testing.T) {
 
 	// TEST FRAME TO SEND
 	nf := frame.NewFrame()
-	nf.WriteVersion(frame.VERSION_1)
+	nf.WriteVersion(nf.Header(), frame.VERSION_1)
 	nf.WriteFlags(frame.CONTROL, frame.CODEC_GOB, frame.CODEC_JSON)
-	nf.WriteOptions(100, 10000, 100000)
+	nf.WriteOptions(nf.HeaderPtr(), 100, 10000, 100000)
 	nf.WriteCRC(nf.Header())
 	assert.Equal(t, true, nf.VerifyCRC(nf.Header()))
 
@@ -115,15 +115,15 @@ func TestSocketRelayNoPayload(t *testing.T) {
 
 	r := NewSocketRelay(accept)
 
-	fr := &frame.Frame{}
+	fr := frame.NewFrame()
 	err = r.Receive(fr)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, fr.ReadVersion(), nf.ReadVersion())
+	assert.Equal(t, fr.ReadVersion(fr.Header()), nf.ReadVersion(nf.Header()))
 	assert.Equal(t, fr.ReadFlags(), nf.ReadFlags())
-	assert.Equal(t, fr.ReadPayloadLen(), nf.ReadPayloadLen()) // should be zero, without error
+	assert.Equal(t, fr.ReadPayloadLen(fr.Header()), nf.ReadPayloadLen(nf.Header()))
 	assert.Equal(t, true, fr.VerifyCRC(fr.Header()))
 	assert.Equal(t, []byte{}, fr.Payload()) // empty
 	assert.Equal(t, []uint32{100, 10000, 100000}, fr.ReadOptions(fr.Header()))
@@ -136,9 +136,9 @@ func TestSocketRelayWrongCRC(t *testing.T) {
 
 	// TEST FRAME TO SEND
 	nf := frame.NewFrame()
-	nf.WriteVersion(frame.VERSION_1)
+	nf.WriteVersion(nf.Header(), frame.VERSION_1)
 	nf.WriteFlags(frame.CONTROL, frame.CODEC_GOB, frame.CODEC_JSON)
-	nf.WriteOptions(100, 10000, 100000)
+	nf.WriteOptions(nf.HeaderPtr(), 100, 10000, 100000)
 	nf.WriteCRC(nf.Header())
 	nf.Header()[6] = 22 // just random wrong CRC directly
 
@@ -153,9 +153,10 @@ func TestSocketRelayWrongCRC(t *testing.T) {
 
 	r := NewSocketRelay(accept)
 
-	fr := &frame.Frame{}
+	fr := frame.NewFrame()
 	err = r.Receive(fr)
 	assert.Error(t, err)
-	assert.Nil(t, fr.Header())
-	assert.Nil(t, fr.Payload())
+	assert.False(t, fr.VerifyCRC(fr.Header()))
+
+	assert.Empty(t, fr.Payload())
 }

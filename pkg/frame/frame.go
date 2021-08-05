@@ -20,7 +20,7 @@ type Frame struct {
 }
 
 // ReadHeader reads only header, without payload
-func ReadHeader(data []byte) *Frame {
+func ReadHeader(data []byte) *Frame { // inlined, cost 14
 	_ = data[11]
 	return &Frame{
 		header:  data[:12],
@@ -31,7 +31,7 @@ func ReadHeader(data []byte) *Frame {
 // ReadFrame produces Frame from the RAW bytes
 // first 12 bytes will be a header
 // the rest - payload
-func ReadFrame(data []byte) *Frame {
+func ReadFrame(data []byte) *Frame { // inlined, cost 60
 	_ = data[11]
 	opt := data[0] & 0x0F
 	// if more than 3, that we have options
@@ -58,11 +58,11 @@ func NewFrame() *Frame {
 		payload: make([]byte, 0, 100),
 	}
 	// set default header len (2)
-	f.defaultHL()
+	f.defaultHL(f.header)
 	return f
 }
 
-// From .. MergeHeader merge header from other frame with original payload
+// From will represent header and payload as a Frame
 func From(header []byte, payload []byte) *Frame {
 	return &Frame{
 		payload: payload,
@@ -70,62 +70,45 @@ func From(header []byte, payload []byte) *Frame {
 	}
 }
 
-// ReadVersion .. To read version, we should return our 4 upper bits to their original place
+// ReadVersion ... To read version, we should return our 4 upper bits to their original place
 // 1111_0000 -> 0000_1111 (15)
-//go:inline
-func (f *Frame) ReadVersion() byte {
-	_ = f.header[0]
-	return f.header[0] >> 4
+func (Frame) ReadVersion(header []byte) byte {
+	_ = header[0]
+	return header[0] >> 4
 }
 
-// WriteVersion ..
-// To write version, we should made the following:
-// 1. For example we have version 15 it's 0000_1111 (1 byte)
+// WriteVersion
+// To write version, we should do the following:
+// 1. For example, we have version 15 it's 0000_1111 (1 byte)
 // 2. We should shift 4 lower bits to upper and write that to the 0th byte
 // 3. The 0th byte should become 1111_0000, but it's not 240, it's only 15, because version only 4 bits len
-//go:inline
-func (f *Frame) WriteVersion(version Version) {
-	_ = f.header[0]
+func (Frame) WriteVersion(header []byte, version Version) {
+	_ = header[0]
 	if version > 15 {
 		panic("version is only 4 bits")
 	}
-	f.header[0] = byte(version)<<4 | f.header[0]
+	header[0] = byte(version)<<4 | header[0]
 }
 
-// ReadHL ..
+// ReadHL
 // The lower 4 bits of the 0th octet occupies our header len data.
 // We should erase upper 4 bits, which contain information about Version
-// To erase, we applying bitwise AND to the upper 4 bits and returning result
-//go:inline
-func (f *Frame) ReadHL() byte {
+// To erase, we are applying bitwise AND to the upper 4 bits and returning result
+func (Frame) ReadHL(header []byte) byte {
 	// 0101_1111         0000_1111
-	return f.header[0] & 0x0F
+	return header[0] & 0x0F
 }
 
-// Writing HL is very simple. Since we are using lower 4 bits
-// we can easily apply bitwise OR and set lower 4 bits to needed hl value
-//go:inline
-func (f *Frame) writeHl(hl byte) {
-	f.header[0] |= hl
-}
-
-//go:inline
-func (f *Frame) incrementHL() {
-	hl := f.ReadHL()
+func (f *Frame) incrementHL(header []byte) {
+	hl := f.ReadHL(header)
 	if hl > 15 {
 		panic("header len should be less than 15")
 	}
-	f.header[0] = f.header[0] | hl + 1
+	header[0] = header[0] | hl + 1
 }
 
-//go:inline
-func (f *Frame) defaultHL() {
-	f.writeHl(3)
-}
-
-// ReadFlags ..
+// ReadFlags
 // Flags is full 1st byte
-//go:inline
 func (f *Frame) ReadFlags() byte {
 	return f.header[1]
 }
@@ -136,47 +119,54 @@ func (f *Frame) WriteFlags(flags ...byte) {
 	}
 }
 
-// WriteOptions ..
+// WriteOptions
 // Options slice len should not be more than 10 (40 bytes)
-func (f *Frame) WriteOptions(options ...uint32) {
+// we need a pointer to the header because we are reallocating the slice
+func (f *Frame) WriteOptions(header *[]byte, options ...uint32) {
 	if options == nil {
 		return
 	}
+
+	if header == nil {
+		panic("header should not be nil")
+	}
+
 	if len(options) > 10 {
 		panic("header options limited by 40 bytes")
 	}
 
-	hl := f.ReadHL()
+	hl := f.ReadHL(*header)
 	// check before writing. we can't handle more than 15*4 bytes of HL (3 for header and 12 for options)
 	if hl == 15 {
 		panic("header len could not be more than 15")
 	}
 
-	tmp := make([]byte, 0, OptionsMaxSize)
-	for i := 0; i < len(options); i++ {
-		tmp = append(tmp, byte(options[i]))
-		tmp = append(tmp, byte(options[i]>>8))
-		tmp = append(tmp, byte(options[i]>>16))
-		tmp = append(tmp, byte(options[i]>>24))
-		f.incrementHL() // increment header len by 32 bit
+	// make a new slice with the exact len (not doubled)
+	newSl := make([]byte, (len(options)*WORD)+len(*header))
+	// copy old data
+	copy(newSl, *header)
+
+	for i, j := 0, 12; i < len(options); i, j = i+1, j+WORD {
+		newSl[j] |= byte(options[i])
+		newSl[j+1] |= byte(options[i] >> 8)
+		newSl[j+2] |= byte(options[i] >> 16)
+		newSl[j+3] |= byte(options[i] >> 24)
+
+		f.incrementHL(newSl) // increment header len by 32 bit
 	}
 
-	f.header = append(f.header, tmp...)
+	// replace value
+	*header = newSl
 }
 
-// AppendOptions appends options to the header
-//go:inline
-func (f *Frame) AppendOptions(opts []byte) {
-	f.header = append(f.header, opts...)
-}
-
-// ReadOptions ...
+// ReadOptions
 // f.readHL() - 2 needed to know actual options size
 // we know, that 2 WORDS is minimal header len
 // extra WORDS will add extra 32bits to the options (4 bytes)
-func (f *Frame) ReadOptions(header []byte) []uint32 {
+// cannot inline, cost 117 vs 80
+func (f *Frame) ReadOptions(header []byte) []uint32 { //nolint:funlen
 	// we can read options, if there are no options
-	if f.ReadHL() <= 3 {
+	if f.ReadHL(header) <= 3 {
 		return nil
 	}
 
@@ -184,57 +174,178 @@ func (f *Frame) ReadOptions(header []byte) []uint32 {
 	const lb = 12
 
 	// Get the options len
-	optionLen := f.ReadHL() - 3 // 3 is the default
+	optionLen := f.ReadHL(header) - 3 // 3 is the default
 	// slice in place
 	options := make([]uint32, optionLen)
 
 	// Options starting from 8-th byte
 	// we should scan with 4 byte window (32bit, WORD)
-	for i, j := byte(0), 0; i < optionLen*WORD; i, j = i+WORD, j+1 {
-		// for example
-		// 8  12  16
-		// 9  13  17
-		// 10 14  18
-		// 11 15  19
-		// For this data, HL will be 3, optionLen will be 12 (3*4) bytes
-		options[j] |= uint32(header[lb+i])
-		options[j] |= uint32(header[lb+i+1]) << 8
-		options[j] |= uint32(header[lb+i+2]) << 16
-		options[j] |= uint32(header[lb+i+3]) << 24
+
+	// 8  12  16
+	// 9  13  17
+	// 10 14  18
+	// 11 15  19
+	// For this data, HL will be 3, optionLen will be 12 (3*4) bytes
+
+	// loop unwind
+	i := byte(0)
+	j := 0
+
+	// 1
+	options[j] |= uint32(header[lb+i])
+	options[j] |= uint32(header[lb+i+1]) << 8
+	options[j] |= uint32(header[lb+i+2]) << 16
+	options[j] |= uint32(header[lb+i+3]) << 24
+
+	i += WORD
+	j++
+
+	if i == optionLen*WORD {
+		goto done
 	}
 
+	// 2
+	options[j] |= uint32(header[lb+i])
+	options[j] |= uint32(header[lb+i+1]) << 8
+	options[j] |= uint32(header[lb+i+2]) << 16
+	options[j] |= uint32(header[lb+i+3]) << 24
+
+	i += WORD
+	j++
+
+	if i == optionLen*WORD {
+		goto done
+	}
+
+	// 3
+	options[j] |= uint32(header[lb+i])
+	options[j] |= uint32(header[lb+i+1]) << 8
+	options[j] |= uint32(header[lb+i+2]) << 16
+	options[j] |= uint32(header[lb+i+3]) << 24
+
+	i += WORD
+	j++
+
+	if i == optionLen*WORD {
+		goto done
+	}
+
+	// 4
+	options[j] |= uint32(header[lb+i])
+	options[j] |= uint32(header[lb+i+1]) << 8
+	options[j] |= uint32(header[lb+i+2]) << 16
+	options[j] |= uint32(header[lb+i+3]) << 24
+
+	i += WORD
+	j++
+
+	if i == optionLen*WORD {
+		goto done
+	}
+
+	// 5
+	options[j] |= uint32(header[lb+i])
+	options[j] |= uint32(header[lb+i+1]) << 8
+	options[j] |= uint32(header[lb+i+2]) << 16
+	options[j] |= uint32(header[lb+i+3]) << 24
+
+	i += WORD
+	j++
+
+	if i == optionLen*WORD {
+		goto done
+	}
+
+	// 6
+	options[j] |= uint32(header[lb+i])
+	options[j] |= uint32(header[lb+i+1]) << 8
+	options[j] |= uint32(header[lb+i+2]) << 16
+	options[j] |= uint32(header[lb+i+3]) << 24
+
+	i += WORD
+	j++
+
+	if i == optionLen*WORD {
+		goto done
+	}
+
+	// 7
+	options[j] |= uint32(header[lb+i])
+	options[j] |= uint32(header[lb+i+1]) << 8
+	options[j] |= uint32(header[lb+i+2]) << 16
+	options[j] |= uint32(header[lb+i+3]) << 24
+
+	i += WORD
+	j++
+
+	if i == optionLen*WORD {
+		goto done
+	}
+
+	// 8
+	options[j] |= uint32(header[lb+i])
+	options[j] |= uint32(header[lb+i+1]) << 8
+	options[j] |= uint32(header[lb+i+2]) << 16
+	options[j] |= uint32(header[lb+i+3]) << 24
+
+	i += WORD
+	j++
+
+	if i == optionLen*WORD {
+		goto done
+	}
+
+	// 9
+	options[j] |= uint32(header[lb+i])
+	options[j] |= uint32(header[lb+i+1]) << 8
+	options[j] |= uint32(header[lb+i+2]) << 16
+	options[j] |= uint32(header[lb+i+3]) << 24
+
+	i += WORD
+	j++
+
+	if i == optionLen*WORD {
+		goto done
+	}
+
+	// 10 - last possible
+	options[j] |= uint32(header[lb+i])
+	options[j] |= uint32(header[lb+i+1]) << 8
+	options[j] |= uint32(header[lb+i+2]) << 16
+	options[j] |= uint32(header[lb+i+3]) << 24
+
+	return options
+
+done:
 	return options
 }
 
-// ReadPayloadLen ..
+// ReadPayloadLen
 // LE format used to write Payload
 // Using 4 bytes (2,3,4,5 bytes in the header)
-//go:inline
-func (f *Frame) ReadPayloadLen() uint32 {
+func (Frame) ReadPayloadLen(header []byte) uint32 {
 	// 2,3,4,5
-	_ = f.header[5]
-	return uint32(f.header[2]) | uint32(f.header[3])<<8 | uint32(f.header[4])<<16 | uint32(f.header[5])<<24
+	_ = header[5]
+	return uint32(header[2]) | uint32(header[3])<<8 | uint32(header[4])<<16 | uint32(header[5])<<24
 }
 
-// WritePayloadLen ..
+// WritePayloadLen
 // LE format used to write Payload
 // Using 4 bytes (2,3,4,5 bytes in the header)
-//go:inline
-func (f *Frame) WritePayloadLen(data []byte, len uint32) {
-	_ = data[5]
-	data[2] = byte(len)
-	data[3] = byte(len >> 8)
-	data[4] = byte(len >> 16)
-	data[5] = byte(len >> 24)
+func (Frame) WritePayloadLen(header []byte, payloadLen uint32) {
+	_ = header[5]
+	header[2] = byte(payloadLen)
+	header[3] = byte(payloadLen >> 8)
+	header[4] = byte(payloadLen >> 16)
+	header[5] = byte(payloadLen >> 24)
 }
 
-// WriteCRC ..
-// Calculating CRC and writing it to the 6th byte (7th reserved)
-func (f *Frame) WriteCRC(header []byte) {
+// WriteCRC will calculate and write CRC32 4-bytes it to the 6th byte (7th reserved)
+func (Frame) WriteCRC(header []byte) {
 	// 6 7 8 9 bytes
 	// 10, 11 reserved
 	_ = header[9]
-
+	// calculate crc
 	crc := crc32.ChecksumIEEE(header[:6])
 	header[6] = byte(crc)
 	header[7] = byte(crc >> 8)
@@ -242,12 +353,26 @@ func (f *Frame) WriteCRC(header []byte) {
 	header[9] = byte(crc >> 24)
 }
 
-// VerifyCRC ..
+// AppendOptions appends options to the header
+func (Frame) AppendOptions(header *[]byte, options []byte) {
+	// make a new slice with the exact len (not doubled)
+	newSl := make([]byte, len(options)+len(*header))
+	// copy old data
+	copy(newSl, *header)
+	// j = 12 - first options byte
+	for i, j := 0, 12; i < len(options); i, j = i+1, j+1 {
+		newSl[j] = options[i]
+	}
+
+	// replace value
+	*header = newSl
+}
+
+// VerifyCRC ...
 // Reading info from 6th byte and verifying it with calculated in-place. Should be equal.
 // If not - drop the frame as incorrect.
-func (f *Frame) VerifyCRC(header []byte) bool {
+func (Frame) VerifyCRC(header []byte) bool {
 	_ = header[9]
-
 	return crc32.ChecksumIEEE(header[:6]) == uint32(header[6])|uint32(header[7])<<8|uint32(header[8])<<16|uint32(header[9])<<24
 }
 
@@ -260,19 +385,22 @@ func (f *Frame) Bytes() []byte {
 }
 
 // Header returns frame header
-//go:inline
 func (f *Frame) Header() []byte {
 	return f.header
 }
 
+// HeaderPtr returns frame header pointer
+func (f *Frame) HeaderPtr() *[]byte {
+	return &f.header
+}
+
 // Payload returns frame payload without header
-//go:inline
 func (f *Frame) Payload() []byte {
 	// start from the 1st (staring from 0) byte
 	return f.payload
 }
 
-// WritePayload .. writes payload
+// WritePayload writes payload
 func (f *Frame) WritePayload(data []byte) {
 	f.payload = make([]byte, len(data))
 	copy(f.payload, data)
@@ -283,5 +411,16 @@ func (f *Frame) Reset() {
 	f.header = make([]byte, 12)
 	f.payload = make([]byte, 0, 100)
 
-	f.defaultHL()
+	f.defaultHL(f.header)
+}
+
+// -------- PRIVATE
+func (f *Frame) defaultHL(header []byte) {
+	f.writeHl(header, 3)
+}
+
+// Writing HL is very simple. Since we are using lower 4 bits
+// we can easily apply bitwise OR and set lower 4 bits to needed hl value
+func (Frame) writeHl(header []byte, hl byte) {
+	header[0] |= hl
 }
