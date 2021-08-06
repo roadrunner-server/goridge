@@ -69,9 +69,9 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error { //nolin
 	defer c.putFrame(fr)
 
 	// SEQ_ID + METHOD_NAME_LEN
-	fr.WriteOptions(uint32(r.Seq), uint32(len(r.ServiceMethod)))
+	fr.WriteOptions(fr.HeaderPtr(), uint32(r.Seq), uint32(len(r.ServiceMethod)))
 	// Write protocol version
-	fr.WriteVersion(frame.VERSION_1)
+	fr.WriteVersion(fr.Header(), frame.VERSION_1)
 
 	// load and delete associated codec to not waste memory
 	// because we write it to the fr and don't need more information about it

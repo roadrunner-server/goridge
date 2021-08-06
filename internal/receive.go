@@ -9,40 +9,50 @@ import (
 
 func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 	const op = errors.Op("goridge_frame_receive")
-	// header bytes
-	hb := make([]byte, 12)
-	_, err := io.ReadFull(relay, hb)
+
+	if fr == nil {
+		return errors.E(op, errors.Str("nil frame"))
+	}
+
+	_, err := io.ReadFull(relay, fr.Header())
 	if err != nil {
 		return errors.E(op, err)
 	}
 
-	// Read frame header
-	header := frame.ReadHeader(hb)
 	// we have options
-	if header.ReadHL() > 3 {
+	if fr.ReadHL(fr.Header()) > 3 {
 		// we should read the options
-		optsLen := (header.ReadHL() - 3) * frame.WORD
+		optsLen := (fr.ReadHL(fr.Header()) - 3) * frame.WORD
 		opts := make([]byte, optsLen)
+
+		// read next part of the frame - options
 		_, err = io.ReadFull(relay, opts)
 		if err != nil {
 			return errors.E(op, err)
 		}
-		header.AppendOptions(opts)
+
+		// we should append frame's
+		fr.AppendOptions(fr.HeaderPtr(), opts)
 	}
 
 	// verify header CRC
-	if !header.VerifyCRC(header.Header()) {
+	if !fr.VerifyCRC(fr.Header()) {
 		return errors.E(op, errors.Str("CRC verification failed"))
 	}
 
 	// read the read payload
-	pb := make([]byte, header.ReadPayloadLen())
+	pl := fr.ReadPayloadLen(fr.Header())
+	// no payload
+	if pl == 0 {
+		return nil
+	}
+
+	pb := make([]byte, pl)
 	_, err = io.ReadFull(relay, pb)
 	if err != nil {
 		return errors.E(op, err)
 	}
 
-	*fr = *frame.From(header.Header(), pb)
-
+	fr.WritePayload(pb)
 	return nil
 }

@@ -59,8 +59,7 @@ func (c *ClientCodec) putFrame(f *frame.Frame) {
 }
 
 // WriteRequest writes request to the connection. Sequential.
-func (c *ClientCodec) WriteRequest(r *rpc.Request,
-	body interface{}) error {
+func (c *ClientCodec) WriteRequest(r *rpc.Request, body interface{}) error {
 	const op = errors.Op("goridge_write_request")
 
 	// get a frame from the pool
@@ -98,8 +97,8 @@ func (c *ClientCodec) WriteRequest(r *rpc.Request,
 	}
 
 	// SEQ_ID + METHOD_NAME_LEN
-	fr.WriteOptions(uint32(r.Seq), uint32(len(r.ServiceMethod)))
-	fr.WriteVersion(frame.VERSION_1)
+	fr.WriteOptions(fr.HeaderPtr(), uint32(r.Seq), uint32(len(r.ServiceMethod)))
+	fr.WriteVersion(fr.Header(), frame.VERSION_1)
 
 	fr.WritePayloadLen(fr.Header(), uint32(buf.Len()))
 	fr.WritePayload(buf.Bytes())

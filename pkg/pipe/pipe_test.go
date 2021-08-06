@@ -16,7 +16,7 @@ func TestPipeReceive(t *testing.T) {
 	relay := NewPipeRelay(pr, pw)
 
 	nf := frame.NewFrame()
-	nf.WriteVersion(frame.VERSION_1)
+	nf.WriteVersion(nf.Header(), frame.VERSION_1)
 	nf.WriteFlags(frame.CONTROL, frame.CODEC_GOB, frame.CODEC_JSON)
 	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
 	nf.WritePayload([]byte(TestPayload))
@@ -32,15 +32,15 @@ func TestPipeReceive(t *testing.T) {
 		_ = pw.Close()
 	}(nf)
 
-	fr := &frame.Frame{}
+	fr := frame.NewFrame()
 	err := relay.Receive(fr)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, fr.ReadVersion(), nf.ReadVersion())
+	assert.Equal(t, fr.ReadVersion(fr.Header()), nf.ReadVersion(nf.Header()))
 	assert.Equal(t, fr.ReadFlags(), nf.ReadFlags())
-	assert.Equal(t, fr.ReadPayloadLen(), nf.ReadPayloadLen())
+	assert.Equal(t, fr.ReadPayloadLen(fr.Header()), nf.ReadPayloadLen(nf.Header()))
 	assert.Equal(t, true, fr.VerifyCRC(nf.Header()))
 	assert.Equal(t, []byte(TestPayload), fr.Payload())
 }
@@ -51,11 +51,11 @@ func TestPipeReceiveWithOptions(t *testing.T) {
 	relay := NewPipeRelay(pr, pw)
 
 	nf := frame.NewFrame()
-	nf.WriteVersion(frame.VERSION_1)
+	nf.WriteVersion(nf.Header(), frame.VERSION_1)
 	nf.WriteFlags(frame.CONTROL, frame.CODEC_GOB, frame.CODEC_JSON)
 	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
 	nf.WritePayload([]byte(TestPayload))
-	nf.WriteOptions(100, 10000, 100000)
+	nf.WriteOptions(nf.HeaderPtr(), 100, 10000, 100000)
 	nf.WriteCRC(nf.Header())
 	assert.Equal(t, true, nf.VerifyCRC(nf.Header()))
 
@@ -68,15 +68,15 @@ func TestPipeReceiveWithOptions(t *testing.T) {
 		_ = pw.Close()
 	}(nf)
 
-	fr := &frame.Frame{}
+	fr := frame.NewFrame()
 	err := relay.Receive(fr)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	assert.Equal(t, fr.ReadVersion(), nf.ReadVersion())
+	assert.Equal(t, fr.ReadVersion(fr.Header()), nf.ReadVersion(nf.Header()))
 	assert.Equal(t, fr.ReadFlags(), nf.ReadFlags())
-	assert.Equal(t, fr.ReadPayloadLen(), nf.ReadPayloadLen())
+	assert.Equal(t, fr.ReadPayloadLen(fr.Header()), nf.ReadPayloadLen(nf.Header()))
 	assert.Equal(t, true, fr.VerifyCRC(fr.Header()))
 	assert.Equal(t, []byte(TestPayload), fr.Payload())
 	assert.Equal(t, []uint32{100, 10000, 100000}, fr.ReadOptions(fr.Header()))
@@ -88,7 +88,7 @@ func TestPipeCRC_Failed(t *testing.T) {
 	relay := NewPipeRelay(pr, pw)
 
 	nf := frame.NewFrame()
-	nf.WriteVersion(frame.VERSION_1)
+	nf.WriteVersion(nf.Header(), frame.VERSION_1)
 	nf.WriteFlags(frame.CONTROL)
 	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
 
@@ -105,9 +105,10 @@ func TestPipeCRC_Failed(t *testing.T) {
 		_ = pw.Close()
 	}(nf)
 
-	fr := &frame.Frame{}
+	fr := frame.NewFrame()
 	err := relay.Receive(fr)
 	assert.Error(t, err)
-	assert.Nil(t, fr.Header())
-	assert.Nil(t, fr.Payload())
+	assert.False(t, fr.VerifyCRC(fr.Header()))
+
+	assert.Empty(t, fr.Payload())
 }
