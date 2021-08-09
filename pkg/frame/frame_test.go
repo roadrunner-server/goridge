@@ -12,7 +12,7 @@ const TestPayload = `alsdjf;lskjdgljasg;lkjsalfkjaskldjflkasjdf;lkasjfdalksdjflk
 func TestNewFrame(t *testing.T) {
 	nf := NewFrame()
 	nf.WriteVersion(nf.Header(), VERSION_1)
-	nf.WriteFlags(CONTROL)
+	nf.WriteFlags(nf.Header(), CONTROL)
 	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
 	nf.WriteCRC(nf.header)
 
@@ -32,7 +32,7 @@ func TestNewFrame(t *testing.T) {
 func TestAppendOptions(t *testing.T) {
 	nf := NewFrame()
 	nf.WriteVersion(nf.Header(), VERSION_1)
-	nf.WriteFlags(CONTROL)
+	nf.WriteFlags(nf.Header(), CONTROL)
 	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
 	nf.WriteCRC(nf.header)
 
@@ -56,7 +56,7 @@ func TestFrame_VerifyCRC_Fail(t *testing.T) {
 	// this is the wrong position
 	nf.WriteCRC(nf.Header())
 	nf.WriteVersion(nf.Header(), VERSION_1)
-	nf.WriteFlags(CONTROL)
+	nf.WriteFlags(nf.Header(), CONTROL)
 	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
 
 	nf.WritePayload([]byte(TestPayload))
@@ -74,7 +74,7 @@ func TestFrame_VerifyCRC_Fail(t *testing.T) {
 func TestFrame_OptionsWithNoOptions(t *testing.T) {
 	nf := NewFrame()
 	nf.WriteVersion(nf.Header(), 1)
-	nf.WriteFlags(CONTROL, CODEC_GOB)
+	nf.WriteFlags(nf.Header(), CONTROL, CODEC_GOB)
 	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
 	nf.WriteOptions(nf.HeaderPtr())
 
@@ -94,10 +94,48 @@ func TestFrame_OptionsWithNoOptions(t *testing.T) {
 	assert.Equal(t, rf.VerifyCRC(rf.Header()), true)
 }
 
+func TestFrame_Panic(t *testing.T) {
+	defer func() {
+		assert.NotNil(t, recover())
+	}()
+	nf := NewFrame()
+	nf.WriteVersion(nf.Header(), 1)
+	nf.WriteFlags(nf.Header(), CONTROL, CODEC_GOB)
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+	nf.WriteOptions(nf.HeaderPtr(), 323423432, 1213231, 1, 2, 3, 4, 5, 2, 1, 2, 12)
+	nf.WriteOptions(nf.HeaderPtr(), 323423432)
+}
+
+func TestFrame_IncrementHLPanic(t *testing.T) {
+	defer func() {
+		assert.NotNil(t, recover())
+	}()
+	nf := NewFrame()
+	nf.WriteVersion(nf.Header(), 1)
+	nf.WriteFlags(nf.Header(), CONTROL, CODEC_GOB)
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+	nf.WriteOptions(nf.HeaderPtr(), 323423432, 1213231, 1, 2, 3, 4, 5, 2, 1, 2)
+	nf.incrementHL(nf.header)
+	nf.incrementHL(nf.header)
+	nf.incrementHL(nf.header)
+}
+
+func TestFrame_ReadOptionsPanic(t *testing.T) {
+	defer func() {
+		assert.NotNil(t, recover())
+	}()
+	nf := NewFrame()
+	nf.WriteVersion(nf.Header(), 1)
+	nf.WriteFlags(nf.Header(), CONTROL, CODEC_GOB)
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+	nf.WriteOptions(nf.HeaderPtr(), 323423432, 1213231, 1, 2, 3, 4, 5, 2, 1, 2, 12)
+	nf.header[53] = 123
+}
+
 func TestFrame_Options(t *testing.T) {
 	nf := NewFrame()
 	nf.WriteVersion(nf.Header(), 1)
-	nf.WriteFlags(CONTROL, CODEC_GOB)
+	nf.WriteFlags(nf.Header(), CONTROL, CODEC_GOB)
 	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
 	nf.WriteOptions(nf.HeaderPtr(), 323423432, 1213231)
 
@@ -120,7 +158,7 @@ func TestFrame_Options(t *testing.T) {
 func BenchmarkLoops(b *testing.B) {
 	nf := NewFrame()
 	nf.WriteVersion(nf.Header(), 1)
-	nf.WriteFlags(CONTROL, CODEC_GOB)
+	nf.WriteFlags(nf.Header(), CONTROL, CODEC_GOB)
 	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
 	nf.WriteOptions(nf.HeaderPtr(), 323423432, 1213231, 123123123, 398797979, 323423432, 1213231, 123123123, 398797979, 123, 123)
 
@@ -136,7 +174,7 @@ func BenchmarkLoops(b *testing.B) {
 func TestFrame_Bytes(t *testing.T) {
 	nf := NewFrame()
 	nf.WriteVersion(nf.Header(), 1)
-	nf.WriteFlags(CONTROL, CODEC_GOB)
+	nf.WriteFlags(nf.Header(), CONTROL, CODEC_GOB)
 	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
 
 	nf.WriteOptions(nf.HeaderPtr(), 323423432)
@@ -168,7 +206,7 @@ func BenchmarkCRC32(b *testing.B) {
 func BenchmarkFrame_CRC(b *testing.B) {
 	nf := NewFrame()
 	nf.WriteVersion(nf.Header(), VERSION_1)
-	nf.WriteFlags(CONTROL, CODEC_GOB)
+	nf.WriteFlags(nf.Header(), CONTROL, CODEC_GOB)
 	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
 	nf.WriteOptions(nf.HeaderPtr(), 1000, 1000, 1000, 1000, 1000, 1000)
 
@@ -190,7 +228,7 @@ func BenchmarkFrame(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		nf := NewFrame()
 		nf.WriteVersion(nf.Header(), VERSION_1)
-		nf.WriteFlags(CONTROL, CODEC_GOB)
+		nf.WriteFlags(nf.Header(), CONTROL, CODEC_GOB)
 		nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
 		nf.WriteOptions(nf.HeaderPtr(), 1000, 1000, 1000, 1000, 1000, 1000)
 		nf.WriteCRC(nf.Header())

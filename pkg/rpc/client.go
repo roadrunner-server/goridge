@@ -73,14 +73,14 @@ func (c *ClientCodec) WriteRequest(r *rpc.Request, body interface{}) error {
 	// writeServiceMethod to the buffer
 	buf.WriteString(r.ServiceMethod)
 	// use fallback as gob
-	fr.WriteFlags(frame.CODEC_GOB)
+	fr.WriteFlags(fr.Header(), frame.CODEC_GOB)
 
 	if body != nil {
 		// if body is proto message, use proto codec
 		switch m := body.(type) {
 		// check if message is PROTO
 		case proto.Message:
-			fr.WriteFlags(frame.CODEC_PROTO)
+			fr.WriteFlags(fr.Header(), frame.CODEC_PROTO)
 			b, err := proto.Marshal(m)
 			if err != nil {
 				return errors.E(op, err)

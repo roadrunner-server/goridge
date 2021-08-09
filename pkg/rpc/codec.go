@@ -79,9 +79,9 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error { //nolin
 	codec, ok := c.codec.Load(r.Seq)
 	if !ok {
 		// fallback codec
-		fr.WriteFlags(frame.CODEC_GOB)
+		fr.WriteFlags(fr.Header(), frame.CODEC_GOB)
 	} else {
-		fr.WriteFlags(codec.(byte))
+		fr.WriteFlags(fr.Header(), codec.(byte))
 	}
 
 	// delete the key
@@ -162,7 +162,7 @@ func (c *Codec) handleError(r *rpc.Response, fr *frame.Frame, err string) error 
 	buf.WriteString(r.ServiceMethod)
 
 	const op = errors.Op("handle codec error")
-	fr.WriteFlags(frame.ERROR)
+	fr.WriteFlags(fr.Header(), frame.ERROR)
 	// error should be here
 	if err != "" {
 		buf.WriteString(err)

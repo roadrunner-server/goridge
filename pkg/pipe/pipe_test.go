@@ -17,7 +17,7 @@ func TestPipeReceive(t *testing.T) {
 
 	nf := frame.NewFrame()
 	nf.WriteVersion(nf.Header(), frame.VERSION_1)
-	nf.WriteFlags(frame.CONTROL, frame.CODEC_GOB, frame.CODEC_JSON)
+	nf.WriteFlags(nf.Header(), frame.CONTROL, frame.CODEC_GOB, frame.CODEC_JSON)
 	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
 	nf.WritePayload([]byte(TestPayload))
 	nf.WriteCRC(nf.Header())
@@ -52,7 +52,7 @@ func TestPipeReceiveWithOptions(t *testing.T) {
 
 	nf := frame.NewFrame()
 	nf.WriteVersion(nf.Header(), frame.VERSION_1)
-	nf.WriteFlags(frame.CONTROL, frame.CODEC_GOB, frame.CODEC_JSON)
+	nf.WriteFlags(nf.Header(), frame.CONTROL, frame.CODEC_GOB, frame.CODEC_JSON)
 	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
 	nf.WritePayload([]byte(TestPayload))
 	nf.WriteOptions(nf.HeaderPtr(), 100, 10000, 100000)
@@ -89,7 +89,7 @@ func TestPipeCRC_Failed(t *testing.T) {
 
 	nf := frame.NewFrame()
 	nf.WriteVersion(nf.Header(), frame.VERSION_1)
-	nf.WriteFlags(frame.CONTROL)
+	nf.WriteFlags(nf.Header(), frame.CONTROL)
 	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
 
 	assert.Equal(t, false, nf.VerifyCRC(nf.Header()))
