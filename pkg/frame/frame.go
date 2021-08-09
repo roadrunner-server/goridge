@@ -96,13 +96,14 @@ func (Frame) WriteVersion(header []byte, version Version) {
 // To erase, we are applying bitwise AND to the upper 4 bits and returning result
 func (Frame) ReadHL(header []byte) byte {
 	// 0101_1111         0000_1111
+	// 0x0F - 15
 	return header[0] & 0x0F
 }
 
 func (f *Frame) incrementHL(header []byte) {
 	hl := f.ReadHL(header)
-	if hl > 15 {
-		panic("header len should be less than 15")
+	if hl == 15 {
+		panic("header len should be less than 15 to increment")
 	}
 	header[0] = header[0] | hl + 1
 }
@@ -113,9 +114,10 @@ func (f *Frame) ReadFlags() byte {
 	return f.header[1]
 }
 
-func (f *Frame) WriteFlags(flags ...byte) {
+func (Frame) WriteFlags(header []byte, flags ...byte) {
+	_ = header[1]
 	for i := 0; i < len(flags); i++ {
-		f.header[1] |= flags[i]
+		header[1] |= flags[i]
 	}
 }
 
@@ -138,7 +140,7 @@ func (f *Frame) WriteOptions(header *[]byte, options ...uint32) {
 	hl := f.ReadHL(*header)
 	// check before writing. we can't handle more than 15*4 bytes of HL (3 for header and 12 for options)
 	if hl == 15 {
-		panic("header len could not be more than 15")
+		panic("header len could not be equal to 15 to write options")
 	}
 
 	// make a new slice with the exact len (not doubled)
@@ -165,31 +167,39 @@ func (f *Frame) WriteOptions(header *[]byte, options ...uint32) {
 // extra WORDS will add extra 32bits to the options (4 bytes)
 // cannot inline, cost 117 vs 80
 func (f *Frame) ReadOptions(header []byte) []uint32 { //nolint:funlen
+	ol := f.ReadHL(header)
 	// we can read options, if there are no options
-	if f.ReadHL(header) <= 3 {
+	if ol <= 3 {
 		return nil
 	}
 
 	// last byte after main header and first options byte
 	const lb = 12
 
-	// Get the options len
-	optionLen := f.ReadHL(header) - 3 // 3 is the default
+	// Get the options len minus the standard options
+	optionLen := ol - 3 // 3 is the default
+	// check the options len
+	if optionLen*WORD > OptionsMaxSize {
+		panic("options size is limited by 40 bytes (10 4-bytes words)")
+	}
+
 	// slice in place
 	options := make([]uint32, optionLen)
 
-	// Options starting from 8-th byte
+	// SAMPLE
+	// Options starting from 12-th byte till 52-th byte (40 bytes max)
 	// we should scan with 4 byte window (32bit, WORD)
-
 	// 8  12  16
 	// 9  13  17
 	// 10 14  18
 	// 11 15  19
-	// For this data, HL will be 3, optionLen will be 12 (3*4) bytes
 
 	// loop unwind
 	i := byte(0)
 	j := 0
+
+	_ = header[lb+i+3]
+	_ = options[j]
 
 	// 1
 	options[j] |= uint32(header[lb+i])
@@ -204,6 +214,8 @@ func (f *Frame) ReadOptions(header []byte) []uint32 { //nolint:funlen
 		goto done
 	}
 
+	_ = header[lb+i+3]
+	_ = options[j]
 	// 2
 	options[j] |= uint32(header[lb+i])
 	options[j] |= uint32(header[lb+i+1]) << 8
@@ -217,6 +229,8 @@ func (f *Frame) ReadOptions(header []byte) []uint32 { //nolint:funlen
 		goto done
 	}
 
+	_ = header[lb+i+3]
+	_ = options[j]
 	// 3
 	options[j] |= uint32(header[lb+i])
 	options[j] |= uint32(header[lb+i+1]) << 8
@@ -230,6 +244,8 @@ func (f *Frame) ReadOptions(header []byte) []uint32 { //nolint:funlen
 		goto done
 	}
 
+	_ = header[lb+i+3]
+	_ = options[j]
 	// 4
 	options[j] |= uint32(header[lb+i])
 	options[j] |= uint32(header[lb+i+1]) << 8
@@ -243,6 +259,8 @@ func (f *Frame) ReadOptions(header []byte) []uint32 { //nolint:funlen
 		goto done
 	}
 
+	_ = header[lb+i+3]
+	_ = options[j]
 	// 5
 	options[j] |= uint32(header[lb+i])
 	options[j] |= uint32(header[lb+i+1]) << 8
@@ -256,6 +274,8 @@ func (f *Frame) ReadOptions(header []byte) []uint32 { //nolint:funlen
 		goto done
 	}
 
+	_ = header[lb+i+3]
+	_ = options[j]
 	// 6
 	options[j] |= uint32(header[lb+i])
 	options[j] |= uint32(header[lb+i+1]) << 8
@@ -269,6 +289,8 @@ func (f *Frame) ReadOptions(header []byte) []uint32 { //nolint:funlen
 		goto done
 	}
 
+	_ = header[lb+i+3]
+	_ = options[j]
 	// 7
 	options[j] |= uint32(header[lb+i])
 	options[j] |= uint32(header[lb+i+1]) << 8
@@ -282,6 +304,8 @@ func (f *Frame) ReadOptions(header []byte) []uint32 { //nolint:funlen
 		goto done
 	}
 
+	_ = header[lb+i+3]
+	_ = options[j]
 	// 8
 	options[j] |= uint32(header[lb+i])
 	options[j] |= uint32(header[lb+i+1]) << 8
@@ -295,6 +319,8 @@ func (f *Frame) ReadOptions(header []byte) []uint32 { //nolint:funlen
 		goto done
 	}
 
+	_ = header[lb+i+3]
+	_ = options[j]
 	// 9
 	options[j] |= uint32(header[lb+i])
 	options[j] |= uint32(header[lb+i+1]) << 8
@@ -308,6 +334,8 @@ func (f *Frame) ReadOptions(header []byte) []uint32 { //nolint:funlen
 		goto done
 	}
 
+	_ = header[lb+i+3]
+	_ = options[j]
 	// 10 - last possible
 	options[j] |= uint32(header[lb+i])
 	options[j] |= uint32(header[lb+i+1]) << 8

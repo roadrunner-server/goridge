@@ -7,6 +7,11 @@ v3.2.0 (-.08.2021)
 ## 🚀 New:
 
 - ✏️ 50% reduce bound checks in the frame's operations. [PR](https://github.com/spiral/goridge/pull/143)
+-
+
+## 🩹 Fixes:
+
+- 🐛 Fix: bug with incorrectly interpreted header len AND operation.
 
 ## 🔨 BC:
 
