@@ -21,8 +21,6 @@ linters-settings:
     check-shadowing: true
   golint:
     min-confidence: 0.1
-  gocyclo:
-    min-complexity: 15
   godot:
     scope: declarations
     capital: true
@@ -56,13 +54,10 @@ linters: # All available linters list: <https://golangci-lint.run/usage/linters/
     - errorlint # find code that will cause problems with the error wrapping scheme introduced in Go 1.13
     - exhaustive # check exhaustiveness of enum switch statements
     - exportloopref # checks for pointers to enclosing loop variables
-    - funlen # Tool for detection of long functions
     - gochecknoglobals # Checks that no globals are present in Go code
     - gochecknoinits # Checks that no init functions are present in Go code
-    - gocognit # Computes and checks the cognitive complexity of functions
     - goconst # Finds repeated strings that could be replaced by a constant
     - gocritic # The most opinionated Go source code linter
-    - gocyclo # Computes and checks the cyclomatic complexity of functions
     - gofmt # Gofmt checks whether code was gofmt-ed. By default this tool runs with -s option to check for code simplification
     - goimports # Goimports does everything that gofmt does. Additionally it checks unused imports
     - goprintffuncname # Checks that printf-like functions are named with `f` at the end
@@ -92,7 +87,4 @@ issues:
   exclude-rules:
     - path: pkg/frame/frame_test.go
       linters:
-        - dupl
-        - funlen
         - scopelint
-        - gocognit

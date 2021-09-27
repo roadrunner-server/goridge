@@ -2,14 +2,18 @@ package rpc
 
 import (
 	"bytes"
+	"encoding/gob"
 	"io"
 	"net/rpc"
 	"sync"
 
+	json "github.com/json-iterator/go"
 	"github.com/spiral/errors"
 	"github.com/spiral/goridge/v3/pkg/frame"
 	"github.com/spiral/goridge/v3/pkg/relay"
 	"github.com/spiral/goridge/v3/pkg/socket"
+	"github.com/vmihailenco/msgpack/v5"
+	"google.golang.org/protobuf/proto"
 )
 
 // Codec represent net/rpc bridge over Goridge socket relay.
@@ -75,8 +79,7 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error { //nolin
 
 	// load and delete associated codec to not waste memory
 	// because we write it to the fr and don't need more information about it
-	// as for go.14, Load and Delete are separate methods
-	codec, ok := c.codec.Load(r.Seq)
+	codec, ok := c.codec.LoadAndDelete(r.Seq)
 	if !ok {
 		// fallback codec
 		fr.WriteFlags(fr.Header(), frame.CODEC_GOB)
@@ -84,74 +87,129 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error { //nolin
 		fr.WriteFlags(fr.Header(), codec.(byte))
 	}
 
-	// delete the key
-	c.codec.Delete(r.Seq)
-
-	// initialize buffer
-	buf := c.get()
-	defer c.put(buf)
-
-	// writeServiceMethod to the buffer
-	buf.WriteString(r.ServiceMethod)
-
 	// if error returned, we sending it via relay and return error from WriteResponse
 	if r.Error != "" {
 		// Append error flag
 		return c.handleError(r, fr, r.Error)
 	}
 
-	// read flag previously written
-	// TODO might be better to save it to local variable
-	flags := fr.ReadFlags()
-
 	switch {
-	case flags&frame.CODEC_RAW != 0:
-		err := encodeRaw(buf, body)
+	case codec.(byte)&frame.CODEC_PROTO != 0:
+		d, err := proto.Marshal(body.(proto.Message))
 		if err != nil {
 			return c.handleError(r, fr, err.Error())
 		}
+
+		// initialize buffer
+		buf := c.get()
+		defer c.put(buf)
+
+		buf.Grow(len(d) + len(r.ServiceMethod))
+		// writeServiceMethod to the buffer
+		buf.WriteString(r.ServiceMethod)
+		buf.Write(d)
+
+		fr.WritePayloadLen(fr.Header(), uint32(buf.Len()))
+		// copy inside
+		fr.WritePayload(buf.Bytes())
+		fr.WriteCRC(fr.Header())
 		// send buffer
-		return c.sendBuf(fr, buf)
-	case flags&frame.CODEC_PROTO != 0:
-		err := encodeProto(buf, body)
+		return c.relay.Send(fr)
+	case codec.(byte)&frame.CODEC_RAW != 0:
+		// initialize buffer
+		buf := c.get()
+		defer c.put(buf)
+
+		switch data := body.(type) {
+		case []byte:
+			buf.Grow(len(data) + len(r.ServiceMethod))
+			// writeServiceMethod to the buffer
+			buf.WriteString(r.ServiceMethod)
+			buf.Write(data)
+
+			c.frame.WritePayloadLen(c.frame.Header(), uint32(buf.Len()))
+			c.frame.WritePayload(buf.Bytes())
+		case *[]byte:
+			buf.Grow(len(*data) + len(r.ServiceMethod))
+			// writeServiceMethod to the buffer
+			buf.WriteString(r.ServiceMethod)
+			buf.Write(*data)
+
+			c.frame.WritePayloadLen(c.frame.Header(), uint32(buf.Len()))
+			c.frame.WritePayload(buf.Bytes())
+		default:
+			return c.handleError(r, fr, "unknown Raw payload type")
+		}
+
+		// send buffer
+		c.frame.WriteCRC(c.frame.Header())
+		return c.relay.Send(c.frame)
+
+	case codec.(byte)&frame.CODEC_JSON != 0:
+		data, err := json.Marshal(body)
 		if err != nil {
 			return c.handleError(r, fr, err.Error())
 		}
+
+		// initialize buffer
+		buf := c.get()
+		defer c.put(buf)
+
+		buf.Grow(len(data) + len(r.ServiceMethod))
+		// writeServiceMethod to the buffer
+		buf.WriteString(r.ServiceMethod)
+		buf.Write(data)
+
+		fr.WritePayloadLen(fr.Header(), uint32(buf.Len()))
+		// copy inside
+		fr.WritePayload(buf.Bytes())
+		fr.WriteCRC(fr.Header())
 		// send buffer
-		return c.sendBuf(fr, buf)
-	case flags&frame.CODEC_JSON != 0:
-		err := encodeJSON(buf, body)
+		return c.relay.Send(fr)
+
+	case codec.(byte)&frame.CODEC_MSGPACK != 0:
+		b, err := msgpack.Marshal(body)
 		if err != nil {
-			return c.handleError(r, fr, err.Error())
+			return errors.E(op, err)
 		}
+		// initialize buffer
+		buf := c.get()
+		defer c.put(buf)
+
+		buf.Grow(len(b) + len(r.ServiceMethod))
+		// writeServiceMethod to the buffer
+		buf.WriteString(r.ServiceMethod)
+		buf.Write(b)
+
+		fr.WritePayloadLen(fr.Header(), uint32(buf.Len()))
+		// copy inside
+		fr.WritePayload(buf.Bytes())
+		fr.WriteCRC(fr.Header())
 		// send buffer
-		return c.sendBuf(fr, buf)
-	case flags&frame.CODEC_MSGPACK != 0:
-		err := encodeMsgPack(buf, body)
+		return c.relay.Send(fr)
+
+	case codec.(byte)&frame.CODEC_GOB != 0:
+		// initialize buffer
+		buf := c.get()
+		defer c.put(buf)
+
+		buf.WriteString(r.ServiceMethod)
+
+		dec := gob.NewEncoder(buf)
+		err := dec.Encode(body)
 		if err != nil {
-			return c.handleError(r, fr, err.Error())
+			return errors.E(op, err)
 		}
+
+		fr.WritePayloadLen(fr.Header(), uint32(buf.Len()))
+		// copy inside
+		fr.WritePayload(buf.Bytes())
+		fr.WriteCRC(fr.Header())
 		// send buffer
-		return c.sendBuf(fr, buf)
-	case flags&frame.CODEC_GOB != 0:
-		err := encodeGob(buf, body)
-		if err != nil {
-			return c.handleError(r, fr, err.Error())
-		}
-		// send buffer
-		return c.sendBuf(fr, buf)
+		return c.relay.Send(fr)
 	default:
 		return c.handleError(r, fr, errors.E(op, errors.Str("unknown codec")).Error())
 	}
-}
-
-//go:inline
-func (c *Codec) sendBuf(frame *frame.Frame, buf *bytes.Buffer) error {
-	frame.WritePayloadLen(frame.Header(), uint32(buf.Len()))
-	frame.WritePayload(buf.Bytes())
-
-	frame.WriteCRC(frame.Header())
-	return c.relay.Send(frame)
 }
 
 func (c *Codec) handleError(r *rpc.Response, fr *frame.Frame, err string) error {
@@ -205,7 +263,6 @@ func (c *Codec) ReadRequestHeader(r *rpc.Request) error {
 	return c.storeCodec(r, f.ReadFlags())
 }
 
-//go:inline
 func (c *Codec) storeCodec(r *rpc.Request, flag byte) error {
 	switch {
 	case flag&frame.CODEC_PROTO != 0:
@@ -237,17 +294,86 @@ func (c *Codec) ReadRequestBody(out interface{}) error {
 
 	flags := c.frame.ReadFlags()
 
-	switch {
+	switch { //nolint:dupl
 	case flags&frame.CODEC_PROTO != 0:
-		return decodeProto(out, c.frame)
+		opts := c.frame.ReadOptions(c.frame.Header())
+		if len(opts) != 2 {
+			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
+		}
+		payload := c.frame.Payload()[opts[1]:]
+		if len(payload) == 0 {
+			return nil
+		}
+
+		// check if the out message is a correct proto.Message
+		// instead send an error
+		if pOut, ok := out.(proto.Message); ok {
+			err := proto.Unmarshal(payload, pOut)
+			if err != nil {
+				return errors.E(op, err)
+			}
+			return nil
+		}
+
+		return errors.E(op, errors.Str("message type is not a proto"))
 	case flags&frame.CODEC_JSON != 0:
-		return decodeJSON(out, c.frame)
+		opts := c.frame.ReadOptions(c.frame.Header())
+		if len(opts) != 2 {
+			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
+		}
+		payload := c.frame.Payload()[opts[1]:]
+		if len(payload) == 0 {
+			return nil
+		}
+		return json.Unmarshal(payload, out)
 	case flags&frame.CODEC_GOB != 0:
-		return decodeGob(out, c.frame)
+		opts := c.frame.ReadOptions(c.frame.Header())
+		if len(opts) != 2 {
+			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
+		}
+		payload := c.frame.Payload()[opts[1]:]
+		if len(payload) == 0 {
+			return nil
+		}
+
+		buf := c.get()
+		defer c.put(buf)
+
+		dec := gob.NewDecoder(buf)
+		buf.Write(payload)
+
+		err := dec.Decode(out)
+		if err != nil {
+			return errors.E(op, err)
+		}
+
+		return nil
 	case flags&frame.CODEC_RAW != 0:
-		return decodeRaw(out, c.frame)
+		opts := c.frame.ReadOptions(c.frame.Header())
+		if len(opts) != 2 {
+			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
+		}
+		payload := c.frame.Payload()[opts[1]:]
+		if len(payload) == 0 {
+			return nil
+		}
+
+		if raw, ok := out.(*[]byte); ok {
+			*raw = append(*raw, payload...)
+		}
+
+		return nil
 	case flags&frame.CODEC_MSGPACK != 0:
-		return decodeMsgPack(out, c.frame)
+		opts := c.frame.ReadOptions(c.frame.Header())
+		if len(opts) != 2 {
+			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
+		}
+		payload := c.frame.Payload()[opts[1]:]
+		if len(payload) == 0 {
+			return nil
+		}
+
+		return msgpack.Unmarshal(payload, out)
 	default:
 		return errors.E(op, errors.Str("unknown decoder used in frame"))
 	}
