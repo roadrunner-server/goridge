@@ -7,10 +7,12 @@ import (
 	"net/rpc"
 	"sync"
 
+	json "github.com/json-iterator/go"
 	"github.com/spiral/errors"
 	"github.com/spiral/goridge/v3/pkg/frame"
 	"github.com/spiral/goridge/v3/pkg/relay"
 	"github.com/spiral/goridge/v3/pkg/socket"
+	"github.com/vmihailenco/msgpack/v5"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -158,17 +160,86 @@ func (c *ClientCodec) ReadResponseBody(out interface{}) error {
 
 	flags := c.frame.ReadFlags()
 
-	switch {
+	switch { //nolint:dupl
 	case flags&frame.CODEC_PROTO != 0:
-		return decodeProto(out, c.frame)
+		opts := c.frame.ReadOptions(c.frame.Header())
+		if len(opts) != 2 {
+			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
+		}
+		payload := c.frame.Payload()[opts[1]:]
+		if len(payload) == 0 {
+			return nil
+		}
+
+		// check if the out message is a correct proto.Message
+		// instead send an error
+		if pOut, ok := out.(proto.Message); ok {
+			err := proto.Unmarshal(payload, pOut)
+			if err != nil {
+				return errors.E(op, err)
+			}
+			return nil
+		}
+
+		return errors.E(op, errors.Str("message type is not a proto"))
 	case flags&frame.CODEC_JSON != 0:
-		return decodeJSON(out, c.frame)
+		opts := c.frame.ReadOptions(c.frame.Header())
+		if len(opts) != 2 {
+			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
+		}
+		payload := c.frame.Payload()[opts[1]:]
+		if len(payload) == 0 {
+			return nil
+		}
+		return json.Unmarshal(payload, out)
 	case flags&frame.CODEC_GOB != 0:
-		return decodeGob(out, c.frame)
+		opts := c.frame.ReadOptions(c.frame.Header())
+		if len(opts) != 2 {
+			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
+		}
+		payload := c.frame.Payload()[opts[1]:]
+		if len(payload) == 0 {
+			return nil
+		}
+
+		buf := c.get()
+		defer c.put(buf)
+
+		dec := gob.NewDecoder(buf)
+		buf.Write(payload)
+
+		err := dec.Decode(out)
+		if err != nil {
+			return errors.E(op, err)
+		}
+
+		return nil
 	case flags&frame.CODEC_RAW != 0:
-		return decodeRaw(out, c.frame)
+		opts := c.frame.ReadOptions(c.frame.Header())
+		if len(opts) != 2 {
+			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
+		}
+		payload := c.frame.Payload()[opts[1]:]
+		if len(payload) == 0 {
+			return nil
+		}
+
+		if raw, ok := out.(*[]byte); ok {
+			*raw = append(*raw, payload...)
+		}
+
+		return nil
 	case flags&frame.CODEC_MSGPACK != 0:
-		return decodeMsgPack(out, c.frame)
+		opts := c.frame.ReadOptions(c.frame.Header())
+		if len(opts) != 2 {
+			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
+		}
+		payload := c.frame.Payload()[opts[1]:]
+		if len(payload) == 0 {
+			return nil
+		}
+
+		return msgpack.Unmarshal(payload, out)
 	default:
 		return errors.E(op, errors.Str("unknown decoder used in frame"))
 	}
