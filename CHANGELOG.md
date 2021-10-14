@@ -1,6 +1,13 @@
 CHANGELOG
 =========
 
+v3.2.2 (14.10.2021)
+-------------------
+
+- 🚀 Internal performance improvements (~15% for the RPC).
+
+---
+
 v3.2.1 (19.08.2021)
 -------------------
 
