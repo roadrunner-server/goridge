@@ -72,7 +72,7 @@ func From(header []byte, payload []byte) *Frame {
 
 // ReadVersion ... To read version, we should return our 4 upper bits to their original place
 // 1111_0000 -> 0000_1111 (15)
-func (Frame) ReadVersion(header []byte) byte {
+func (*Frame) ReadVersion(header []byte) byte {
 	_ = header[0]
 	return header[0] >> 4
 }
@@ -82,7 +82,7 @@ func (Frame) ReadVersion(header []byte) byte {
 // 1. For example, we have version 15 it's 0000_1111 (1 byte)
 // 2. We should shift 4 lower bits to upper and write that to the 0th byte
 // 3. The 0th byte should become 1111_0000, but it's not 240, it's only 15, because version only 4 bits len
-func (Frame) WriteVersion(header []byte, version Version) {
+func (*Frame) WriteVersion(header []byte, version Version) {
 	_ = header[0]
 	if version > 15 {
 		panic("version is only 4 bits")
@@ -94,7 +94,7 @@ func (Frame) WriteVersion(header []byte, version Version) {
 // The lower 4 bits of the 0th octet occupies our header len data.
 // We should erase upper 4 bits, which contain information about Version
 // To erase, we are applying bitwise AND to the upper 4 bits and returning result
-func (Frame) ReadHL(header []byte) byte {
+func (*Frame) ReadHL(header []byte) byte {
 	// 0101_1111         0000_1111
 	// 0x0F - 15
 	return header[0] & 0x0F
@@ -114,7 +114,7 @@ func (f *Frame) ReadFlags() byte {
 	return f.header[1]
 }
 
-func (Frame) WriteFlags(header []byte, flags ...byte) {
+func (*Frame) WriteFlags(header []byte, flags ...byte) {
 	_ = header[1]
 	for i := 0; i < len(flags); i++ {
 		header[1] |= flags[i]
@@ -351,7 +351,7 @@ done:
 // ReadPayloadLen
 // LE format used to write Payload
 // Using 4 bytes (2,3,4,5 bytes in the header)
-func (Frame) ReadPayloadLen(header []byte) uint32 {
+func (*Frame) ReadPayloadLen(header []byte) uint32 {
 	// 2,3,4,5
 	_ = header[5]
 	return uint32(header[2]) | uint32(header[3])<<8 | uint32(header[4])<<16 | uint32(header[5])<<24
@@ -360,7 +360,7 @@ func (Frame) ReadPayloadLen(header []byte) uint32 {
 // WritePayloadLen
 // LE format used to write Payload
 // Using 4 bytes (2,3,4,5 bytes in the header)
-func (Frame) WritePayloadLen(header []byte, payloadLen uint32) {
+func (*Frame) WritePayloadLen(header []byte, payloadLen uint32) {
 	_ = header[5]
 	header[2] = byte(payloadLen)
 	header[3] = byte(payloadLen >> 8)
@@ -369,7 +369,7 @@ func (Frame) WritePayloadLen(header []byte, payloadLen uint32) {
 }
 
 // WriteCRC will calculate and write CRC32 4-bytes it to the 6th byte (7th reserved)
-func (Frame) WriteCRC(header []byte) {
+func (*Frame) WriteCRC(header []byte) {
 	// 6 7 8 9 bytes
 	// 10, 11 reserved
 	_ = header[9]
@@ -382,7 +382,7 @@ func (Frame) WriteCRC(header []byte) {
 }
 
 // AppendOptions appends options to the header
-func (Frame) AppendOptions(header *[]byte, options []byte) {
+func (*Frame) AppendOptions(header *[]byte, options []byte) {
 	// make a new slice with the exact len (not doubled)
 	newSl := make([]byte, len(options)+len(*header))
 	// copy old data
@@ -399,7 +399,7 @@ func (Frame) AppendOptions(header *[]byte, options []byte) {
 // VerifyCRC ...
 // Reading info from 6th byte and verifying it with calculated in-place. Should be equal.
 // If not - drop the frame as incorrect.
-func (Frame) VerifyCRC(header []byte) bool {
+func (*Frame) VerifyCRC(header []byte) bool {
 	_ = header[9]
 	return crc32.ChecksumIEEE(header[:6]) == uint32(header[6])|uint32(header[7])<<8|uint32(header[8])<<16|uint32(header[9])<<24
 }
@@ -449,6 +449,6 @@ func (f *Frame) defaultHL(header []byte) {
 
 // Writing HL is very simple. Since we are using lower 4 bits
 // we can easily apply bitwise OR and set lower 4 bits to needed hl value
-func (Frame) writeHl(header []byte, hl byte) {
+func (*Frame) writeHl(header []byte, hl byte) {
 	header[0] |= hl
 }

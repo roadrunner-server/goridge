@@ -1,22 +1,31 @@
 package internal
 
 import (
+	"bytes"
 	"io"
 
 	"github.com/spiral/errors"
 	"github.com/spiral/goridge/v3/pkg/frame"
 )
 
+// shortland for the Could not open input file: ../roadrunner/tests/psr-wfsdorker.php
+var res = []byte("Could not op") //nolint:gochecknoglobals
+
 func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 	const op = errors.Op("goridge_frame_receive")
-
-	if fr == nil {
-		return errors.E(op, errors.Str("nil frame"))
-	}
 
 	_, err := io.ReadFull(relay, fr.Header())
 	if err != nil {
 		return errors.E(op, err)
+	}
+
+	if bytes.Equal(fr.Header(), res) {
+		data, errRa := io.ReadAll(relay)
+		if errRa == nil && len(data) > 0 {
+			return errors.E(op, errors.FileNotFound, errors.Str(string(fr.Header())+string(data)))
+		}
+
+		return errors.E(op, errors.FileNotFound, errors.Str("file not found"))
 	}
 
 	// we have options
@@ -47,12 +56,14 @@ func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 		return nil
 	}
 
-	pb := make([]byte, pl)
-	_, err = io.ReadFull(relay, pb)
+	pb := get(pl)
+	_, err = io.ReadFull(relay, (*pb)[:pl])
 	if err != nil {
+		put(pl, pb)
 		return errors.E(op, err)
 	}
 
-	fr.WritePayload(pb)
+	fr.WritePayload((*pb)[:pl])
+	put(pl, pb)
 	return nil
 }

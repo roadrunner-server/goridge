@@ -15,6 +15,7 @@ type Relay struct {
 
 // NewSocketRelay creates new socket based data relay.
 func NewSocketRelay(rwc io.ReadWriteCloser) *Relay {
+	internal.Preallocate()
 	return &Relay{rwc: rwc}
 }
 
@@ -30,6 +31,9 @@ func (rl *Relay) Send(frame *frame.Frame) error {
 
 // Receive data from the underlying process and returns associated prefix or error.
 func (rl *Relay) Receive(frame *frame.Frame) error {
+	if frame == nil {
+		return errors.Str("nil frame")
+	}
 	return internal.ReceiveFrame(rl.rwc, frame)
 }
 
