@@ -17,6 +17,7 @@ type Relay struct {
 
 // NewPipeRelay creates new pipe based data relay.
 func NewPipeRelay(in io.ReadCloser, out io.WriteCloser) *Relay {
+	internal.Preallocate()
 	return &Relay{in: in, out: out}
 }
 

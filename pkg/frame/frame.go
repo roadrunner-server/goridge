@@ -428,16 +428,8 @@ func (f *Frame) Payload() []byte {
 	return f.payload
 }
 
-func (f *Frame) AllocatePayload(l int) {
-	f.payload = make([]byte, l)
-}
-
 // WritePayload writes payload
 func (f *Frame) WritePayload(data []byte) {
-	if len(f.payload) == len(data) {
-		copy(f.payload, data)
-		return
-	}
 	f.payload = make([]byte, len(data))
 	copy(f.payload, data)
 }

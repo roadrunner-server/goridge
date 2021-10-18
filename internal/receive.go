@@ -56,12 +56,14 @@ func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 		return nil
 	}
 
-	pb := make([]byte, pl)
-	_, err = io.ReadFull(relay, pb)
+	pb := get(pl)
+	_, err = io.ReadFull(relay, (*pb)[:pl])
 	if err != nil {
+		put(pl, pb)
 		return errors.E(op, err)
 	}
 
-	fr.WritePayload(pb)
+	fr.WritePayload((*pb)[:pl])
+	put(pl, pb)
 	return nil
 }
