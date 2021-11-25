@@ -46,7 +46,7 @@ func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 
 	// verify header CRC
 	if !fr.VerifyCRC(fr.Header()) {
-		return errors.E(op, errors.Str("CRC verification failed"))
+		return errors.E(op, errors.Errorf("CRC verification failed, bad header: %s", fr.Header()))
 	}
 
 	// read the read payload

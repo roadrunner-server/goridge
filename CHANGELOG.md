@@ -1,8 +1,29 @@
 CHANGELOG
 =========
 
+v3.2.4 (25.11.2021)
+-------------------
+
+## 🚀 New:
+
+- ✏️ Include bad header data in the returned error.
+
+---
+
+v3.2.3 (18.10.2021)
+-------------------
+
+## 🚀 New:
+
+- ✏️ New reusable pool with size classes. More than 50% boost in allocation time.
+- ✏️ Better handling `file not found` error.
+
+---
+
 v3.2.2 (14.10.2021)
 -------------------
+
+## 🚀 New:
 
 - 🚀 Internal performance improvements (~15% for the RPC).
 
