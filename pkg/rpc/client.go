@@ -7,7 +7,7 @@ import (
 	"net/rpc"
 	"sync"
 
-	json "github.com/json-iterator/go"
+	"github.com/goccy/go-json"
 	"github.com/spiral/errors"
 	"github.com/spiral/goridge/v3/pkg/frame"
 	"github.com/spiral/goridge/v3/pkg/relay"
