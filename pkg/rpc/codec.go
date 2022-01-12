@@ -3,12 +3,14 @@ package rpc
 import (
 	"bytes"
 	"encoding/gob"
+	stderr "errors"
 	"io"
 	"net/rpc"
 	"sync"
 
 	json "github.com/json-iterator/go"
 	"github.com/spiral/errors"
+
 	"github.com/spiral/goridge/v3/pkg/frame"
 	"github.com/spiral/goridge/v3/pkg/relay"
 	"github.com/spiral/goridge/v3/pkg/socket"
@@ -127,23 +129,23 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error { //nolin
 			buf.WriteString(r.ServiceMethod)
 			buf.Write(data)
 
-			c.frame.WritePayloadLen(c.frame.Header(), uint32(buf.Len()))
-			c.frame.WritePayload(buf.Bytes())
+			fr.WritePayloadLen(fr.Header(), uint32(buf.Len()))
+			fr.WritePayload(buf.Bytes())
 		case *[]byte:
 			buf.Grow(len(*data) + len(r.ServiceMethod))
 			// writeServiceMethod to the buffer
 			buf.WriteString(r.ServiceMethod)
 			buf.Write(*data)
 
-			c.frame.WritePayloadLen(c.frame.Header(), uint32(buf.Len()))
-			c.frame.WritePayload(buf.Bytes())
+			fr.WritePayloadLen(fr.Header(), uint32(buf.Len()))
+			fr.WritePayload(buf.Bytes())
 		default:
 			return c.handleError(r, fr, "unknown Raw payload type")
 		}
 
 		// send buffer
-		c.frame.WriteCRC(c.frame.Header())
-		return c.relay.Send(c.frame)
+		fr.WriteCRC(fr.Header())
+		return c.relay.Send(fr)
 
 	case codec.(byte)&frame.CODEC_JSON != 0:
 		data, err := json.Marshal(body)
@@ -247,6 +249,12 @@ func (c *Codec) ReadRequestHeader(r *rpc.Request) error {
 
 	err := c.relay.Receive(f)
 	if err != nil {
+		if stderr.Is(err, io.EOF) {
+			c.putFrame(f)
+			return err
+		}
+
+		c.putFrame(f)
 		return err
 	}
 
@@ -254,6 +262,7 @@ func (c *Codec) ReadRequestHeader(r *rpc.Request) error {
 	// opts[1] service method name offset from payload in bytes
 	opts := f.ReadOptions(f.Header())
 	if len(opts) != 2 {
+		c.putFrame(f)
 		return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
 	}
 
