@@ -2,6 +2,7 @@ package internal
 
 import (
 	"bytes"
+	stderr "errors"
 	"io"
 
 	"github.com/spiral/errors"
@@ -16,7 +17,7 @@ func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 
 	_, err := io.ReadFull(relay, fr.Header())
 	if err != nil {
-		return errors.E(op, err)
+		return err
 	}
 
 	if bytes.Equal(fr.Header(), res) {
@@ -37,6 +38,9 @@ func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 		// read next part of the frame - options
 		_, err = io.ReadFull(relay, opts)
 		if err != nil {
+			if stderr.Is(err, io.EOF) {
+				return err
+			}
 			return errors.E(op, err)
 		}
 
@@ -57,10 +61,14 @@ func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 	}
 
 	pb := get(pl)
-	_, err = io.ReadFull(relay, (*pb)[:pl])
-	if err != nil {
+	_, err2 := io.ReadFull(relay, (*pb)[:pl])
+	if err2 != nil {
+		if stderr.Is(err2, io.EOF) {
+			put(pl, pb)
+			return err
+		}
 		put(pl, pb)
-		return errors.E(op, err)
+		return errors.E(op, err2)
 	}
 
 	fr.WritePayload((*pb)[:pl])

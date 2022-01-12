@@ -82,13 +82,6 @@ func TestClientServerProto(t *testing.T) {
 	assert.NoError(t, err)
 
 	client := rpc.NewClientWithCodec(NewClientCodec(conn))
-	defer func() {
-		err := client.Close()
-		if err != nil {
-			t.Fatal(err)
-		}
-	}()
-
 	keysP := &test.Payload{
 		Storage: "memory-rr",
 		Items: []*test.Item{
@@ -107,6 +100,13 @@ func TestClientServerProto(t *testing.T) {
 	item := &test.Item{}
 	assert.NoError(t, client.Call("test123.ProtoMessage", keysP, item))
 	assert.Equal(t, "a", item.Key)
+
+	t.Cleanup(func() {
+		err2 := client.Close()
+		if err2 != nil {
+			t.Fatal(err2)
+		}
+	})
 }
 
 func TestClientServerProtoError(t *testing.T) {
@@ -128,13 +128,6 @@ func TestClientServerProtoError(t *testing.T) {
 	assert.NoError(t, err)
 
 	client := rpc.NewClientWithCodec(NewClientCodec(conn))
-	defer func() {
-		err := client.Close()
-		if err != nil {
-			t.Fatal(err)
-		}
-	}()
-
 	keysP := &test.Payload{
 		Storage: "memory-rr",
 		Items: []*test.Item{
@@ -157,6 +150,13 @@ func TestClientServerProtoError(t *testing.T) {
 
 	item := &test.Item{}
 	assert.Error(t, client.Call("testError.ProtoMessage", keys, item))
+
+	t.Cleanup(func() {
+		err2 := client.Close()
+		if err2 != nil {
+			t.Fatal(err2)
+		}
+	})
 }
 
 func TestClientServerJSON(t *testing.T) {
@@ -178,12 +178,6 @@ func TestClientServerJSON(t *testing.T) {
 	assert.NoError(t, err)
 
 	client := rpc.NewClientWithCodec(NewClientCodec(conn))
-	defer func() {
-		err := client.Close()
-		if err != nil {
-			t.Fatal(err)
-		}
-	}()
 
 	var rp = Payload{}
 	assert.NoError(t, client.Call("test2.Process", Payload{
@@ -195,6 +189,47 @@ func TestClientServerJSON(t *testing.T) {
 	assert.Equal(t, "NAME", rp.Name)
 	assert.Equal(t, -1000, rp.Value)
 	assert.Equal(t, "key", rp.Keys["value"])
+
+	t.Cleanup(func() {
+		err2 := client.Close()
+		if err2 != nil {
+			t.Fatal(err2)
+		}
+	})
+}
+
+func TestClientServerRaw(t *testing.T) {
+	ln, err := net.Listen("tcp", "127.0.0.1:18937")
+	assert.NoError(t, err)
+
+	go func() {
+		for {
+			conn, err2 := ln.Accept()
+			assert.NoError(t, err2)
+			rpc.ServeCodec(NewCodec(conn))
+		}
+	}()
+
+	err = rpc.RegisterName("testBinary", new(testService))
+	assert.NoError(t, err)
+
+	conn, err := net.Dial("tcp", "127.0.0.1:18937")
+	assert.NoError(t, err)
+
+	client := rpc.NewClientWithCodec(NewClientCodec(conn))
+
+	data := make([]byte, 100000)
+	_, _ = rand.Read(data)
+
+	resp := make([]byte, 0, 10000)
+	assert.NoError(t, client.Call("testBinary.EchoBinary", data, &resp))
+
+	t.Cleanup(func() {
+		err2 := client.Close()
+		if err2 != nil {
+			t.Fatal(err2)
+		}
+	})
 }
 
 func TestClientServerError(t *testing.T) {
@@ -216,16 +251,17 @@ func TestClientServerError(t *testing.T) {
 	assert.NoError(t, err)
 
 	client := rpc.NewClientWithCodec(NewClientCodec(conn))
-	defer func() {
-		err := client.Close()
-		if err != nil {
-			t.Fatal(err)
-		}
-	}()
 
 	err = client.Call("unknown", nil, nil)
 	assert.Error(t, err)
 	assert.Equal(t, "rpc: service/method request ill-formed: unknown", err.Error())
+
+	t.Cleanup(func() {
+		err2 := client.Close()
+		if err2 != nil {
+			t.Fatal(err2)
+		}
+	})
 }
 
 func TestClientServerConcurrent(t *testing.T) {
@@ -249,10 +285,6 @@ func TestClientServerConcurrent(t *testing.T) {
 	assert.NoError(t, err)
 
 	client := rpc.NewClientWithCodec(NewClientCodec(conn))
-	defer func() {
-		err := client.Close()
-		assert.NoError(t, err)
-	}()
 
 	wg := &sync.WaitGroup{}
 	wg.Add(300)
@@ -363,4 +395,11 @@ func TestClientServerConcurrent(t *testing.T) {
 	}
 
 	wg2.Wait()
+
+	t.Cleanup(func() {
+		err2 := client.Close()
+		if err2 != nil {
+			t.Fatal(err2)
+		}
+	})
 }
