@@ -8,9 +8,10 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/spiral/errors"
-	"github.com/spiral/goridge/v3/test"
+	"github.com/roadrunner-server/errors"
+	"github.com/roadrunner-server/goridge/v3/test"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -223,6 +224,8 @@ func TestClientServerRaw(t *testing.T) {
 
 	resp := make([]byte, 0, 10000)
 	assert.NoError(t, client.Call("testBinary.EchoBinary", data, &resp))
+
+	require.Equal(t, data, resp)
 
 	t.Cleanup(func() {
 		err2 := client.Close()

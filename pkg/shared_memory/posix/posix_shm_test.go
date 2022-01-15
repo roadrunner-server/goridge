@@ -6,7 +6,7 @@ package posix
 import (
 	"testing"
 
-	"github.com/spiral/goridge/v3/pkg/shared_memory/test"
+	"github.com/roadrunner-server/goridge/v3/pkg/shared_memory/test"
 	"github.com/stretchr/testify/assert"
 )
 

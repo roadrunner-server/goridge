@@ -4,7 +4,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/spiral/goridge/v3/pkg/frame"
+	"github.com/roadrunner-server/goridge/v3/pkg/frame"
 	"github.com/stretchr/testify/assert"
 )
 

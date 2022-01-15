@@ -53,7 +53,7 @@ v3.2.0 (09.08.2021)
 
 ## 🚀 New:
 
-- ✏️ 50% reduce bound checks in the frame's operations. [PR](https://github.com/spiral/goridge/pull/143)
+- ✏️ 50% reduce bound checks in the frame's operations. [PR](https://github.com/roadrunner-server/goridge/pull/143)
 -
 
 ## 🩹 Fixes:
@@ -71,7 +71,7 @@ v3.1.4 (14.06.2021)
 
 ## 🩹 Fixes:
 
-- 🐛 Fix: Duplicated RPC error message: [PR](https://github.com/spiral/goridge/pull/129)
+- 🐛 Fix: Duplicated RPC error message: [PR](https://github.com/roadrunner-server/goridge/pull/129)
 
 ---
 
@@ -80,7 +80,7 @@ v3.1.3 (11.06.2021)
 
 ## 🩹 Fixes:
 
-- 🐛 Fix: Performance optimization fixes [PR](https://github.com/spiral/goridge/pull/127)
+- 🐛 Fix: Performance optimization fixes [PR](https://github.com/roadrunner-server/goridge/pull/127)
 
 ---
 
@@ -139,15 +139,15 @@ v3.1.0 (09.06.2021)
 - Improve Relay factory and SocketRelay
 - Improve test coverage
 - Performance improvements
-- See the full milestone here: [link](https://github.com/spiral/goridge/milestone/5?closed=1)
+- See the full milestone here: [link](https://github.com/roadrunner-server/goridge/milestone/5?closed=1)
 
 ## v2.4.0 (05.05.2020)
 
 - More tests for PHP (@vvval)
 - Upgrade PHP version to the 7.2 (currently minimum supported)
-- Add new RelayInterface [link](https://github.com/spiral/goridge/pull/56/files#diff-85a3f483116946b4093f21ad855af4a8) (
+- Add new RelayInterface [link](https://github.com/roadrunner-server/goridge/pull/56/files#diff-85a3f483116946b4093f21ad855af4a8) (
   @vvval)
-- See the full milestone here: [link](https://github.com/spiral/goridge/issues?q=is%3Aclosed+milestone%3A2.4.0)
+- See the full milestone here: [link](https://github.com/roadrunner-server/goridge/issues?q=is%3Aclosed+milestone%3A2.4.0)
 
 ## v2.3.1 (21.04.2020)
 

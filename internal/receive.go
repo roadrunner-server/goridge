@@ -5,8 +5,8 @@ import (
 	stderr "errors"
 	"io"
 
-	"github.com/spiral/errors"
-	"github.com/spiral/goridge/v3/pkg/frame"
+	"github.com/roadrunner-server/errors"
+	"github.com/roadrunner-server/goridge/v3/pkg/frame"
 )
 
 // shortland for the Could not open input file: ../roadrunner/tests/psr-wfsdorker.php
