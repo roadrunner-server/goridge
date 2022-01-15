@@ -8,8 +8,8 @@ import (
 	"net/rpc"
 	"time"
 
-	goridgeRpc "github.com/spiral/goridge/v3/pkg/rpc"
-	"github.com/spiral/goridge/v3/test"
+	goridgeRpc "github.com/roadrunner-server/goridge/v3/pkg/rpc"
+	"github.com/roadrunner-server/goridge/v3/test"
 )
 
 func main() {

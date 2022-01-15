@@ -1,10 +1,10 @@
-module github.com/spiral/goridge/v3
+module github.com/roadrunner-server/goridge/v3
 
 go 1.17
 
 require (
 	github.com/json-iterator/go v1.1.12
-	github.com/spiral/errors v1.0.12
+	github.com/roadrunner-server/errors v1.1.0
 	github.com/stretchr/testify v1.7.0
 	github.com/vmihailenco/msgpack/v5 v5.3.5
 	google.golang.org/protobuf v1.27.1

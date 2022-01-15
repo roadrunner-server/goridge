@@ -1,11 +1,11 @@
 High-performance PHP-to-Golang IPC bridge
 =================================================
 [![Latest Stable Version](https://poser.pugx.org/spiral/goridge/v/stable)](https://packagist.org/packages/spiral/goridge)
-[![GoDoc](https://godoc.org/github.com/spiral/goridge/v3?status.svg)](https://godoc.org/github.com/spiral/goridge/v3)
-![Linux](https://github.com/spiral/goridge/workflows/Linux/badge.svg)
-![macOS](https://github.com/spiral/goridge/workflows/MacOS/badge.svg)
-![Windows](https://github.com/spiral/goridge/workflows/Windows/badge.svg)
-![Linters](https://github.com/spiral/goridge/workflows/Linters/badge.svg)
+[![GoDoc](https://godoc.org/github.com/roadrunner-server/goridge/v3?status.svg)](https://godoc.org/github.com/roadrunner-server/goridge/v3)
+![Linux](https://github.com/roadrunner-server/goridge/workflows/Linux/badge.svg)
+![macOS](https://github.com/roadrunner-server/goridge/workflows/MacOS/badge.svg)
+![Windows](https://github.com/roadrunner-server/goridge/workflows/Windows/badge.svg)
+![Linters](https://github.com/roadrunner-server/goridge/workflows/Linters/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/spiral/goridge)](https://goreportcard.com/report/github.com/spiral/goridge)
 [![Codecov](https://codecov.io/gh/spiral/goridge/branch/master/graph/badge.svg)](https://codecov.io/gh/spiral/goridge/)
 <a href="https://discord.gg/TFeEmCs"><img src="https://img.shields.io/badge/discord-chat-magenta.svg"></a>
@@ -14,7 +14,7 @@ High-performance PHP-to-Golang IPC bridge
 
 Goridge is high performance PHP-to-Golang codec library which works over native PHP sockets and Golang net/rpc package.
 The library allows you to call Go service methods from PHP with a minimal footprint, structures and `[]byte` support.  
-PHP source code can be found in this repository: [goridge-php](https://github.com/spiral/goridge-php)
+PHP source code can be found in this repository: [goridge-php](https://github.com/roadrunner-server/goridge-php)
 
 <br/>
 See https://github.com/spiral/roadrunner - High-performance PHP application server, load-balancer and process manager written in Golang
@@ -41,7 +41,7 @@ Installation
 ------------
 
 ```go
-GO111MODULE=on go get github.com/spiral/goridge/v3
+GO111MODULE=on go get github.com/roadrunner-server/goridge/v3
 ```
 
 ### Sample of usage
@@ -53,7 +53,7 @@ import (
 	"net"
 	"net/rpc"
 
-	goridgeRpc "github.com/spiral/goridge/v3/pkg/rpc"
+	goridgeRpc "github.com/roadrunner-server/goridge/v3/pkg/rpc"
 )
 
 type App struct{}
