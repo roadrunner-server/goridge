@@ -224,7 +224,6 @@ func TestClientServerRaw(t *testing.T) {
 
 	resp := make([]byte, 0, 10000)
 	assert.NoError(t, client.Call("testBinary.EchoBinary", data, &resp))
-
 	require.Equal(t, data, resp)
 
 	t.Cleanup(func() {
