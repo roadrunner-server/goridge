@@ -121,6 +121,16 @@ func (*Frame) WriteFlags(header []byte, flags ...byte) {
 	}
 }
 
+func (*Frame) SetStreamFlag(header []byte) {
+	_ = header[11]
+	header[10] |= 1
+}
+
+func (*Frame) IsStream(header []byte) bool {
+	_ = header[11]
+	return header[10]&1 == 1
+}
+
 // WriteOptions
 // Options slice len should not be more than 10 (40 bytes)
 // we need a pointer to the header because we are reallocating the slice
@@ -370,9 +380,8 @@ func (*Frame) WritePayloadLen(header []byte, payloadLen uint32) {
 
 // WriteCRC will calculate and write CRC32 4-bytes it to the 6th byte (7th reserved)
 func (*Frame) WriteCRC(header []byte) {
-	// 6 7 8 9 bytes
-	// 10, 11 reserved
-	_ = header[9]
+	// 6 7 8 9 10 11 bytes
+	_ = header[11]
 	// calculate crc
 	crc := crc32.ChecksumIEEE(header[:6])
 	header[6] = byte(crc)

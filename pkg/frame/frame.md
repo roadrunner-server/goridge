@@ -6,7 +6,7 @@
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    |        Payload Length         |           Header CRC          |    4
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
-   |          Header CRC           |           Reserved            |    8
+   |          Header CRC           |            Stream             |    8
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
    |           Options             |            Payload            |    12
    +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
@@ -19,7 +19,7 @@ Overlapping flags are just bit flags. They might be combined with bitwise OR and
    
 3. `(2, 3, 4, 5)` bytes contain payload length and represented by unsigned long 32bit integer (up to 4Gb in payload).
 4. `(6, 7, 8, 9)` bytes contain header `CRC32` checksum. CRC32 calculated only for `0-5` (including) bytes.
-5. `(10, 11)` bytes are padding and currently reserved for future use. For example as `sequence Id` for async operations.
+5. `(10, 11)` bytes contain stream information. `0-th` bit of `10-th` byte used to indicate a stream send. 
 6. `(12..52)` bytes contain options. Options are optional. As an example of usage, in `goridge` in case of pipes or sockets
 we write two unsigned 32bit integers of RPC_SEQ_ID and method length offset. This field can be up to 40 bytes.
    

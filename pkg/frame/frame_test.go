@@ -155,6 +155,55 @@ func TestFrame_Options(t *testing.T) {
 	assert.Equal(t, rf.VerifyCRC(rf.Header()), true)
 }
 
+func TestFrame_Stream(t *testing.T) {
+	nf := NewFrame()
+	nf.WriteVersion(nf.Header(), 1)
+	nf.WriteFlags(nf.Header(), CONTROL, CODEC_GOB)
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+	nf.WriteOptions(nf.HeaderPtr(), 323423432, 1213231)
+	nf.SetStreamFlag(nf.Header())
+
+	// test options
+	options := nf.ReadOptions(nf.Header())
+	assert.Equal(t, []uint32{323423432, 1213231}, options)
+	// write payload
+	nf.WritePayload([]byte(TestPayload))
+	nf.WriteCRC(nf.Header())
+	data := nf.Bytes()
+
+	rf := ReadFrame(data)
+
+	assert.Equal(t, rf.ReadVersion(rf.Header()), nf.ReadVersion(nf.Header()))
+	assert.Equal(t, rf.ReadFlags(), nf.ReadFlags())
+	assert.Equal(t, rf.ReadPayloadLen(rf.Header()), nf.ReadPayloadLen(nf.Header()))
+	assert.Equal(t, true, rf.VerifyCRC(rf.Header()))
+	assert.Equal(t, true, rf.IsStream(rf.Header()))
+}
+
+func TestFrame_Stream2(t *testing.T) {
+	nf := NewFrame()
+	nf.WriteVersion(nf.Header(), 1)
+	nf.WriteFlags(nf.Header(), CONTROL, CODEC_GOB)
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+	nf.WriteOptions(nf.HeaderPtr(), 323423432, 1213231)
+
+	// test options
+	options := nf.ReadOptions(nf.Header())
+	assert.Equal(t, []uint32{323423432, 1213231}, options)
+	// write payload
+	nf.WritePayload([]byte(TestPayload))
+	nf.WriteCRC(nf.Header())
+	data := nf.Bytes()
+
+	rf := ReadFrame(data)
+
+	assert.Equal(t, rf.ReadVersion(rf.Header()), nf.ReadVersion(nf.Header()))
+	assert.Equal(t, rf.ReadFlags(), nf.ReadFlags())
+	assert.Equal(t, rf.ReadPayloadLen(rf.Header()), nf.ReadPayloadLen(nf.Header()))
+	assert.Equal(t, true, rf.VerifyCRC(rf.Header()))
+	assert.Equal(t, false, rf.IsStream(rf.Header()))
+}
+
 func BenchmarkLoops(b *testing.B) {
 	nf := NewFrame()
 	nf.WriteVersion(nf.Header(), 1)
