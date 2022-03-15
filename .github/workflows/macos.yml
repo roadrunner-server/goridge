@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        go: [ 1.17.6 ]
+        go: [ 1.17.8 ]
         os: [ macos-latest ]
     steps:
       - name: Set up Go ${{ matrix.go }}
