@@ -123,20 +123,20 @@ func (*Frame) WriteFlags(header []byte, flags ...byte) {
 
 func (*Frame) SetStreamFlag(header []byte) {
 	_ = header[11]
-	header[10] |= 1
+	header[10] |= STREAM
 }
 
 func (*Frame) IsStream(header []byte) bool {
 	_ = header[11]
-	return header[10]&1 == 1
+	return header[10]&STREAM == 1
 }
 
 func (*Frame) SetStopBit(header []byte) {
-	header[10] |= 0x02
+	header[10] |= STOP
 }
 
 func (*Frame) IsStop(header []byte) bool {
-	return header[10]&0x02 != 0
+	return header[10]&STOP != 0
 }
 
 // WriteOptions
