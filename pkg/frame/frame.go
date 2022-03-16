@@ -82,12 +82,12 @@ func (*Frame) ReadVersion(header []byte) byte {
 // 1. For example, we have version 15 it's 0000_1111 (1 byte)
 // 2. We should shift 4 lower bits to upper and write that to the 0th byte
 // 3. The 0th byte should become 1111_0000, but it's not 240, it's only 15, because version only 4 bits len
-func (*Frame) WriteVersion(header []byte, version Version) {
+func (*Frame) WriteVersion(header []byte, version byte) {
 	_ = header[0]
 	if version > 15 {
 		panic("version is only 4 bits")
 	}
-	header[0] = byte(version)<<4 | header[0]
+	header[0] = version<<4 | header[0]
 }
 
 // ReadHL
@@ -129,6 +129,14 @@ func (*Frame) SetStreamFlag(header []byte) {
 func (*Frame) IsStream(header []byte) bool {
 	_ = header[11]
 	return header[10]&1 == 1
+}
+
+func (*Frame) SetStopBit(header []byte) {
+	header[10] |= 0x02
+}
+
+func (*Frame) IsStop(header []byte) bool {
+	return header[10]&0x02 != 0
 }
 
 // WriteOptions

@@ -75,14 +75,14 @@ func (c *ClientCodec) WriteRequest(r *rpc.Request, body interface{}) error {
 	// writeServiceMethod to the buffer
 	buf.WriteString(r.ServiceMethod)
 	// use fallback as gob
-	fr.WriteFlags(fr.Header(), frame.CODEC_GOB)
+	fr.WriteFlags(fr.Header(), frame.CodecGob)
 
 	if body != nil {
 		// if body is proto message, use proto codec
 		switch m := body.(type) {
 		// check if message is PROTO
 		case proto.Message:
-			fr.WriteFlags(fr.Header(), frame.CODEC_PROTO)
+			fr.WriteFlags(fr.Header(), frame.CodecProto)
 			b, err := proto.Marshal(m)
 			if err != nil {
 				return errors.E(op, err)
@@ -100,7 +100,7 @@ func (c *ClientCodec) WriteRequest(r *rpc.Request, body interface{}) error {
 
 	// SEQ_ID + METHOD_NAME_LEN
 	fr.WriteOptions(fr.HeaderPtr(), uint32(r.Seq), uint32(len(r.ServiceMethod)))
-	fr.WriteVersion(fr.Header(), frame.VERSION_1)
+	fr.WriteVersion(fr.Header(), frame.Version1)
 
 	fr.WritePayloadLen(fr.Header(), uint32(buf.Len()))
 	fr.WritePayload(buf.Bytes())
@@ -161,7 +161,7 @@ func (c *ClientCodec) ReadResponseBody(out interface{}) error {
 	flags := c.frame.ReadFlags()
 
 	switch { //nolint:dupl
-	case flags&frame.CODEC_PROTO != 0:
+	case flags&frame.CodecProto != 0:
 		opts := c.frame.ReadOptions(c.frame.Header())
 		if len(opts) != 2 {
 			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
@@ -182,7 +182,7 @@ func (c *ClientCodec) ReadResponseBody(out interface{}) error {
 		}
 
 		return errors.E(op, errors.Str("message type is not a proto"))
-	case flags&frame.CODEC_JSON != 0:
+	case flags&frame.CodecJSON != 0:
 		opts := c.frame.ReadOptions(c.frame.Header())
 		if len(opts) != 2 {
 			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
@@ -192,7 +192,7 @@ func (c *ClientCodec) ReadResponseBody(out interface{}) error {
 			return nil
 		}
 		return json.Unmarshal(payload, out)
-	case flags&frame.CODEC_GOB != 0:
+	case flags&frame.CodecGob != 0:
 		opts := c.frame.ReadOptions(c.frame.Header())
 		if len(opts) != 2 {
 			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
@@ -214,7 +214,7 @@ func (c *ClientCodec) ReadResponseBody(out interface{}) error {
 		}
 
 		return nil
-	case flags&frame.CODEC_RAW != 0:
+	case flags&frame.CodecRaw != 0:
 		opts := c.frame.ReadOptions(c.frame.Header())
 		if len(opts) != 2 {
 			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
@@ -229,7 +229,7 @@ func (c *ClientCodec) ReadResponseBody(out interface{}) error {
 		}
 
 		return nil
-	case flags&frame.CODEC_MSGPACK != 0:
+	case flags&frame.CodecMsgpack != 0:
 		opts := c.frame.ReadOptions(c.frame.Header())
 		if len(opts) != 2 {
 			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
