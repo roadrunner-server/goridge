@@ -16,8 +16,8 @@ func TestPipeReceive(t *testing.T) {
 	relay := NewPipeRelay(pr, pw)
 
 	nf := frame.NewFrame()
-	nf.WriteVersion(nf.Header(), frame.VERSION_1)
-	nf.WriteFlags(nf.Header(), frame.CONTROL, frame.CODEC_GOB, frame.CODEC_JSON)
+	nf.WriteVersion(nf.Header(), frame.Version1)
+	nf.WriteFlags(nf.Header(), frame.CONTROL, frame.CodecGob, frame.CodecJSON)
 	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
 	nf.WritePayload([]byte(TestPayload))
 	nf.WriteCRC(nf.Header())
@@ -51,8 +51,8 @@ func TestPipeReceiveWithOptions(t *testing.T) {
 	relay := NewPipeRelay(pr, pw)
 
 	nf := frame.NewFrame()
-	nf.WriteVersion(nf.Header(), frame.VERSION_1)
-	nf.WriteFlags(nf.Header(), frame.CONTROL, frame.CODEC_GOB, frame.CODEC_JSON)
+	nf.WriteVersion(nf.Header(), frame.Version1)
+	nf.WriteFlags(nf.Header(), frame.CONTROL, frame.CodecGob, frame.CodecJSON)
 	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
 	nf.WritePayload([]byte(TestPayload))
 	nf.WriteOptions(nf.HeaderPtr(), 100, 10000, 100000)
@@ -88,7 +88,7 @@ func TestPipeCRC_Failed(t *testing.T) {
 	relay := NewPipeRelay(pr, pw)
 
 	nf := frame.NewFrame()
-	nf.WriteVersion(nf.Header(), frame.VERSION_1)
+	nf.WriteVersion(nf.Header(), frame.Version1)
 	nf.WriteFlags(nf.Header(), frame.CONTROL)
 	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
 

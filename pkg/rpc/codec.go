@@ -77,14 +77,14 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error { //nolin
 	// SEQ_ID + METHOD_NAME_LEN
 	fr.WriteOptions(fr.HeaderPtr(), uint32(r.Seq), uint32(len(r.ServiceMethod)))
 	// Write protocol version
-	fr.WriteVersion(fr.Header(), frame.VERSION_1)
+	fr.WriteVersion(fr.Header(), frame.Version1)
 
 	// load and delete associated codec to not waste memory
 	// because we write it to the fr and don't need more information about it
 	codec, ok := c.codec.LoadAndDelete(r.Seq)
 	if !ok {
 		// fallback codec
-		fr.WriteFlags(fr.Header(), frame.CODEC_GOB)
+		fr.WriteFlags(fr.Header(), frame.CodecGob)
 	} else {
 		fr.WriteFlags(fr.Header(), codec.(byte))
 	}
@@ -96,7 +96,7 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error { //nolin
 	}
 
 	switch {
-	case codec.(byte)&frame.CODEC_PROTO != 0:
+	case codec.(byte)&frame.CodecProto != 0:
 		d, err := proto.Marshal(body.(proto.Message))
 		if err != nil {
 			return c.handleError(r, fr, err.Error())
@@ -117,7 +117,7 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error { //nolin
 		fr.WriteCRC(fr.Header())
 		// send buffer
 		return c.relay.Send(fr)
-	case codec.(byte)&frame.CODEC_RAW != 0:
+	case codec.(byte)&frame.CodecRaw != 0:
 		// initialize buffer
 		buf := c.get()
 		defer c.put(buf)
@@ -147,7 +147,7 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error { //nolin
 		fr.WriteCRC(fr.Header())
 		return c.relay.Send(fr)
 
-	case codec.(byte)&frame.CODEC_JSON != 0:
+	case codec.(byte)&frame.CodecJSON != 0:
 		data, err := json.Marshal(body)
 		if err != nil {
 			return c.handleError(r, fr, err.Error())
@@ -169,7 +169,7 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error { //nolin
 		// send buffer
 		return c.relay.Send(fr)
 
-	case codec.(byte)&frame.CODEC_MSGPACK != 0:
+	case codec.(byte)&frame.CodecMsgpack != 0:
 		b, err := msgpack.Marshal(body)
 		if err != nil {
 			return errors.E(op, err)
@@ -190,7 +190,7 @@ func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error { //nolin
 		// send buffer
 		return c.relay.Send(fr)
 
-	case codec.(byte)&frame.CODEC_GOB != 0:
+	case codec.(byte)&frame.CodecGob != 0:
 		// initialize buffer
 		buf := c.get()
 		defer c.put(buf)
@@ -274,18 +274,18 @@ func (c *Codec) ReadRequestHeader(r *rpc.Request) error {
 
 func (c *Codec) storeCodec(r *rpc.Request, flag byte) error {
 	switch {
-	case flag&frame.CODEC_PROTO != 0:
-		c.codec.Store(r.Seq, frame.CODEC_PROTO)
-	case flag&frame.CODEC_JSON != 0:
-		c.codec.Store(r.Seq, frame.CODEC_JSON)
-	case flag&frame.CODEC_RAW != 0:
-		c.codec.Store(r.Seq, frame.CODEC_RAW)
-	case flag&frame.CODEC_MSGPACK != 0:
-		c.codec.Store(r.Seq, frame.CODEC_MSGPACK)
-	case flag&frame.CODEC_GOB != 0:
-		c.codec.Store(r.Seq, frame.CODEC_GOB)
+	case flag&frame.CodecProto != 0:
+		c.codec.Store(r.Seq, frame.CodecProto)
+	case flag&frame.CodecJSON != 0:
+		c.codec.Store(r.Seq, frame.CodecJSON)
+	case flag&frame.CodecRaw != 0:
+		c.codec.Store(r.Seq, frame.CodecRaw)
+	case flag&frame.CodecMsgpack != 0:
+		c.codec.Store(r.Seq, frame.CodecMsgpack)
+	case flag&frame.CodecGob != 0:
+		c.codec.Store(r.Seq, frame.CodecGob)
 	default:
-		c.codec.Store(r.Seq, frame.CODEC_GOB)
+		c.codec.Store(r.Seq, frame.CodecGob)
 	}
 
 	return nil
@@ -304,7 +304,7 @@ func (c *Codec) ReadRequestBody(out interface{}) error {
 	flags := c.frame.ReadFlags()
 
 	switch { //nolint:dupl
-	case flags&frame.CODEC_PROTO != 0:
+	case flags&frame.CodecProto != 0:
 		opts := c.frame.ReadOptions(c.frame.Header())
 		if len(opts) != 2 {
 			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
@@ -325,7 +325,7 @@ func (c *Codec) ReadRequestBody(out interface{}) error {
 		}
 
 		return errors.E(op, errors.Str("message type is not a proto"))
-	case flags&frame.CODEC_JSON != 0:
+	case flags&frame.CodecJSON != 0:
 		opts := c.frame.ReadOptions(c.frame.Header())
 		if len(opts) != 2 {
 			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
@@ -335,7 +335,7 @@ func (c *Codec) ReadRequestBody(out interface{}) error {
 			return nil
 		}
 		return json.Unmarshal(payload, out)
-	case flags&frame.CODEC_GOB != 0:
+	case flags&frame.CodecGob != 0:
 		opts := c.frame.ReadOptions(c.frame.Header())
 		if len(opts) != 2 {
 			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
@@ -357,7 +357,7 @@ func (c *Codec) ReadRequestBody(out interface{}) error {
 		}
 
 		return nil
-	case flags&frame.CODEC_RAW != 0:
+	case flags&frame.CodecRaw != 0:
 		opts := c.frame.ReadOptions(c.frame.Header())
 		if len(opts) != 2 {
 			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
@@ -372,7 +372,7 @@ func (c *Codec) ReadRequestBody(out interface{}) error {
 		}
 
 		return nil
-	case flags&frame.CODEC_MSGPACK != 0:
+	case flags&frame.CodecMsgpack != 0:
 		opts := c.frame.ReadOptions(c.frame.Header())
 		if len(opts) != 2 {
 			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))

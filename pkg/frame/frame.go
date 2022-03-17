@@ -82,12 +82,12 @@ func (*Frame) ReadVersion(header []byte) byte {
 // 1. For example, we have version 15 it's 0000_1111 (1 byte)
 // 2. We should shift 4 lower bits to upper and write that to the 0th byte
 // 3. The 0th byte should become 1111_0000, but it's not 240, it's only 15, because version only 4 bits len
-func (*Frame) WriteVersion(header []byte, version Version) {
+func (*Frame) WriteVersion(header []byte, version byte) {
 	_ = header[0]
 	if version > 15 {
 		panic("version is only 4 bits")
 	}
-	header[0] = byte(version)<<4 | header[0]
+	header[0] = version<<4 | header[0]
 }
 
 // ReadHL
@@ -119,6 +119,24 @@ func (*Frame) WriteFlags(header []byte, flags ...byte) {
 	for i := 0; i < len(flags); i++ {
 		header[1] |= flags[i]
 	}
+}
+
+func (*Frame) SetStreamFlag(header []byte) {
+	_ = header[11]
+	header[10] |= STREAM
+}
+
+func (*Frame) IsStream(header []byte) bool {
+	_ = header[11]
+	return header[10]&STREAM == 1
+}
+
+func (*Frame) SetStopBit(header []byte) {
+	header[10] |= STOP
+}
+
+func (*Frame) IsStop(header []byte) bool {
+	return header[10]&STOP != 0
 }
 
 // WriteOptions
@@ -370,9 +388,8 @@ func (*Frame) WritePayloadLen(header []byte, payloadLen uint32) {
 
 // WriteCRC will calculate and write CRC32 4-bytes it to the 6th byte (7th reserved)
 func (*Frame) WriteCRC(header []byte) {
-	// 6 7 8 9 bytes
-	// 10, 11 reserved
-	_ = header[9]
+	// 6 7 8 9 10 11 bytes
+	_ = header[11]
 	// calculate crc
 	crc := crc32.ChecksumIEEE(header[:6])
 	header[6] = byte(crc)

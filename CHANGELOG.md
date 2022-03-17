@@ -1,6 +1,16 @@
 CHANGELOG
 =========
 
+v3.4.0 (17.03.2022)
+-------------------
+
+## 🚀 New:
+
+- ✏️ Add `Stream` and `Stop` bits to the protocol.
+- ✏️ Minimum golang version required is `v1.18`
+
+---
+
 v3.2.5 (12.01.2022)
 -------------------
 
