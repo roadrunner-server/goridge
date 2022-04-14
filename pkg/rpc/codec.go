@@ -10,7 +10,6 @@ import (
 
 	"github.com/goccy/go-json"
 	"github.com/roadrunner-server/errors"
-
 	"github.com/roadrunner-server/goridge/v3/pkg/frame"
 	"github.com/roadrunner-server/goridge/v3/pkg/relay"
 	"github.com/roadrunner-server/goridge/v3/pkg/socket"
