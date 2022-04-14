@@ -53,7 +53,7 @@ jobs:
           go test -v -race -cover -tags=debug -coverpkg=./... -coverprofile=./coverage-ci/socket.txt -covermode=atomic ./pkg/socket
           cat ./coverage-ci/*.txt > ./coverage-ci/summary.txt
 
-      - uses: codecov/codecov-action@v2 # Docs: <https://github.com/codecov/codecov-action>
+      - uses: codecov/codecov-action@v3 # Docs: <https://github.com/codecov/codecov-action>
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./coverage-ci/summary.txt
