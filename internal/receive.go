@@ -56,7 +56,7 @@ func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 	// verify header CRC
 	if !fr.VerifyCRC(fr.Header()) {
 		if d, ok := relay.(deadliner); ok {
-			err = d.SetReadDeadline(time.Now().Add(time.Second * 3))
+			err = d.SetReadDeadline(time.Now().Add(time.Second * 2))
 			if err != nil {
 				return errors.E(op, errors.Errorf("CRC verification failed, bad header: %s", fr.Header()))
 			}
