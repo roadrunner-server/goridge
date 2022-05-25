@@ -13,10 +13,6 @@ import (
 // shortland for the Could not open input file: ../roadrunner/tests/psr-wfsdorker.php
 var res = []byte("Could not op") //nolint:gochecknoglobals
 
-type deadliner interface {
-	SetReadDeadline(time.Time) error
-}
-
 func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 	const op = errors.Op("goridge_frame_receive")
 
@@ -55,6 +51,10 @@ func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 
 	// verify header CRC
 	if !fr.VerifyCRC(fr.Header()) {
+		type deadliner interface {
+			SetReadDeadline(time.Time) error
+		}
+
 		if d, ok := relay.(deadliner); ok {
 			err = d.SetReadDeadline(time.Now().Add(time.Second * 2))
 			if err != nil {
