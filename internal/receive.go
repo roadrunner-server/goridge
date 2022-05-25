@@ -4,6 +4,7 @@ import (
 	"bytes"
 	stderr "errors"
 	"io"
+	"time"
 
 	"github.com/roadrunner-server/errors"
 	"github.com/roadrunner-server/goridge/v3/pkg/frame"
@@ -50,6 +51,23 @@ func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 
 	// verify header CRC
 	if !fr.VerifyCRC(fr.Header()) {
+		type deadliner interface {
+			SetReadDeadline(time.Time) error
+		}
+
+		if d, ok := relay.(deadliner); ok {
+			err = d.SetReadDeadline(time.Now().Add(time.Second * 2))
+			if err != nil {
+				return errors.E(op, errors.Errorf("CRC verification failed, bad header: %s", fr.Header()))
+			}
+
+			// we don't care about error here
+			resp, _ := io.ReadAll(relay)
+
+			return errors.E(op, errors.Errorf("CRC verification failed, bad header: %s", string(fr.Header())+string(resp)))
+		}
+
+		// no deadline, so, only 14 bytes
 		return errors.E(op, errors.Errorf("CRC verification failed, bad header: %s", fr.Header()))
 	}
 

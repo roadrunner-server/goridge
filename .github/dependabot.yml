@@ -17,15 +17,6 @@ updates:
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
-      interval: weekly
-    reviewers:
-      - "rustatian"
-    assignees:
-      - "rustatian"
-
-  - package-ecosystem: "docker"
-    directory: "/"
-    schedule:
       interval: daily
     reviewers:
       - "rustatian"
