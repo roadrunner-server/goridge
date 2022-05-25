@@ -61,8 +61,8 @@ func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 				return errors.E(op, errors.Errorf("CRC verification failed, bad header: %s", fr.Header()))
 			}
 
-			resp, _ := io.ReadAll(relay)
 			// we don't care about error here
+			resp, _ := io.ReadAll(relay)
 
 			return errors.E(op, errors.Errorf("CRC verification failed, bad header: %s", string(fr.Header())+string(resp)))
 		}
