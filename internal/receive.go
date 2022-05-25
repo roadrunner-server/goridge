@@ -4,6 +4,7 @@ import (
 	"bytes"
 	stderr "errors"
 	"io"
+	"time"
 
 	"github.com/roadrunner-server/errors"
 	"github.com/roadrunner-server/goridge/v3/pkg/frame"
@@ -11,6 +12,10 @@ import (
 
 // shortland for the Could not open input file: ../roadrunner/tests/psr-wfsdorker.php
 var res = []byte("Could not op") //nolint:gochecknoglobals
+
+type deadliner interface {
+	SetReadDeadline(time.Time) error
+}
 
 func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 	const op = errors.Op("goridge_frame_receive")
@@ -50,6 +55,19 @@ func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 
 	// verify header CRC
 	if !fr.VerifyCRC(fr.Header()) {
+		if d, ok := relay.(deadliner); ok {
+			err = d.SetReadDeadline(time.Now().Add(time.Second * 3))
+			if err != nil {
+				return errors.E(op, errors.Errorf("CRC verification failed, bad header: %s", fr.Header()))
+			}
+
+			resp, _ := io.ReadAll(relay)
+			// we don't care about error here
+
+			return errors.E(op, errors.Errorf("CRC verification failed, bad header: %s", string(fr.Header())+string(resp)))
+		}
+
+		// no deadline, so, only 14 bytes
 		return errors.E(op, errors.Errorf("CRC verification failed, bad header: %s", fr.Header()))
 	}
 
