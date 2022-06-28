@@ -1,4 +1,4 @@
-// go:build !windows
+// go:build windows
 
 package internal
 
@@ -58,12 +58,8 @@ func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 		}
 
 		if d, ok := relay.(deadliner); ok {
-			err = d.SetReadDeadline(time.Now().Add(time.Second * 2))
-			if err != nil {
-				return errors.E(op, errors.Errorf("CRC verification failed, bad header: %s", fr.Header()))
-			}
-
-			// we don't care about error here
+			// we don't care about errors here, because the pipe can be either closed, and then we read all data w/o deadline or deadline will be successfully set.
+			_ = d.SetReadDeadline(time.Now().Add(time.Second * 2))
 			resp, _ := io.ReadAll(relay)
 
 			return errors.E(op, errors.Errorf("CRC verification failed: %s", string(fr.Header())+string(resp)))
