@@ -58,17 +58,17 @@ func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 		if d, ok := relay.(deadliner); ok {
 			err = d.SetReadDeadline(time.Now().Add(time.Second * 2))
 			if err != nil {
-				return errors.E(op, errors.Errorf("validation failed on the message sent to STDOUT: see: https://bit.ly/3a8iQTQ, invalid message: %s", fr.Header()))
+				return errors.E(op, errors.Errorf("validation failed on the message sent to STDOUT, RR docs: https://bit.ly/3a8iQTQ, invalid message: %s", fr.Header()))
 			}
 
 			// we don't care about error here
 			resp, _ := io.ReadAll(relay)
 
-			return errors.E(op, errors.Errorf("validation failed on the message sent to STDOUT: see: https://bit.ly/3a8iQTQ, invalid message: %s", string(fr.Header())+string(resp)))
+			return errors.E(op, errors.Errorf("validation failed on the message sent to STDOUT, RR docs: https://bit.ly/3a8iQTQ, invalid message: %s", string(fr.Header())+string(resp)))
 		}
 
 		// no deadline, so, only 14 bytes
-		return errors.E(op, errors.Errorf("validation failed on the message sent to STDOUT: see: https://bit.ly/3a8iQTQ, invalid message: %s", fr.Header()))
+		return errors.E(op, errors.Errorf("validation failed on the message sent to STDOUT, RR docs: https://bit.ly/3a8iQTQ, invalid message: %s", fr.Header()))
 	}
 
 	// read the read payload
