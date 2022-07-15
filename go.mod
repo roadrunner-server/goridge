@@ -3,7 +3,7 @@ module github.com/roadrunner-server/goridge/v3
 go 1.18
 
 require (
-	github.com/goccy/go-json v0.9.8
+	github.com/goccy/go-json v0.9.10
 	github.com/roadrunner-server/errors v1.1.2
 	github.com/stretchr/testify v1.8.0
 	github.com/vmihailenco/msgpack/v5 v5.3.5
