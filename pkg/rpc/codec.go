@@ -34,11 +34,11 @@ func NewCodec(rwc io.ReadWriteCloser) *Codec {
 		relay: socket.NewSocketRelay(rwc),
 		codec: sync.Map{},
 
-		bPool: sync.Pool{New: func() interface{} {
+		bPool: sync.Pool{New: func() any {
 			return new(bytes.Buffer)
 		}},
 
-		fPool: sync.Pool{New: func() interface{} {
+		fPool: sync.Pool{New: func() any {
 			return frame.NewFrame()
 		}},
 	}
@@ -68,7 +68,7 @@ func (c *Codec) putFrame(f *frame.Frame) {
 }
 
 // WriteResponse marshals response, byte slice or error to remote party.
-func (c *Codec) WriteResponse(r *rpc.Response, body interface{}) error { //nolint:funlen
+func (c *Codec) WriteResponse(r *rpc.Response, body any) error { //nolint:funlen
 	const op = errors.Op("goridge_write_response")
 	fr := c.getFrame()
 	defer c.putFrame(fr)
@@ -292,7 +292,7 @@ func (c *Codec) storeCodec(r *rpc.Request, flag byte) error {
 
 // ReadRequestBody fetches prefixed body data and automatically unmarshal it as json. RawBody flag will populate
 // []byte lice argument for rpc method.
-func (c *Codec) ReadRequestBody(out interface{}) error {
+func (c *Codec) ReadRequestBody(out any) error {
 	const op = errors.Op("goridge_read_request_body")
 	if out == nil {
 		return nil

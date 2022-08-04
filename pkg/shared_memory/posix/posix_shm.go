@@ -51,7 +51,9 @@ type SharedMemorySegment struct {
 	data    []byte
 }
 
-/* The args are:
+/*
+	The args are:
+
 key - int, used as uniques identifier for the shared memory segment
 size - uint, size in bytes to allocate
 permission - int, if passed zero, 0600 will be used by default

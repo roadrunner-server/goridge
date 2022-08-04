@@ -19,19 +19,19 @@ func Preallocate() {
 
 func internalAllocate() {
 	pool1 := &sync.Pool{
-		New: func() interface{} {
+		New: func() any {
 			data := make([]byte, OneMB)
 			return &data
 		},
 	}
 	pool5 := &sync.Pool{
-		New: func() interface{} {
+		New: func() any {
 			data := make([]byte, FiveMB)
 			return &data
 		},
 	}
 	pool10 := &sync.Pool{
-		New: func() interface{} {
+		New: func() any {
 			data := make([]byte, TenMB)
 			return &data
 		},

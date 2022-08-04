@@ -30,11 +30,11 @@ type ClientCodec struct {
 // NewClientCodec initiates new server rpc codec over socket connection.
 func NewClientCodec(rwc io.ReadWriteCloser) *ClientCodec {
 	return &ClientCodec{
-		bPool: sync.Pool{New: func() interface{} {
+		bPool: sync.Pool{New: func() any {
 			return new(bytes.Buffer)
 		}},
 
-		fPool: sync.Pool{New: func() interface{} {
+		fPool: sync.Pool{New: func() any {
 			return frame.NewFrame()
 		}},
 
@@ -61,7 +61,7 @@ func (c *ClientCodec) putFrame(f *frame.Frame) {
 }
 
 // WriteRequest writes request to the connection. Sequential.
-func (c *ClientCodec) WriteRequest(r *rpc.Request, body interface{}) error {
+func (c *ClientCodec) WriteRequest(r *rpc.Request, body any) error {
 	const op = errors.Op("goridge_write_request")
 
 	// get a frame from the pool
@@ -148,7 +148,7 @@ func (c *ClientCodec) ReadResponseHeader(r *rpc.Response) error {
 }
 
 // ReadResponseBody response from the connection.
-func (c *ClientCodec) ReadResponseBody(out interface{}) error {
+func (c *ClientCodec) ReadResponseBody(out any) error {
 	const op = errors.Op("client_read_response_body")
 
 	// put frame after response was sent
