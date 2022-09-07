@@ -38,7 +38,9 @@ func (rl *Relay) Receive(frame *frame.Frame) error {
 	return internal.ReceiveFrame(rl.in, frame)
 }
 
-// Close the connection. Pipes are closed automatically with the underlying process.
+// Close the connection
 func (rl *Relay) Close() error {
+	_ = rl.out.Close()
+	_ = rl.in.Close()
 	return nil
 }
