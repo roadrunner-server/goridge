@@ -7,7 +7,7 @@ import (
 	"net/rpc"
 	"sync"
 
-	json "github.com/bytedance/sonic"
+	"github.com/goccy/go-json"
 	"github.com/roadrunner-server/errors"
 	"github.com/roadrunner-server/goridge/v3/pkg/frame"
 	"github.com/roadrunner-server/goridge/v3/pkg/relay"
