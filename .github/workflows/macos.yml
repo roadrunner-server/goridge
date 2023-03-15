@@ -27,7 +27,7 @@ jobs:
         os: [ macos-latest ]
     steps:
       - name: Set up Go ${{ matrix.go }}
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4
         with:
           go-version: ${{ matrix.go }}
 
