@@ -1,6 +1,5 @@
 High-performance PHP-to-Golang IPC bridge
 =================================================
-[![Latest Stable Version](https://poser.pugx.org/spiral/goridge/v/stable)](https://packagist.org/packages/spiral/goridge)
 [![GoDoc](https://godoc.org/github.com/roadrunner-server/goridge/v3?status.svg)](https://godoc.org/github.com/roadrunner-server/goridge/v3)
 ![Linux](https://github.com/roadrunner-server/goridge/workflows/Linux/badge.svg)
 ![macOS](https://github.com/roadrunner-server/goridge/workflows/MacOS/badge.svg)
