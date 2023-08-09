@@ -16,7 +16,7 @@ The library allows you to call Go service methods from PHP with a minimal footpr
 PHP source code can be found in this repository: [goridge-php](https://github.com/roadrunner-php/goridge)
 
 <br/>
-See https://github.com/spiral/roadrunner - High-performance PHP application server, load-balancer and process manager written in Golang
+See https://github.com/roadrunner-server/roadrunner - High-performance PHP application server, load-balancer and process manager written in Golang
 <br/>
 
 Features
