@@ -6,7 +6,7 @@ toolchain go1.21.0
 
 require (
 	github.com/goccy/go-json v0.10.2
-	github.com/roadrunner-server/errors v1.2.0
+	github.com/roadrunner-server/errors v1.3.0
 	github.com/stretchr/testify v1.8.4
 	github.com/vmihailenco/msgpack/v5 v5.3.5
 	google.golang.org/protobuf v1.31.0
