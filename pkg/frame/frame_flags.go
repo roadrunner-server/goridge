@@ -15,11 +15,15 @@ const (
 	Version1 byte = 0x01
 
 	/*
-		10th byte
+		10th byte, stream
 	*/
 
 	// STREAM bit
 	STREAM byte = 0x01
 	// STOP command
 	STOP byte = 0x02
+	// PING command
+	PING byte = 0x04
+	// PONG command
+	PONG byte = 0x08
 )

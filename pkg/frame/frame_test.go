@@ -296,6 +296,81 @@ func TestFrame_Bytes(t *testing.T) {
 	assert.Equal(t, []uint32{323423432}, rf.ReadOptions(rf.Header()))
 }
 
+func TestFrame_NotPingPong(t *testing.T) {
+	nf := NewFrame()
+	nf.WriteVersion(nf.Header(), 1)
+	nf.WriteFlags(nf.Header(), CONTROL, CodecGob)
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+
+	nf.WriteOptions(nf.HeaderPtr(), 323423432)
+	assert.Equal(t, []uint32{323423432}, nf.ReadOptions(nf.Header()))
+	nf.WritePayload([]byte(TestPayload))
+
+	nf.WriteCRC(nf.Header())
+	assert.Equal(t, true, nf.VerifyCRC(nf.Header()))
+	data := nf.Bytes()
+
+	rf := ReadFrame(data)
+
+	assert.False(t, rf.IsPing(rf.Header()))
+	assert.False(t, rf.IsPong(rf.Header()))
+	assert.Equal(t, rf.ReadVersion(rf.Header()), nf.ReadVersion(nf.Header()))
+	assert.Equal(t, rf.ReadFlags(), nf.ReadFlags())
+	assert.Equal(t, rf.ReadPayloadLen(rf.Header()), nf.ReadPayloadLen(nf.Header()))
+	assert.Equal(t, true, rf.VerifyCRC(rf.Header()))
+	assert.Equal(t, []uint32{323423432}, rf.ReadOptions(rf.Header()))
+}
+
+func TestFrame_Ping(t *testing.T) {
+	nf := NewFrame()
+	nf.WriteVersion(nf.Header(), 1)
+	nf.WriteFlags(nf.Header(), CONTROL, CodecGob)
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+
+	nf.WriteOptions(nf.HeaderPtr(), 323423432)
+	assert.Equal(t, []uint32{323423432}, nf.ReadOptions(nf.Header()))
+	nf.WritePayload([]byte(TestPayload))
+	nf.SetPingBit(nf.Header())
+
+	nf.WriteCRC(nf.Header())
+	assert.Equal(t, true, nf.VerifyCRC(nf.Header()))
+	data := nf.Bytes()
+
+	rf := ReadFrame(data)
+
+	assert.True(t, rf.IsPing(rf.Header()))
+	assert.Equal(t, rf.ReadVersion(rf.Header()), nf.ReadVersion(nf.Header()))
+	assert.Equal(t, rf.ReadFlags(), nf.ReadFlags())
+	assert.Equal(t, rf.ReadPayloadLen(rf.Header()), nf.ReadPayloadLen(nf.Header()))
+	assert.Equal(t, true, rf.VerifyCRC(rf.Header()))
+	assert.Equal(t, []uint32{323423432}, rf.ReadOptions(rf.Header()))
+}
+
+func TestFrame_Pong(t *testing.T) {
+	nf := NewFrame()
+	nf.WriteVersion(nf.Header(), 1)
+	nf.WriteFlags(nf.Header(), CONTROL, CodecGob)
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+
+	nf.WriteOptions(nf.HeaderPtr(), 323423432)
+	assert.Equal(t, []uint32{323423432}, nf.ReadOptions(nf.Header()))
+	nf.WritePayload([]byte(TestPayload))
+	nf.SetPongBit(nf.Header())
+
+	nf.WriteCRC(nf.Header())
+	assert.Equal(t, true, nf.VerifyCRC(nf.Header()))
+	data := nf.Bytes()
+
+	rf := ReadFrame(data)
+
+	assert.True(t, rf.IsPong(rf.Header()))
+	assert.Equal(t, rf.ReadVersion(rf.Header()), nf.ReadVersion(nf.Header()))
+	assert.Equal(t, rf.ReadFlags(), nf.ReadFlags())
+	assert.Equal(t, rf.ReadPayloadLen(rf.Header()), nf.ReadPayloadLen(nf.Header()))
+	assert.Equal(t, true, rf.VerifyCRC(rf.Header()))
+	assert.Equal(t, []uint32{323423432}, rf.ReadOptions(rf.Header()))
+}
+
 func BenchmarkCRC32(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()

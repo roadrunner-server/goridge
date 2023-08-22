@@ -14,7 +14,6 @@ const WORD = 4
 type Frame struct {
 	// Payload, max length 4.2GB.
 	payload []byte
-
 	// Header
 	header []byte
 }
@@ -128,10 +127,31 @@ func (*Frame) SetStreamFlag(header []byte) {
 
 func (*Frame) IsStream(header []byte) bool {
 	_ = header[11]
-	return header[10]&STREAM == 1
+	return header[10]&STREAM != 0
+}
+
+func (*Frame) IsPing(header []byte) bool {
+	_ = header[11]
+	return header[10]&PING != 0
+}
+
+func (*Frame) SetPingBit(header []byte) {
+	_ = header[11]
+	header[10] |= PING
+}
+
+func (*Frame) IsPong(header []byte) bool {
+	_ = header[11]
+	return header[10]&PONG != 0
+}
+
+func (*Frame) SetPongBit(header []byte) {
+	_ = header[11]
+	header[10] |= PONG
 }
 
 func (*Frame) SetStopBit(header []byte) {
+	_ = header[11]
 	header[10] |= STOP
 }
 
