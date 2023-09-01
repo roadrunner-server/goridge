@@ -13,6 +13,8 @@ import (
 // shortland for the Could not open input file: ../roadrunner/tests/psr-wfsdorker.php
 var res = []byte("Could not op") //nolint:gochecknoglobals
 
+const validationError = "validation failed on the message sent to STDOUT, see: https://roadrunner.dev/docs/known-issues-stdout-crc/current/en, invalid message: %s"
+
 func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 	const op = errors.Op("goridge_frame_receive")
 
@@ -58,17 +60,17 @@ func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 		if d, ok := relay.(deadliner); ok {
 			err = d.SetReadDeadline(time.Now().Add(time.Second * 2))
 			if err != nil {
-				return errors.E(op, errors.Errorf("validation failed on the message sent to STDOUT, see: https://roadrunner.dev/docs/known-issues-stdout-crc/2.x/en, invalid message: %s", fr.Header()))
+				return errors.E(op, errors.Errorf(validationError, fr.Header()))
 			}
 
 			// we don't care about error here
 			resp, _ := io.ReadAll(relay)
 
-			return errors.E(op, errors.Errorf("validation failed on the message sent to STDOUT, see: https://roadrunner.dev/docs/known-issues-stdout-crc/2.x/en, invalid message: %s", string(fr.Header())+string(resp)))
+			return errors.E(op, errors.Errorf(validationError, string(fr.Header())+string(resp)))
 		}
 
 		// no deadline, so, only 14 bytes
-		return errors.E(op, errors.Errorf("validation failed on the message sent to STDOUT, see: https://roadrunner.dev/docs/known-issues-stdout-crc/2.x/en, invalid message: %s", fr.Header()))
+		return errors.E(op, errors.Errorf(validationError, fr.Header()))
 	}
 
 	// read the read payload
