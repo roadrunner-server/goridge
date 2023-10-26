@@ -8,7 +8,7 @@ require (
 	github.com/goccy/go-json v0.10.2
 	github.com/roadrunner-server/errors v1.3.0
 	github.com/stretchr/testify v1.8.4
-	github.com/vmihailenco/msgpack/v5 v5.4.0
+	github.com/vmihailenco/msgpack/v5 v5.4.1
 	google.golang.org/protobuf v1.31.0
 )
 
