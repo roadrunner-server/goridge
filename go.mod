@@ -9,7 +9,7 @@ require (
 	github.com/roadrunner-server/errors v1.3.0
 	github.com/stretchr/testify v1.8.4
 	github.com/vmihailenco/msgpack/v5 v5.4.1
-	google.golang.org/protobuf v1.31.0
+	google.golang.org/protobuf v1.32.0
 )
 
 require (
