@@ -4,7 +4,7 @@
 // 	protoc        v3.17.3
 // source: message.proto
 
-package test
+package tests
 
 import (
 	reflect "reflect"

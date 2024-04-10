@@ -2,25 +2,14 @@
 
 run:
   timeout: 1m
-  skip-dirs:
-    - .github
-    - .git
-    - benchmarks
-  skip-files:
-    - pkg/frame/frame_test.go
-    - pkg/pipe/pipe_test.go
-    - pkg/rpc/client_server.test.go
   modules-download-mode: readonly
   allow-parallel-runners: true
 
 output:
-  format: colored-line-number # colored-line-number|line-number|json|tab|checkstyle|code-climate
+  formats:
+    - format: colored-line-number
 
 linters-settings:
-  govet:
-    check-shadowing: true
-  golint:
-    min-confidence: 0.1
   godot:
     scope: declarations
     capital: true
@@ -38,7 +27,6 @@ linters-settings:
     range-loops: true
     for-loops: true
   nolintlint:
-    allow-leading-space: false
     require-specific: true
 
 linters: # All available linters list: <https://golangci-lint.run/usage/linters/>
@@ -78,6 +66,14 @@ linters: # All available linters list: <https://golangci-lint.run/usage/linters/
     - whitespace # Tool for detection of leading and trailing whitespace
 
 issues:
+  exclude-dirs:
+    - .github
+    - .git
+    - benchmarks
+  exclude-files:
+    - pkg/frame/frame_test.go
+    - pkg/pipe/pipe_test.go
+    - pkg/rpc/client_server.test.go
   exclude-rules:
     - path: pkg/frame/frame_test.go
       linters:

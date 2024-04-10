@@ -9,7 +9,7 @@ import (
 	"time"
 
 	goridgeRpc "github.com/roadrunner-server/goridge/v3/pkg/rpc"
-	"github.com/roadrunner-server/goridge/v3/test"
+	"github.com/roadrunner-server/goridge/v3/tests"
 )
 
 func main() {
@@ -32,7 +32,7 @@ func main() {
 // testService sample
 type testService struct{}
 
-func (s *testService) ProtoMessage(payload *test.Payload, item *test.Item) error {
+func (s *testService) ProtoMessage(payload *tests.Payload, item *tests.Item) error {
 	(*item).Key = payload.Items[0].Key
 	return nil
 }
@@ -58,9 +58,9 @@ func client() {
 
 	tt := time.Now().String()
 
-	keysP := &test.Payload{
+	keysP := &tests.Payload{
 		Storage: "memory-rr",
-		Items: []*test.Item{
+		Items: []*tests.Item{
 			{
 				Key:     "a",
 				Value:   "hhhhhhhhhhhhhhhhheeeeeeeeeeeeeeeeeeeeeeeeeeeelllllllllllllllllllllllllllllllllloooooooooooooooooooooooooooooo",
@@ -79,7 +79,7 @@ func client() {
 		},
 	}
 
-	item := &test.Item{}
+	item := &tests.Item{}
 	for i := 0; i < 1000000; i++ {
 		err = client.Call("testbench.ProtoMessage", keysP, item)
 		if err != nil {

@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/roadrunner-server/errors"
-	"github.com/roadrunner-server/goridge/v3/test"
+	"github.com/roadrunner-server/goridge/v3/tests"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
@@ -59,7 +59,7 @@ func (s *testService) EchoBinary(msg []byte, out *[]byte) error {
 }
 
 // Test Proto
-func (s *testService) ProtoMessage(payload *test.Payload, item *test.Item) error {
+func (s *testService) ProtoMessage(payload *tests.Payload, item *tests.Item) error {
 	(*item).Key = payload.Items[0].Key
 	return nil
 }
@@ -83,9 +83,9 @@ func TestClientServerProto(t *testing.T) {
 	assert.NoError(t, err)
 
 	client := rpc.NewClientWithCodec(NewClientCodec(conn))
-	keysP := &test.Payload{
+	keysP := &tests.Payload{
 		Storage: "memory-rr",
-		Items: []*test.Item{
+		Items: []*tests.Item{
 			{
 				Key: "a",
 			},
@@ -98,7 +98,7 @@ func TestClientServerProto(t *testing.T) {
 		},
 	}
 
-	item := &test.Item{}
+	item := &tests.Item{}
 	assert.NoError(t, client.Call("test123.ProtoMessage", keysP, item))
 	assert.Equal(t, "a", item.Key)
 
@@ -129,9 +129,9 @@ func TestClientServerProtoError(t *testing.T) {
 	assert.NoError(t, err)
 
 	client := rpc.NewClientWithCodec(NewClientCodec(conn))
-	keysP := &test.Payload{
+	keysP := &tests.Payload{
 		Storage: "memory-rr",
-		Items: []*test.Item{
+		Items: []*tests.Item{
 			{
 				Key: "a",
 			},
@@ -149,7 +149,7 @@ func TestClientServerProtoError(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	item := &test.Item{}
+	item := &tests.Item{}
 	assert.Error(t, client.Call("testError.ProtoMessage", keys, item))
 
 	t.Cleanup(func() {

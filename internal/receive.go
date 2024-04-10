@@ -13,7 +13,7 @@ import (
 // shortland for the Could not open input file: ../roadrunner/tests/psr-wfsdorker.php
 var res = []byte("Could not op") //nolint:gochecknoglobals
 
-const validationError = "validation failed on the message sent to STDOUT, see: https://roadrunner.dev/docs/known-issues-stdout-crc/current/en, invalid message: %s"
+const validationError = "validation failed on the message sent to STDOUT, see: https://docs.roadrunner.dev/error-codes/stdout-crc, invalid message: %s"
 
 func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 	const op = errors.Op("goridge_frame_receive")
@@ -23,6 +23,7 @@ func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 		return err
 	}
 
+	// todo: rustatian: think about smarter solution
 	if bytes.Equal(fr.Header(), res) {
 		data, errRa := io.ReadAll(relay)
 		if errRa == nil && len(data) > 0 {
@@ -38,7 +39,7 @@ func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 		optsLen := (fr.ReadHL(fr.Header()) - 3) * frame.WORD
 		opts := make([]byte, optsLen)
 
-		// read next part of the frame - options
+		// read the next part of the frame - options
 		_, err = io.ReadFull(relay, opts)
 		if err != nil {
 			if stderr.Is(err, io.EOF) {
