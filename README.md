@@ -4,7 +4,6 @@ High-performance PHP-to-Golang IPC bridge
 ![Linux](https://github.com/roadrunner-server/goridge/workflows/Linux/badge.svg)
 ![macOS](https://github.com/roadrunner-server/goridge/workflows/MacOS/badge.svg)
 ![Windows](https://github.com/roadrunner-server/goridge/workflows/Windows/badge.svg)
-![Linters](https://github.com/roadrunner-server/goridge/workflows/Linters/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/spiral/goridge)](https://goreportcard.com/report/github.com/spiral/goridge)
 [![Codecov](https://codecov.io/gh/roadrunner-server/goridge/branch/master/graph/badge.svg)](https://codecov.io/gh/roadrunner-server/goridge/)
 <a href="https://discord.gg/TFeEmCs"><img src="https://img.shields.io/badge/discord-chat-magenta.svg"></a>
