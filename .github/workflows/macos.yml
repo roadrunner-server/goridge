@@ -1,19 +1,6 @@
 name: MacOS
 
-on:
-  push:
-    branches:
-      - master
-      - beta
-      - stable
-    tags-ignore:
-      - '**'
-    paths-ignore:
-      - '**.md'
-  pull_request:
-    paths-ignore:
-      - '**.md'
-
+on: [push, pull_request]
 
 jobs:
   build:
