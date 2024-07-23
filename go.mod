@@ -1,6 +1,8 @@
 module github.com/roadrunner-server/goridge/v3
 
-go 1.22.5
+go 1.22
+
+toolchain go1.22.5
 
 require (
 	github.com/goccy/go-json v0.10.3
