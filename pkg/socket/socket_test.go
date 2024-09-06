@@ -19,7 +19,7 @@ func TestSocketRelay(t *testing.T) {
 	nf := frame.NewFrame()
 	nf.WriteVersion(nf.Header(), frame.Version1)
 	nf.WriteFlags(nf.Header(), frame.CONTROL, frame.CodecGob, frame.CodecJSON)
-	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload)))) //nolint:gosec
 	nf.WritePayload([]byte(TestPayload))
 	nf.WriteCRC(nf.Header())
 	assert.Equal(t, true, nf.VerifyCRC(nf.Header()))
@@ -58,7 +58,7 @@ func TestSocketRelayOptions(t *testing.T) {
 	nf := frame.NewFrame()
 	nf.WriteVersion(nf.Header(), frame.Version1)
 	nf.WriteFlags(nf.Header(), frame.CONTROL, frame.CodecGob, frame.CodecJSON)
-	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload)))) //nolint:gosec
 	nf.WritePayload([]byte(TestPayload))
 	nf.WriteOptions(nf.HeaderPtr(), 100, 10000, 100000)
 	nf.WriteCRC(nf.Header())

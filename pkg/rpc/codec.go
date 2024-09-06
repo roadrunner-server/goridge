@@ -67,14 +67,14 @@ func (c *Codec) putFrame(f *frame.Frame) {
 	c.fPool.Put(f)
 }
 
-// WriteResponse marshals response, byte slice or error to remote party.
+// WriteResponse marshals response, byte slice or error to remote.
 func (c *Codec) WriteResponse(r *rpc.Response, body any) error { //nolint:funlen
 	const op = errors.Op("goridge_write_response")
 	fr := c.getFrame()
 	defer c.putFrame(fr)
 
 	// SEQ_ID + METHOD_NAME_LEN
-	fr.WriteOptions(fr.HeaderPtr(), uint32(r.Seq), uint32(len(r.ServiceMethod)))
+	fr.WriteOptions(fr.HeaderPtr(), uint32(r.Seq), uint32(len(r.ServiceMethod))) //nolint:gosec
 	// Write protocol version
 	fr.WriteVersion(fr.Header(), frame.Version1)
 
@@ -110,7 +110,7 @@ func (c *Codec) WriteResponse(r *rpc.Response, body any) error { //nolint:funlen
 		buf.WriteString(r.ServiceMethod)
 		buf.Write(d)
 
-		fr.WritePayloadLen(fr.Header(), uint32(buf.Len()))
+		fr.WritePayloadLen(fr.Header(), uint32(buf.Len())) //nolint:gosec
 		// copy inside
 		fr.WritePayload(buf.Bytes())
 		fr.WriteCRC(fr.Header())
@@ -128,7 +128,7 @@ func (c *Codec) WriteResponse(r *rpc.Response, body any) error { //nolint:funlen
 			buf.WriteString(r.ServiceMethod)
 			buf.Write(data)
 
-			fr.WritePayloadLen(fr.Header(), uint32(buf.Len()))
+			fr.WritePayloadLen(fr.Header(), uint32(buf.Len())) //nolint:gosec
 			fr.WritePayload(buf.Bytes())
 		case *[]byte:
 			buf.Grow(len(*data) + len(r.ServiceMethod))
@@ -136,7 +136,7 @@ func (c *Codec) WriteResponse(r *rpc.Response, body any) error { //nolint:funlen
 			buf.WriteString(r.ServiceMethod)
 			buf.Write(*data)
 
-			fr.WritePayloadLen(fr.Header(), uint32(buf.Len()))
+			fr.WritePayloadLen(fr.Header(), uint32(buf.Len())) //nolint:gosec
 			fr.WritePayload(buf.Bytes())
 		default:
 			return c.handleError(r, fr, "unknown Raw payload type")
@@ -161,7 +161,7 @@ func (c *Codec) WriteResponse(r *rpc.Response, body any) error { //nolint:funlen
 		buf.WriteString(r.ServiceMethod)
 		buf.Write(data)
 
-		fr.WritePayloadLen(fr.Header(), uint32(buf.Len()))
+		fr.WritePayloadLen(fr.Header(), uint32(buf.Len())) //nolint:gosec
 		// copy inside
 		fr.WritePayload(buf.Bytes())
 		fr.WriteCRC(fr.Header())
@@ -182,7 +182,7 @@ func (c *Codec) WriteResponse(r *rpc.Response, body any) error { //nolint:funlen
 		buf.WriteString(r.ServiceMethod)
 		buf.Write(b)
 
-		fr.WritePayloadLen(fr.Header(), uint32(buf.Len()))
+		fr.WritePayloadLen(fr.Header(), uint32(buf.Len())) //nolint:gosec
 		// copy inside
 		fr.WritePayload(buf.Bytes())
 		fr.WriteCRC(fr.Header())
@@ -202,7 +202,7 @@ func (c *Codec) WriteResponse(r *rpc.Response, body any) error { //nolint:funlen
 			return errors.E(op, err)
 		}
 
-		fr.WritePayloadLen(fr.Header(), uint32(buf.Len()))
+		fr.WritePayloadLen(fr.Header(), uint32(buf.Len())) //nolint:gosec
 		// copy inside
 		fr.WritePayload(buf.Bytes())
 		fr.WriteCRC(fr.Header())
@@ -226,7 +226,7 @@ func (c *Codec) handleError(r *rpc.Response, fr *frame.Frame, err string) error 
 	if err != "" {
 		buf.WriteString(err)
 	}
-	fr.WritePayloadLen(fr.Header(), uint32(buf.Len()))
+	fr.WritePayloadLen(fr.Header(), uint32(buf.Len())) //nolint:gosec
 	fr.WritePayload(buf.Bytes())
 
 	fr.WriteCRC(fr.Header())

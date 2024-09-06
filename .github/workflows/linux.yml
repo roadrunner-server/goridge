@@ -3,7 +3,7 @@ name: Linux
 on: [push, pull_request]
 
 jobs:
-  build:
+  testing:
     name: Tests [Go ${{ matrix.go }} OS ${{ matrix.os }}]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 20

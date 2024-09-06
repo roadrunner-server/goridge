@@ -99,10 +99,10 @@ func (c *ClientCodec) WriteRequest(r *rpc.Request, body any) error {
 	}
 
 	// SEQ_ID + METHOD_NAME_LEN
-	fr.WriteOptions(fr.HeaderPtr(), uint32(r.Seq), uint32(len(r.ServiceMethod)))
+	fr.WriteOptions(fr.HeaderPtr(), uint32(r.Seq), uint32(len(r.ServiceMethod))) //nolint:gosec
 	fr.WriteVersion(fr.Header(), frame.Version1)
 
-	fr.WritePayloadLen(fr.Header(), uint32(buf.Len()))
+	fr.WritePayloadLen(fr.Header(), uint32(buf.Len())) //nolint:gosec
 	fr.WritePayload(buf.Bytes())
 	fr.WriteCRC(fr.Header())
 
