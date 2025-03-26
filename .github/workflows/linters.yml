@@ -16,6 +16,6 @@ jobs:
           go-version: 'stable'
 
       - name: Run linter
-        uses: golangci/golangci-lint-action@v7.0.0 # Action page: <https://github.com/golangci/golangci-lint-action>
+        uses: golangci/golangci-lint-action@v7 # Action page: <https://github.com/golangci/golangci-lint-action>
         with:
           only-new-issues: false # show only new issues if it's a pull request
