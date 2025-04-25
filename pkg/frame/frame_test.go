@@ -264,10 +264,9 @@ func BenchmarkLoops(b *testing.B) {
 	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
 	nf.WriteOptions(nf.HeaderPtr(), 323423432, 1213231, 123123123, 398797979, 323423432, 1213231, 123123123, 398797979, 123, 123)
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		options := nf.ReadOptions(nf.Header())
 		_ = options
 	}
@@ -373,8 +372,8 @@ func TestFrame_Pong(t *testing.T) {
 
 func BenchmarkCRC32(b *testing.B) {
 	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
+
+	for b.Loop() {
 		res := crc32.ChecksumIEEE([]byte{'t', 't', 'b', 'u', '6', '1', 'g', 'h', 'r', 't'})
 		_ = res
 	}
@@ -387,10 +386,9 @@ func BenchmarkFrame_CRC(b *testing.B) {
 	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
 	nf.WriteOptions(nf.HeaderPtr(), 1000, 1000, 1000, 1000, 1000, 1000)
 
-	b.ResetTimer()
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		nf.WriteCRC(nf.Header())
 		if !nf.VerifyCRC(nf.Header()) {
 			panic("CRC")
@@ -399,10 +397,10 @@ func BenchmarkFrame_CRC(b *testing.B) {
 }
 
 func BenchmarkFrame(b *testing.B) {
-	b.ResetTimer()
+
 	b.ReportAllocs()
 
-	for i := 0; i < b.N; i++ {
+	for b.Loop() {
 		nf := NewFrame()
 		nf.WriteVersion(nf.Header(), Version1)
 		nf.WriteFlags(nf.Header(), CONTROL, CodecGob)

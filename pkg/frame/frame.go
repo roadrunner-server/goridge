@@ -115,7 +115,7 @@ func (f *Frame) ReadFlags() byte {
 
 func (*Frame) WriteFlags(header []byte, flags ...byte) {
 	_ = header[1]
-	for i := 0; i < len(flags); i++ {
+	for i := range flags {
 		header[1] |= flags[i]
 	}
 }

@@ -292,7 +292,7 @@ func TestClientServerConcurrent(t *testing.T) {
 	wg.Add(300)
 
 	// this test uses random inputs
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		go func() {
 			defer wg.Done()
 			var rp = Payload{}
@@ -347,7 +347,7 @@ func TestClientServerConcurrent(t *testing.T) {
 	wg2 := &sync.WaitGroup{}
 	wg2.Add(300)
 
-	for i := 0; i < 100; i++ {
+	for range 100 {
 		go func() {
 			defer wg2.Done()
 			var rp = Payload{}

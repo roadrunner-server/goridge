@@ -80,7 +80,7 @@ func client() {
 	}
 
 	item := &tests.Item{}
-	for i := 0; i < 1000000; i++ {
+	for range 1000000 {
 		err = client.Call("testbench.ProtoMessage", keysP, item)
 		if err != nil {
 			panic(err)
