@@ -1,6 +1,7 @@
 package socket
 
 import (
+	"context"
 	"net"
 	"testing"
 
@@ -12,7 +13,8 @@ const TestPayload = `alsdjf;lskjdgljasg;lkjsalfkjaskldjflkasjdf;lkasjfdalksdjflk
 
 func TestSocketRelay(t *testing.T) {
 	// configure and create tcp4 listener
-	ls, err := net.Listen("tcp", "localhost:10002")
+	var lc net.ListenConfig
+	ls, err := lc.Listen(context.Background(), "tcp", "localhost:10002")
 	assert.NoError(t, err)
 
 	// TEST FRAME TO SEND
@@ -24,7 +26,8 @@ func TestSocketRelay(t *testing.T) {
 	nf.WriteCRC(nf.Header())
 	assert.Equal(t, true, nf.VerifyCRC(nf.Header()))
 
-	conn, err := net.Dial("tcp", "localhost:10002")
+	var d net.Dialer
+	conn, err := d.DialContext(context.Background(), "tcp", "localhost:10002")
 	assert.NoError(t, err)
 	rsend := NewSocketRelay(conn)
 	err = rsend.Send(nf)
@@ -51,7 +54,8 @@ func TestSocketRelay(t *testing.T) {
 
 func TestSocketRelayOptions(t *testing.T) {
 	// configure and create tcp4 listener
-	ls, err := net.Listen("tcp", "localhost:10001")
+	var lc net.ListenConfig
+	ls, err := lc.Listen(context.Background(), "tcp", "localhost:10001")
 	assert.NoError(t, err)
 
 	// TEST FRAME TO SEND
@@ -64,7 +68,8 @@ func TestSocketRelayOptions(t *testing.T) {
 	nf.WriteCRC(nf.Header())
 	assert.Equal(t, true, nf.VerifyCRC(nf.Header()))
 
-	conn, err := net.Dial("tcp", "localhost:10001")
+	var d net.Dialer
+	conn, err := d.DialContext(context.Background(), "tcp", "localhost:10001")
 	assert.NoError(t, err)
 	rsend := NewSocketRelay(conn)
 	err = rsend.Send(nf)
@@ -92,7 +97,8 @@ func TestSocketRelayOptions(t *testing.T) {
 
 func TestSocketRelayNoPayload(t *testing.T) {
 	// configure and create tcp4 listener
-	ls, err := net.Listen("tcp", "localhost:12221")
+	var lc net.ListenConfig
+	ls, err := lc.Listen(context.Background(), "tcp", "localhost:12221")
 	assert.NoError(t, err)
 
 	// TEST FRAME TO SEND
@@ -103,7 +109,8 @@ func TestSocketRelayNoPayload(t *testing.T) {
 	nf.WriteCRC(nf.Header())
 	assert.Equal(t, true, nf.VerifyCRC(nf.Header()))
 
-	conn, err := net.Dial("tcp", "localhost:12221")
+	var d net.Dialer
+	conn, err := d.DialContext(context.Background(), "tcp", "localhost:12221")
 	assert.NoError(t, err)
 	rsend := NewSocketRelay(conn)
 	err = rsend.Send(nf)
@@ -131,7 +138,8 @@ func TestSocketRelayNoPayload(t *testing.T) {
 
 func TestSocketRelayWrongCRC(t *testing.T) {
 	// configure and create tcp4 listener
-	ls, err := net.Listen("tcp", "localhost:13445")
+	var lc net.ListenConfig
+	ls, err := lc.Listen(context.Background(), "tcp", "localhost:13445")
 	assert.NoError(t, err)
 
 	// TEST FRAME TO SEND
@@ -142,7 +150,8 @@ func TestSocketRelayWrongCRC(t *testing.T) {
 	nf.WriteCRC(nf.Header())
 	nf.Header()[6] = 22 // just random wrong CRC directly
 
-	conn, err := net.Dial("tcp", "localhost:13445")
+	var d net.Dialer
+	conn, err := d.DialContext(context.Background(), "tcp", "localhost:13445")
 	assert.NoError(t, err)
 	_, err = conn.Write(nf.Bytes())
 	assert.NoError(t, err)

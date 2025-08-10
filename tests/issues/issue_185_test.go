@@ -1,6 +1,7 @@
 package issues
 
 import (
+	"context"
 	"fmt"
 	"net"
 	"net/rpc"
@@ -21,7 +22,8 @@ func (s *App) Hi(name string, r *string) error {
 }
 
 func TestRPC_Issue185(t *testing.T) {
-	ln, err := net.Listen("tcp", "127.0.0.1:6001")
+	var lc net.ListenConfig
+	ln, err := lc.Listen(context.Background(), "tcp", "127.0.0.1:6001")
 	require.NoError(t, err)
 
 	err = rpc.Register(new(App))
@@ -31,7 +33,7 @@ func TestRPC_Issue185(t *testing.T) {
 
 	go func() {
 		time.Sleep(time.Second * 2)
-		out, err := exec.Command("php", "../php_test_files/issue_185.php").Output()
+		out, err := exec.CommandContext(context.Background(), "php", "../php_test_files/issue_185.php").Output()
 		assert.NoError(t, err)
 
 		assert.Equal(t, out, []byte("Hello, Antony!"))
