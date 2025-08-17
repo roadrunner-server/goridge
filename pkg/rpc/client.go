@@ -3,11 +3,11 @@ package rpc
 import (
 	"bytes"
 	"encoding/gob"
+	"encoding/json"
 	"io"
 	"net/rpc"
 	"sync"
 
-	"github.com/goccy/go-json"
 	"github.com/roadrunner-server/errors"
 	"github.com/roadrunner-server/goridge/v3/pkg/frame"
 	"github.com/roadrunner-server/goridge/v3/pkg/relay"

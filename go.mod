@@ -1,11 +1,10 @@
 module github.com/roadrunner-server/goridge/v3
 
-go 1.24
+go 1.25
 
-toolchain go1.24.0
+toolchain go1.25.0
 
 require (
-	github.com/goccy/go-json v0.10.5
 	github.com/roadrunner-server/errors v1.4.1
 	github.com/stretchr/testify v1.10.0
 	github.com/vmihailenco/msgpack/v5 v5.4.1
