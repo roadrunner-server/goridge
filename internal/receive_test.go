@@ -123,13 +123,13 @@ func TestReceiveFrame_PayloadEOF(t *testing.T) {
 	// Valid header with payloadLen=100, but EOF when reading payload.
 	// receive.go:89 returns `err` (nil from header read) instead of `err2` (EOF).
 	//
-	// After fix, this test should assert: assert.ErrorIs(t, err, io.ErrUnexpectedEOF)
+	// The fix returns io.EOF (zero bytes read from payload → io.ReadFull returns io.EOF, not io.ErrUnexpectedEOF).
 	payload := make([]byte, 100)
 	data := buildValidFrame(payload)
 	// Provide only the 12-byte header (valid) but no payload bytes
 	fr := frame.NewFrame()
 	err := ReceiveFrame(bytes.NewReader(data[:12]), fr)
-	assert.Error(t, err, "unexpected EOF")
+	assert.ErrorIs(t, err, io.EOF)
 }
 
 func TestReceiveFrame_PayloadNonEOFError(t *testing.T) {

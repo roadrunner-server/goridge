@@ -158,6 +158,7 @@ func (*Frame) SetStopBit(header []byte) {
 
 // IsStop reports whether the STOP bit is set on byte 10 of the header.
 func (*Frame) IsStop(header []byte) bool {
+	_ = header[11]
 	return header[10]&STOP != 0
 }
 

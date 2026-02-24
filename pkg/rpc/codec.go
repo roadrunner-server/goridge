@@ -216,7 +216,7 @@ func (c *Codec) handleError(r *rpc.Response, fr *frame.Frame, err string) error 
 
 	fr.WriteCRC(fr.Header())
 	_ = c.relay.Send(fr)
-	return errors.E(op, errors.Str(r.Error))
+	return errors.E(op, errors.Str(err))
 }
 
 // ReadRequestHeader receives frame with options

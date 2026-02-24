@@ -36,7 +36,7 @@ func TestWriteResponse_NilCodecPanic_Bug2(t *testing.T) {
 		Error:         "",    // No error → doesn't short-circuit to handleError
 	}
 
-	// This will panic at codec.(byte) because LoadAndDelete returns nil
+	// Previously panicked at codec.(byte) due to LoadAndDelete returning nil; ensure no panic now.
 	_ = c.WriteResponse(resp, "some body")
 }
 

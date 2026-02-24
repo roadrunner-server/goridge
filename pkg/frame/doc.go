@@ -4,7 +4,7 @@
 // The header is laid out as follows:
 //
 //	Byte 0:       version (upper 4 bits) | header length in 32-bit words (lower 4 bits)
-//	Byte 1:       flags — codec selection (CodecRaw, CodecJSON, CodecMsgpack, CodecGob, CodecProto)
+//	Byte 1:       flags — codec selection (CodecRaw, CodecJSON, CodecGob, CodecProto)
 //	              and control flags (CONTROL, ERROR)
 //	Bytes 2-5:    payload length (little-endian uint32, max ~4 GB)
 //	Bytes 6-9:    CRC32 (IEEE) of bytes 0-5
