@@ -2,10 +2,6 @@ version: "2"
 run:
   modules-download-mode: readonly
   allow-parallel-runners: true
-output:
-  formats:
-    text:
-      path: stdout
 linters:
   default: none
   enable:
@@ -63,6 +59,10 @@ linters:
       - legacy
       - std-error-handling
     rules:
+      - linters:
+          - gosec
+        path: pkg/frame/frame.go
+        text: "G602|G115"
       - linters:
           - scopelint
         path: pkg/frame/frame_test.go

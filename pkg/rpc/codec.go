@@ -10,10 +10,9 @@ import (
 	"sync"
 
 	"github.com/roadrunner-server/errors"
-	"github.com/roadrunner-server/goridge/v3/pkg/frame"
-	"github.com/roadrunner-server/goridge/v3/pkg/relay"
-	"github.com/roadrunner-server/goridge/v3/pkg/socket"
-	"github.com/vmihailenco/msgpack/v5"
+	"github.com/roadrunner-server/goridge/v4/pkg/frame"
+	"github.com/roadrunner-server/goridge/v4/pkg/relay"
+	"github.com/roadrunner-server/goridge/v4/pkg/socket"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -94,6 +93,10 @@ func (c *Codec) WriteResponse(r *rpc.Response, body any) error { //nolint:funlen
 		return c.handleError(r, fr, r.Error)
 	}
 
+	if codec == nil {
+		return c.handleError(r, fr, errors.E(op, errors.Str("codec not found for response")).Error())
+	}
+
 	switch {
 	case codec.(byte)&frame.CodecProto != 0:
 		d, err := proto.Marshal(body.(proto.Message))
@@ -169,25 +172,7 @@ func (c *Codec) WriteResponse(r *rpc.Response, body any) error { //nolint:funlen
 		return c.relay.Send(fr)
 
 	case codec.(byte)&frame.CodecMsgpack != 0:
-		b, err := msgpack.Marshal(body)
-		if err != nil {
-			return errors.E(op, err)
-		}
-		// initialize buffer
-		buf := c.get()
-		defer c.put(buf)
-
-		buf.Grow(len(b) + len(r.ServiceMethod))
-		// writeServiceMethod to the buffer
-		buf.WriteString(r.ServiceMethod)
-		buf.Write(b)
-
-		fr.WritePayloadLen(fr.Header(), uint32(buf.Len())) //nolint:gosec
-		// copy inside
-		fr.WritePayload(buf.Bytes())
-		fr.WriteCRC(fr.Header())
-		// send buffer
-		return c.relay.Send(fr)
+		return errors.E(op, errors.Str("msgpack codec is not supported in v4"))
 
 	case codec.(byte)&frame.CodecGob != 0:
 		// initialize buffer
@@ -280,7 +265,7 @@ func (c *Codec) storeCodec(r *rpc.Request, flag byte) error {
 	case flag&frame.CodecRaw != 0:
 		c.codec.Store(r.Seq, frame.CodecRaw)
 	case flag&frame.CodecMsgpack != 0:
-		c.codec.Store(r.Seq, frame.CodecMsgpack)
+		return errors.E(errors.Op("store_codec"), errors.Str("msgpack codec is not supported in v4"))
 	case flag&frame.CodecGob != 0:
 		c.codec.Store(r.Seq, frame.CodecGob)
 	default:
@@ -372,16 +357,7 @@ func (c *Codec) ReadRequestBody(out any) error {
 
 		return nil
 	case flags&frame.CodecMsgpack != 0:
-		opts := c.frame.ReadOptions(c.frame.Header())
-		if len(opts) != 2 {
-			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
-		}
-		payload := c.frame.Payload()[opts[1]:]
-		if len(payload) == 0 {
-			return nil
-		}
-
-		return msgpack.Unmarshal(payload, out)
+		return errors.E(op, errors.Str("msgpack codec is not supported in v4"))
 	default:
 		return errors.E(op, errors.Str("unknown decoder used in frame"))
 	}

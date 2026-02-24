@@ -18,7 +18,7 @@ type Frame struct {
 	header []byte
 }
 
-// ReadHeader reads only header, without payload
+// ReadHeader reads only the header (first 12 bytes) from data, without payload.
 func ReadHeader(data []byte) *Frame { // inlined, cost 14
 	_ = data[11]
 	return &Frame{
@@ -27,9 +27,8 @@ func ReadHeader(data []byte) *Frame { // inlined, cost 14
 	}
 }
 
-// ReadFrame produces Frame from the RAW bytes
-// first 12 bytes will be a header
-// the rest - payload
+// ReadFrame produces a Frame from raw bytes.
+// The first 12 bytes (or more if options are present) form the header; the rest is the payload.
 func ReadFrame(data []byte) *Frame { // inlined, cost 60
 	_ = data[11]
 	opt := data[0] & 0x0F
@@ -50,7 +49,7 @@ func ReadFrame(data []byte) *Frame { // inlined, cost 60
 	return f
 }
 
-// NewFrame initializes new frame with 12-byte header and 100-byte reserved space for the payload
+// NewFrame initializes a new frame with a 12-byte header and 100-byte reserved space for the payload.
 func NewFrame() *Frame {
 	f := &Frame{
 		header:  make([]byte, 12),
@@ -61,7 +60,7 @@ func NewFrame() *Frame {
 	return f
 }
 
-// From will represent header and payload as a Frame
+// From wraps the given header and payload slices as a Frame.
 func From(header []byte, payload []byte) *Frame {
 	return &Frame{
 		payload: payload,
@@ -69,18 +68,15 @@ func From(header []byte, payload []byte) *Frame {
 	}
 }
 
-// ReadVersion ... To read version, we should return our 4 upper bits to their original place
+// ReadVersion returns the protocol version from the upper 4 bits of byte 0.
 // 1111_0000 -> 0000_1111 (15)
 func (*Frame) ReadVersion(header []byte) byte {
 	_ = header[0]
 	return header[0] >> 4
 }
 
-// WriteVersion
-// To write version, we should do the following:
-// 1. For example, we have version 15 it's 0000_1111 (1 byte)
-// 2. We should shift 4 lower bits to upper and write that to the 0th byte
-// 3. The 0th byte should become 1111_0000, but it's not 240, it's only 15, because version only 4 bits len
+// WriteVersion writes the protocol version (0-15) into the upper 4 bits of byte 0.
+// The version is shifted left by 4 and OR'd with the existing byte to preserve the header length.
 func (*Frame) WriteVersion(header []byte, version byte) {
 	_ = header[0]
 	if version > 15 {
@@ -89,10 +85,8 @@ func (*Frame) WriteVersion(header []byte, version byte) {
 	header[0] = version<<4 | header[0]
 }
 
-// ReadHL
-// The lower 4 bits of the 0th octet occupies our header len data.
-// We should erase upper 4 bits, which contain information about Version
-// To erase, we are applying bitwise AND to the upper 4 bits and returning result
+// ReadHL reads the header length from the lower 4 bits of byte 0.
+// The upper 4 bits (version) are masked off with bitwise AND 0x0F.
 func (*Frame) ReadHL(header []byte) byte {
 	// 0101_1111         0000_1111
 	// 0x0F - 15
@@ -107,12 +101,12 @@ func (f *Frame) incrementHL(header []byte) {
 	header[0] = header[0] | hl + 1
 }
 
-// ReadFlags
-// Flags is full 1st byte
+// ReadFlags returns the flags byte (byte 1) of the frame header.
 func (f *Frame) ReadFlags() byte {
 	return f.header[1]
 }
 
+// WriteFlags sets one or more flags on byte 1 of the header using bitwise OR.
 func (*Frame) WriteFlags(header []byte, flags ...byte) {
 	_ = header[1]
 	for i := range flags {
@@ -120,48 +114,55 @@ func (*Frame) WriteFlags(header []byte, flags ...byte) {
 	}
 }
 
+// SetStreamFlag sets the STREAM bit on byte 10 of the header.
 func (*Frame) SetStreamFlag(header []byte) {
 	_ = header[11]
 	header[10] |= STREAM
 }
 
+// IsStream reports whether the STREAM bit is set on byte 10 of the header.
 func (*Frame) IsStream(header []byte) bool {
 	_ = header[11]
 	return header[10]&STREAM != 0
 }
 
+// IsPing reports whether the PING bit is set on byte 10 of the header.
 func (*Frame) IsPing(header []byte) bool {
 	_ = header[11]
 	return header[10]&PING != 0
 }
 
+// SetPingBit sets the PING bit on byte 10 of the header.
 func (*Frame) SetPingBit(header []byte) {
 	_ = header[11]
 	header[10] |= PING
 }
 
+// IsPong reports whether the PONG bit is set on byte 10 of the header.
 func (*Frame) IsPong(header []byte) bool {
 	_ = header[11]
 	return header[10]&PONG != 0
 }
 
+// SetPongBit sets the PONG bit on byte 10 of the header.
 func (*Frame) SetPongBit(header []byte) {
 	_ = header[11]
 	header[10] |= PONG
 }
 
+// SetStopBit sets the STOP bit on byte 10 of the header.
 func (*Frame) SetStopBit(header []byte) {
 	_ = header[11]
 	header[10] |= STOP
 }
 
+// IsStop reports whether the STOP bit is set on byte 10 of the header.
 func (*Frame) IsStop(header []byte) bool {
 	return header[10]&STOP != 0
 }
 
-// WriteOptions
-// Options slice len should not be more than 10 (40 bytes)
-// we need a pointer to the header because we are reallocating the slice
+// WriteOptions writes uint32 option values into the header, extending it by 4 bytes per option.
+// At most 10 options (40 bytes) are allowed. The header pointer is required because the slice is reallocated.
 func (f *Frame) WriteOptions(header *[]byte, options ...uint32) {
 	if options == nil {
 		return
@@ -199,11 +200,8 @@ func (f *Frame) WriteOptions(header *[]byte, options ...uint32) {
 	*header = newSl
 }
 
-// ReadOptions
-// f.readHL() - 2 needed to know actual options size
-// we know, that 2 WORDS is minimal header len
-// extra WORDS will add extra 32bits to the options (4 bytes)
-// cannot inline, cost 117 vs 80
+// ReadOptions reads uint32 option values from the extended header.
+// Returns nil if no options are present (HL <= 3). Option count is derived from HL - 3.
 func (f *Frame) ReadOptions(header []byte) []uint32 { //nolint:funlen
 	ol := f.ReadHL(header)
 	// we can read options, if there are no options
@@ -386,18 +384,14 @@ done:
 	return options
 }
 
-// ReadPayloadLen
-// LE format used to write Payload
-// Using 4 bytes (2,3,4,5 bytes in the header)
+// ReadPayloadLen reads the payload length from bytes 2-5 of the header in little-endian format.
 func (*Frame) ReadPayloadLen(header []byte) uint32 {
 	// 2,3,4,5
 	_ = header[5]
 	return uint32(header[2]) | uint32(header[3])<<8 | uint32(header[4])<<16 | uint32(header[5])<<24
 }
 
-// WritePayloadLen
-// LE format used to write Payload
-// Using 4 bytes (2,3,4,5 bytes in the header)
+// WritePayloadLen writes the payload length into bytes 2-5 of the header in little-endian format.
 func (*Frame) WritePayloadLen(header []byte, payloadLen uint32) {
 	_ = header[5]
 	header[2] = byte(payloadLen)
@@ -406,7 +400,7 @@ func (*Frame) WritePayloadLen(header []byte, payloadLen uint32) {
 	header[5] = byte(payloadLen >> 24)
 }
 
-// WriteCRC will calculate and write CRC32 4-bytes it to the 6th byte (7th reserved)
+// WriteCRC calculates the CRC32 checksum of bytes 0-5 and writes it into bytes 6-9 of the header.
 func (*Frame) WriteCRC(header []byte) {
 	// 6 7 8 9 10 11 bytes
 	_ = header[11]
@@ -418,7 +412,7 @@ func (*Frame) WriteCRC(header []byte) {
 	header[9] = byte(crc >> 24)
 }
 
-// AppendOptions appends options to the header
+// AppendOptions appends raw option bytes to the header.
 func (*Frame) AppendOptions(header *[]byte, options []byte) {
 	// make a new slice with the exact len (not doubled)
 	newSl := make([]byte, len(options)+len(*header))
@@ -433,15 +427,14 @@ func (*Frame) AppendOptions(header *[]byte, options []byte) {
 	*header = newSl
 }
 
-// VerifyCRC ...
-// Reading info from 6th byte and verifying it with calculated in-place. Should be equal.
-// If not - drop the frame as incorrect.
+// VerifyCRC verifies the CRC32 checksum stored in bytes 6-9 against the computed checksum of bytes 0-5.
+// Returns false if the checksums do not match, indicating a corrupted frame.
 func (*Frame) VerifyCRC(header []byte) bool {
 	_ = header[9]
 	return crc32.ChecksumIEEE(header[:6]) == uint32(header[6])|uint32(header[7])<<8|uint32(header[8])<<16|uint32(header[9])<<24
 }
 
-// Bytes returns header with payload
+// Bytes returns the full frame as a single byte slice (header + payload).
 func (f *Frame) Bytes() []byte {
 	buf := make([]byte, 0, len(f.header)+len(f.payload))
 	buf = append(buf, f.header...)
@@ -449,29 +442,29 @@ func (f *Frame) Bytes() []byte {
 	return buf
 }
 
-// Header returns frame header
+// Header returns the frame header byte slice.
 func (f *Frame) Header() []byte {
 	return f.header
 }
 
-// HeaderPtr returns frame header pointer
+// HeaderPtr returns a pointer to the frame header slice.
 func (f *Frame) HeaderPtr() *[]byte {
 	return &f.header
 }
 
-// Payload returns frame payload without header
+// Payload returns the frame payload without the header.
 func (f *Frame) Payload() []byte {
 	// start from the 1st (staring from 0) byte
 	return f.payload
 }
 
-// WritePayload writes payload
+// WritePayload copies data into the frame's payload.
 func (f *Frame) WritePayload(data []byte) {
 	f.payload = make([]byte, len(data))
 	copy(f.payload, data)
 }
 
-// Reset a frame
+// Reset clears the frame, restoring it to its initial state with a 12-byte header and empty payload.
 func (f *Frame) Reset() {
 	f.header = make([]byte, 12)
 	f.payload = make([]byte, 0, 100)

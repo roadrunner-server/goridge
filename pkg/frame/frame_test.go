@@ -13,7 +13,7 @@ func TestNewFrame(t *testing.T) {
 	nf := NewFrame()
 	nf.WriteVersion(nf.Header(), Version1)
 	nf.WriteFlags(nf.Header(), CONTROL)
-	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload)))) //nolint:gosec
 	nf.WriteCRC(nf.header)
 
 	nf.WritePayload([]byte(TestPayload))
@@ -33,7 +33,7 @@ func TestAppendOptions(t *testing.T) {
 	nf := NewFrame()
 	nf.WriteVersion(nf.Header(), Version1)
 	nf.WriteFlags(nf.Header(), CONTROL)
-	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload)))) //nolint:gosec
 	nf.WriteCRC(nf.header)
 
 	nf.AppendOptions(nf.HeaderPtr(), []byte{byte(112), byte(123), byte(0), byte(0)})
@@ -57,7 +57,7 @@ func TestFrame_VerifyCRC_Fail(t *testing.T) {
 	nf.WriteCRC(nf.Header())
 	nf.WriteVersion(nf.Header(), Version1)
 	nf.WriteFlags(nf.Header(), CONTROL)
-	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload)))) //nolint:gosec
 
 	nf.WritePayload([]byte(TestPayload))
 
@@ -75,7 +75,7 @@ func TestFrame_OptionsWithNoOptions(t *testing.T) {
 	nf := NewFrame()
 	nf.WriteVersion(nf.Header(), 1)
 	nf.WriteFlags(nf.Header(), CONTROL, CodecGob)
-	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload)))) //nolint:gosec
 	nf.WriteOptions(nf.HeaderPtr())
 
 	// test options
@@ -101,7 +101,7 @@ func TestFrame_Panic(t *testing.T) {
 	nf := NewFrame()
 	nf.WriteVersion(nf.Header(), 1)
 	nf.WriteFlags(nf.Header(), CONTROL, CodecGob)
-	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload)))) //nolint:gosec
 	nf.WriteOptions(nf.HeaderPtr(), 323423432, 1213231, 1, 2, 3, 4, 5, 2, 1, 2, 12)
 	nf.WriteOptions(nf.HeaderPtr(), 323423432)
 }
@@ -113,7 +113,7 @@ func TestFrame_IncrementHLPanic(t *testing.T) {
 	nf := NewFrame()
 	nf.WriteVersion(nf.Header(), 1)
 	nf.WriteFlags(nf.Header(), CONTROL, CodecGob)
-	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload)))) //nolint:gosec
 	nf.WriteOptions(nf.HeaderPtr(), 323423432, 1213231, 1, 2, 3, 4, 5, 2, 1, 2)
 	nf.incrementHL(nf.header)
 	nf.incrementHL(nf.header)
@@ -127,7 +127,7 @@ func TestFrame_ReadOptionsPanic(t *testing.T) {
 	nf := NewFrame()
 	nf.WriteVersion(nf.Header(), 1)
 	nf.WriteFlags(nf.Header(), CONTROL, CodecGob)
-	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload)))) //nolint:gosec
 	nf.WriteOptions(nf.HeaderPtr(), 323423432, 1213231, 1, 2, 3, 4, 5, 2, 1, 2, 12)
 	nf.header[53] = 123
 }
@@ -136,7 +136,7 @@ func TestFrame_Options(t *testing.T) {
 	nf := NewFrame()
 	nf.WriteVersion(nf.Header(), 1)
 	nf.WriteFlags(nf.Header(), CONTROL, CodecGob)
-	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload)))) //nolint:gosec
 	nf.WriteOptions(nf.HeaderPtr(), 323423432, 1213231)
 
 	// test options
@@ -159,7 +159,7 @@ func TestFrame_Stream(t *testing.T) {
 	nf := NewFrame()
 	nf.WriteVersion(nf.Header(), 1)
 	nf.WriteFlags(nf.Header(), CONTROL, CodecGob)
-	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload)))) //nolint:gosec
 	nf.WriteOptions(nf.HeaderPtr(), 323423432, 1213231)
 	nf.SetStreamFlag(nf.Header())
 
@@ -184,7 +184,7 @@ func TestFrame_Stop(t *testing.T) {
 	nf := NewFrame()
 	nf.WriteVersion(nf.Header(), 1)
 	nf.WriteFlags(nf.Header(), CONTROL, CodecGob)
-	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload)))) //nolint:gosec
 	nf.WriteOptions(nf.HeaderPtr(), 323423432, 1213231)
 	nf.SetStreamFlag(nf.Header())
 	nf.SetStopBit(nf.Header())
@@ -211,7 +211,7 @@ func TestFrame_Stop2(t *testing.T) {
 	nf := NewFrame()
 	nf.WriteVersion(nf.Header(), 1)
 	nf.WriteFlags(nf.Header(), CONTROL, CodecGob)
-	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload)))) //nolint:gosec
 	nf.WriteOptions(nf.HeaderPtr(), 323423432, 1213231)
 	nf.SetStreamFlag(nf.Header())
 
@@ -237,7 +237,7 @@ func TestFrame_Stream2(t *testing.T) {
 	nf := NewFrame()
 	nf.WriteVersion(nf.Header(), 1)
 	nf.WriteFlags(nf.Header(), CONTROL, CodecGob)
-	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload)))) //nolint:gosec
 	nf.WriteOptions(nf.HeaderPtr(), 323423432, 1213231)
 
 	// test options
@@ -261,7 +261,7 @@ func BenchmarkLoops(b *testing.B) {
 	nf := NewFrame()
 	nf.WriteVersion(nf.Header(), 1)
 	nf.WriteFlags(nf.Header(), CONTROL, CodecGob)
-	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload)))) //nolint:gosec
 	nf.WriteOptions(nf.HeaderPtr(), 323423432, 1213231, 123123123, 398797979, 323423432, 1213231, 123123123, 398797979, 123, 123)
 
 	b.ReportAllocs()
@@ -276,7 +276,7 @@ func TestFrame_Bytes(t *testing.T) {
 	nf := NewFrame()
 	nf.WriteVersion(nf.Header(), 1)
 	nf.WriteFlags(nf.Header(), CONTROL, CodecGob)
-	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload)))) //nolint:gosec
 
 	nf.WriteOptions(nf.HeaderPtr(), 323423432)
 	assert.Equal(t, []uint32{323423432}, nf.ReadOptions(nf.Header()))
@@ -299,7 +299,7 @@ func TestFrame_NotPingPong(t *testing.T) {
 	nf := NewFrame()
 	nf.WriteVersion(nf.Header(), 1)
 	nf.WriteFlags(nf.Header(), CONTROL, CodecGob)
-	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload)))) //nolint:gosec
 
 	nf.WriteOptions(nf.HeaderPtr(), 323423432)
 	assert.Equal(t, []uint32{323423432}, nf.ReadOptions(nf.Header()))
@@ -324,7 +324,7 @@ func TestFrame_Ping(t *testing.T) {
 	nf := NewFrame()
 	nf.WriteVersion(nf.Header(), 1)
 	nf.WriteFlags(nf.Header(), CONTROL, CodecGob)
-	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload)))) //nolint:gosec
 
 	nf.WriteOptions(nf.HeaderPtr(), 323423432)
 	assert.Equal(t, []uint32{323423432}, nf.ReadOptions(nf.Header()))
@@ -349,7 +349,7 @@ func TestFrame_Pong(t *testing.T) {
 	nf := NewFrame()
 	nf.WriteVersion(nf.Header(), 1)
 	nf.WriteFlags(nf.Header(), CONTROL, CodecGob)
-	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload)))) //nolint:gosec
 
 	nf.WriteOptions(nf.HeaderPtr(), 323423432)
 	assert.Equal(t, []uint32{323423432}, nf.ReadOptions(nf.Header()))
@@ -383,7 +383,7 @@ func BenchmarkFrame_CRC(b *testing.B) {
 	nf := NewFrame()
 	nf.WriteVersion(nf.Header(), Version1)
 	nf.WriteFlags(nf.Header(), CONTROL, CodecGob)
-	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload)))) //nolint:gosec
 	nf.WriteOptions(nf.HeaderPtr(), 1000, 1000, 1000, 1000, 1000, 1000)
 
 	b.ReportAllocs()
@@ -404,7 +404,7 @@ func BenchmarkFrame(b *testing.B) {
 		nf := NewFrame()
 		nf.WriteVersion(nf.Header(), Version1)
 		nf.WriteFlags(nf.Header(), CONTROL, CodecGob)
-		nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+		nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload)))) //nolint:gosec
 		nf.WriteOptions(nf.HeaderPtr(), 1000, 1000, 1000, 1000, 1000, 1000)
 		nf.WriteCRC(nf.Header())
 

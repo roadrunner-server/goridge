@@ -9,10 +9,9 @@ import (
 	"sync"
 
 	"github.com/roadrunner-server/errors"
-	"github.com/roadrunner-server/goridge/v3/pkg/frame"
-	"github.com/roadrunner-server/goridge/v3/pkg/relay"
-	"github.com/roadrunner-server/goridge/v3/pkg/socket"
-	"github.com/vmihailenco/msgpack/v5"
+	"github.com/roadrunner-server/goridge/v4/pkg/frame"
+	"github.com/roadrunner-server/goridge/v4/pkg/relay"
+	"github.com/roadrunner-server/goridge/v4/pkg/socket"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -230,16 +229,7 @@ func (c *ClientCodec) ReadResponseBody(out any) error {
 
 		return nil
 	case flags&frame.CodecMsgpack != 0:
-		opts := c.frame.ReadOptions(c.frame.Header())
-		if len(opts) != 2 {
-			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
-		}
-		payload := c.frame.Payload()[opts[1]:]
-		if len(payload) == 0 {
-			return nil
-		}
-
-		return msgpack.Unmarshal(payload, out)
+		return errors.E(op, errors.Str("msgpack codec is not supported in client codec in v4"))
 	default:
 		return errors.E(op, errors.Str("unknown decoder used in frame"))
 	}

@@ -1,6 +1,6 @@
 package relay
 
-import "github.com/roadrunner-server/goridge/v3/pkg/frame"
+import "github.com/roadrunner-server/goridge/v4/pkg/frame"
 
 // Relay provide IPC over signed payloads.
 type Relay interface {

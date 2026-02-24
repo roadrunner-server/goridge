@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/roadrunner-server/errors"
-	"github.com/roadrunner-server/goridge/v3/pkg/frame"
+	"github.com/roadrunner-server/goridge/v4/pkg/frame"
 )
 
 // shortland for the Could not open input file: ../roadrunner/tests/psr-wfsdorker.php
@@ -15,6 +15,7 @@ var res = []byte("Could not op") //nolint:gochecknoglobals
 
 const validationError = "validation failed on the message sent to STDOUT, see: https://docs.roadrunner.dev/error-codes/stdout-crc, invalid message: %s"
 
+// ReceiveFrame reads a complete frame (header, options, and payload) from the relay into fr.
 func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 	const op = errors.Op("goridge_frame_receive")
 
@@ -86,7 +87,7 @@ func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 	if err2 != nil {
 		if stderr.Is(err2, io.EOF) {
 			put(pl, pb)
-			return err
+			return err2
 		}
 		put(pl, pb)
 		return errors.E(op, err2)
