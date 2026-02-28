@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/gob"
 	"encoding/json"
-	stderr "errors"
 	"io"
 	"net/rpc"
 	"sync"
@@ -15,6 +14,9 @@ import (
 	"github.com/roadrunner-server/goridge/v4/pkg/socket"
 	"google.golang.org/protobuf/proto"
 )
+
+const errOpts = "should be 2 options. SEQ_ID and METHOD_LEN"
+const errMsgpackV4 = "msgpack codec is not supported in v4"
 
 // Codec represent net/rpc bridge over Goridge socket relay.
 type Codec struct {
@@ -172,7 +174,7 @@ func (c *Codec) WriteResponse(r *rpc.Response, body any) error { //nolint:funlen
 		return c.relay.Send(fr)
 
 	case codec.(byte)&frame.CodecMsgpack != 0:
-		return errors.E(op, errors.Str("msgpack codec is not supported in v4"))
+		return errors.E(op, errors.Str(errMsgpackV4))
 
 	case codec.(byte)&frame.CodecGob != 0:
 		// initialize buffer
@@ -233,11 +235,6 @@ func (c *Codec) ReadRequestHeader(r *rpc.Request) error {
 
 	err := c.relay.Receive(f)
 	if err != nil {
-		if stderr.Is(err, io.EOF) {
-			c.putFrame(f)
-			return err
-		}
-
 		c.putFrame(f)
 		return err
 	}
@@ -247,7 +244,7 @@ func (c *Codec) ReadRequestHeader(r *rpc.Request) error {
 	opts := f.ReadOptions(f.Header())
 	if len(opts) != 2 {
 		c.putFrame(f)
-		return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
+		return errors.E(op, errors.Str(errOpts))
 	}
 
 	r.Seq = uint64(opts[0])
@@ -265,7 +262,7 @@ func (c *Codec) storeCodec(r *rpc.Request, flag byte) error {
 	case flag&frame.CodecRaw != 0:
 		c.codec.Store(r.Seq, frame.CodecRaw)
 	case flag&frame.CodecMsgpack != 0:
-		return errors.E(errors.Op("store_codec"), errors.Str("msgpack codec is not supported in v4"))
+		return errors.E(errors.Op("store_codec"), errors.Str(errMsgpackV4))
 	case flag&frame.CodecGob != 0:
 		c.codec.Store(r.Seq, frame.CodecGob)
 	default:
@@ -287,17 +284,18 @@ func (c *Codec) ReadRequestBody(out any) error {
 
 	flags := c.frame.ReadFlags()
 
+	opts := c.frame.ReadOptions(c.frame.Header())
+	if len(opts) != 2 {
+		return errors.E(op, errors.Str(errOpts))
+	}
+
+	payload := c.frame.Payload()[opts[1]:]
+	if len(payload) == 0 {
+		return nil
+	}
+
 	switch { //nolint:dupl
 	case flags&frame.CodecProto != 0:
-		opts := c.frame.ReadOptions(c.frame.Header())
-		if len(opts) != 2 {
-			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
-		}
-		payload := c.frame.Payload()[opts[1]:]
-		if len(payload) == 0 {
-			return nil
-		}
-
 		// check if the out message is a correct proto.Message
 		// instead send an error
 		if pOut, ok := out.(proto.Message); ok {
@@ -310,25 +308,8 @@ func (c *Codec) ReadRequestBody(out any) error {
 
 		return errors.E(op, errors.Str("message type is not a proto"))
 	case flags&frame.CodecJSON != 0:
-		opts := c.frame.ReadOptions(c.frame.Header())
-		if len(opts) != 2 {
-			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
-		}
-		payload := c.frame.Payload()[opts[1]:]
-		if len(payload) == 0 {
-			return nil
-		}
 		return json.Unmarshal(payload, out)
 	case flags&frame.CodecGob != 0:
-		opts := c.frame.ReadOptions(c.frame.Header())
-		if len(opts) != 2 {
-			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
-		}
-		payload := c.frame.Payload()[opts[1]:]
-		if len(payload) == 0 {
-			return nil
-		}
-
 		buf := c.get()
 		defer c.put(buf)
 
@@ -342,22 +323,13 @@ func (c *Codec) ReadRequestBody(out any) error {
 
 		return nil
 	case flags&frame.CodecRaw != 0:
-		opts := c.frame.ReadOptions(c.frame.Header())
-		if len(opts) != 2 {
-			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
-		}
-		payload := c.frame.Payload()[opts[1]:]
-		if len(payload) == 0 {
-			return nil
-		}
-
 		if raw, ok := out.(*[]byte); ok {
 			*raw = append(*raw, payload...)
 		}
 
 		return nil
 	case flags&frame.CodecMsgpack != 0:
-		return errors.E(op, errors.Str("msgpack codec is not supported in v4"))
+		return errors.E(op, errors.Str(errMsgpackV4))
 	default:
 		return errors.E(op, errors.Str("unknown decoder used in frame"))
 	}

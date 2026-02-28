@@ -35,9 +35,10 @@ func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 	}
 
 	// we have options
-	if fr.ReadHL(fr.Header()) > 3 {
+	hl := fr.ReadHL(fr.Header())
+	if hl > 3 {
 		// we should read the options
-		optsLen := (fr.ReadHL(fr.Header()) - 3) * frame.WORD
+		optsLen := (hl - 3) * frame.WORD
 		opts := make([]byte, optsLen)
 
 		// read the next part of the frame - options

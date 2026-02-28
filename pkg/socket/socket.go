@@ -21,7 +21,7 @@ func NewSocketRelay(rwc io.ReadWriteCloser) *Relay {
 
 // Send signed (prefixed) data to PHP process.
 func (rl *Relay) Send(frame *frame.Frame) error {
-	const op = errors.Op("pipes frame send")
+	const op = errors.Op("socket frame send")
 	_, err := rl.rwc.Write(frame.Bytes())
 	if err != nil {
 		return errors.E(op, err)
