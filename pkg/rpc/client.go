@@ -135,6 +135,10 @@ func (c *ClientCodec) ReadResponseHeader(r *rpc.Response) error {
 		return errors.E(op, errors.Str(errOpts))
 	}
 
+	if int(opts[1]) > len(fr.Payload()) {
+		return errors.E(op, errors.Str("method length offset exceeds payload bounds"))
+	}
+
 	// check for error
 	if fr.ReadFlags()&frame.ERROR != 0 {
 		r.Error = string(fr.Payload()[opts[1]:])
@@ -162,6 +166,10 @@ func (c *ClientCodec) ReadResponseBody(out any) error {
 	opts := c.frame.ReadOptions(c.frame.Header())
 	if len(opts) != 2 {
 		return errors.E(op, errors.Str(errOpts))
+	}
+
+	if int(opts[1]) > len(c.frame.Payload()) {
+		return errors.E(op, errors.Str("method length offset exceeds payload bounds"))
 	}
 
 	payload := c.frame.Payload()[opts[1]:]

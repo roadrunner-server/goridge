@@ -174,7 +174,7 @@ func (c *Codec) WriteResponse(r *rpc.Response, body any) error { //nolint:funlen
 		return c.relay.Send(fr)
 
 	case codec.(byte)&frame.CodecMsgpack != 0:
-		return errors.E(op, errors.Str(errMsgpackV4))
+		return c.handleError(r, fr, errMsgpackV4)
 
 	case codec.(byte)&frame.CodecGob != 0:
 		// initialize buffer
@@ -247,6 +247,11 @@ func (c *Codec) ReadRequestHeader(r *rpc.Request) error {
 		return errors.E(op, errors.Str(errOpts))
 	}
 
+	if int(opts[1]) > len(f.Payload()) {
+		c.putFrame(f)
+		return errors.E(op, errors.Str("method length offset exceeds payload bounds"))
+	}
+
 	r.Seq = uint64(opts[0])
 	r.ServiceMethod = string(f.Payload()[:opts[1]])
 	c.frame = f
@@ -287,6 +292,10 @@ func (c *Codec) ReadRequestBody(out any) error {
 	opts := c.frame.ReadOptions(c.frame.Header())
 	if len(opts) != 2 {
 		return errors.E(op, errors.Str(errOpts))
+	}
+
+	if int(opts[1]) > len(c.frame.Payload()) {
+		return errors.E(op, errors.Str("method length offset exceeds payload bounds"))
 	}
 
 	payload := c.frame.Payload()[opts[1]:]
