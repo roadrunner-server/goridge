@@ -9,7 +9,7 @@ import (
 	"testing"
 
 	"github.com/roadrunner-server/errors"
-	"github.com/roadrunner-server/goridge/v3/tests"
+	"github.com/roadrunner-server/goridge/v4/tests"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"

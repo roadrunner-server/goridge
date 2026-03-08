@@ -4,7 +4,7 @@ import (
 	"io"
 	"testing"
 
-	"github.com/roadrunner-server/goridge/v3/pkg/frame"
+	"github.com/roadrunner-server/goridge/v4/pkg/frame"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -18,7 +18,7 @@ func TestPipeReceive(t *testing.T) {
 	nf := frame.NewFrame()
 	nf.WriteVersion(nf.Header(), frame.Version1)
 	nf.WriteFlags(nf.Header(), frame.CONTROL, frame.CodecGob, frame.CodecJSON)
-	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload)))) //nolint:gosec
 	nf.WritePayload([]byte(TestPayload))
 	nf.WriteCRC(nf.Header())
 	assert.Equal(t, true, nf.VerifyCRC(nf.Header()))
@@ -53,7 +53,7 @@ func TestPipeReceiveWithOptions(t *testing.T) {
 	nf := frame.NewFrame()
 	nf.WriteVersion(nf.Header(), frame.Version1)
 	nf.WriteFlags(nf.Header(), frame.CONTROL, frame.CodecGob, frame.CodecJSON)
-	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload)))) //nolint:gosec
 	nf.WritePayload([]byte(TestPayload))
 	nf.WriteOptions(nf.HeaderPtr(), 100, 10000, 100000)
 	nf.WriteCRC(nf.Header())
@@ -90,7 +90,7 @@ func TestPipeCRC_Failed(t *testing.T) {
 	nf := frame.NewFrame()
 	nf.WriteVersion(nf.Header(), frame.Version1)
 	nf.WriteFlags(nf.Header(), frame.CONTROL)
-	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload))))
+	nf.WritePayloadLen(nf.Header(), uint32(len([]byte(TestPayload)))) //nolint:gosec
 
 	assert.Equal(t, false, nf.VerifyCRC(nf.Header()))
 

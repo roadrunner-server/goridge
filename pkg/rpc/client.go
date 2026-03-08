@@ -9,10 +9,9 @@ import (
 	"sync"
 
 	"github.com/roadrunner-server/errors"
-	"github.com/roadrunner-server/goridge/v3/pkg/frame"
-	"github.com/roadrunner-server/goridge/v3/pkg/relay"
-	"github.com/roadrunner-server/goridge/v3/pkg/socket"
-	"github.com/vmihailenco/msgpack/v5"
+	"github.com/roadrunner-server/goridge/v4/pkg/frame"
+	"github.com/roadrunner-server/goridge/v4/pkg/relay"
+	"github.com/roadrunner-server/goridge/v4/pkg/socket"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -133,7 +132,11 @@ func (c *ClientCodec) ReadResponseHeader(r *rpc.Response) error {
 
 	opts := fr.ReadOptions(fr.Header())
 	if len(opts) != 2 {
-		return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
+		return errors.E(op, errors.Str(errOpts))
+	}
+
+	if int(opts[1]) > len(fr.Payload()) {
+		return errors.E(op, errors.Str("method length offset exceeds payload bounds"))
 	}
 
 	// check for error
@@ -160,17 +163,22 @@ func (c *ClientCodec) ReadResponseBody(out any) error {
 
 	flags := c.frame.ReadFlags()
 
+	opts := c.frame.ReadOptions(c.frame.Header())
+	if len(opts) != 2 {
+		return errors.E(op, errors.Str(errOpts))
+	}
+
+	if int(opts[1]) > len(c.frame.Payload()) {
+		return errors.E(op, errors.Str("method length offset exceeds payload bounds"))
+	}
+
+	payload := c.frame.Payload()[opts[1]:]
+	if len(payload) == 0 {
+		return nil
+	}
+
 	switch { //nolint:dupl
 	case flags&frame.CodecProto != 0:
-		opts := c.frame.ReadOptions(c.frame.Header())
-		if len(opts) != 2 {
-			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
-		}
-		payload := c.frame.Payload()[opts[1]:]
-		if len(payload) == 0 {
-			return nil
-		}
-
 		// check if the out message is a correct proto.Message
 		// instead send an error
 		if pOut, ok := out.(proto.Message); ok {
@@ -183,25 +191,8 @@ func (c *ClientCodec) ReadResponseBody(out any) error {
 
 		return errors.E(op, errors.Str("message type is not a proto"))
 	case flags&frame.CodecJSON != 0:
-		opts := c.frame.ReadOptions(c.frame.Header())
-		if len(opts) != 2 {
-			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
-		}
-		payload := c.frame.Payload()[opts[1]:]
-		if len(payload) == 0 {
-			return nil
-		}
 		return json.Unmarshal(payload, out)
 	case flags&frame.CodecGob != 0:
-		opts := c.frame.ReadOptions(c.frame.Header())
-		if len(opts) != 2 {
-			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
-		}
-		payload := c.frame.Payload()[opts[1]:]
-		if len(payload) == 0 {
-			return nil
-		}
-
 		buf := c.get()
 		defer c.put(buf)
 
@@ -215,31 +206,13 @@ func (c *ClientCodec) ReadResponseBody(out any) error {
 
 		return nil
 	case flags&frame.CodecRaw != 0:
-		opts := c.frame.ReadOptions(c.frame.Header())
-		if len(opts) != 2 {
-			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
-		}
-		payload := c.frame.Payload()[opts[1]:]
-		if len(payload) == 0 {
-			return nil
-		}
-
 		if raw, ok := out.(*[]byte); ok {
 			*raw = append(*raw, payload...)
 		}
 
 		return nil
 	case flags&frame.CodecMsgpack != 0:
-		opts := c.frame.ReadOptions(c.frame.Header())
-		if len(opts) != 2 {
-			return errors.E(op, errors.Str("should be 2 options. SEQ_ID and METHOD_LEN"))
-		}
-		payload := c.frame.Payload()[opts[1]:]
-		if len(payload) == 0 {
-			return nil
-		}
-
-		return msgpack.Unmarshal(payload, out)
+		return errors.E(op, errors.Str(errMsgpackV4))
 	default:
 		return errors.E(op, errors.Str("unknown decoder used in frame"))
 	}

@@ -1,6 +1,6 @@
 High-performance PHP-to-Golang IPC bridge
 =================================================
-[![GoDoc](https://godoc.org/github.com/roadrunner-server/goridge/v3?status.svg)](https://godoc.org/github.com/roadrunner-server/goridge/v3)
+[![GoDoc](https://godoc.org/github.com/roadrunner-server/goridge/v4?status.svg)](https://godoc.org/github.com/roadrunner-server/goridge/v4)
 ![Linux](https://github.com/roadrunner-server/goridge/workflows/Linux/badge.svg)
 ![macOS](https://github.com/roadrunner-server/goridge/workflows/MacOS/badge.svg)
 ![Windows](https://github.com/roadrunner-server/goridge/workflows/Windows/badge.svg)
@@ -39,7 +39,7 @@ Installation
 ------------
 
 ```go
-GO111MODULE=on go get github.com/roadrunner-server/goridge/v3
+GO111MODULE=on go get github.com/roadrunner-server/goridge/v4
 ```
 
 ### Sample of usage
@@ -51,7 +51,7 @@ import (
 	"net"
 	"net/rpc"
 
-	goridgeRpc "github.com/roadrunner-server/goridge/v3/pkg/rpc"
+	goridgeRpc "github.com/roadrunner-server/goridge/v4/pkg/rpc"
 )
 
 type App struct{}

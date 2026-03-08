@@ -4,8 +4,8 @@ import (
 	"io"
 
 	"github.com/roadrunner-server/errors"
-	"github.com/roadrunner-server/goridge/v3/internal"
-	"github.com/roadrunner-server/goridge/v3/pkg/frame"
+	"github.com/roadrunner-server/goridge/v4/internal"
+	"github.com/roadrunner-server/goridge/v4/pkg/frame"
 )
 
 // Relay communicates with underlying process using sockets (TPC or Unix).
@@ -21,7 +21,7 @@ func NewSocketRelay(rwc io.ReadWriteCloser) *Relay {
 
 // Send signed (prefixed) data to PHP process.
 func (rl *Relay) Send(frame *frame.Frame) error {
-	const op = errors.Op("pipes frame send")
+	const op = errors.Op("socket frame send")
 	_, err := rl.rwc.Write(frame.Bytes())
 	if err != nil {
 		return errors.E(op, err)
