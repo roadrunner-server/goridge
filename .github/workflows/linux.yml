@@ -18,7 +18,7 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v6
       - name: Init Go modules Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
@@ -28,11 +28,11 @@ jobs:
       - name: Run golang tests on Linux with coverage
         run: |
           mkdir ./coverage-ci
-          go test -v -race -cover -tags=debug -coverpkg=./... -coverprofile=./coverage-ci/frame.txt -covermode=atomic ./pkg/frame
-          go test -v -race -cover -tags=debug -coverpkg=./... -coverprofile=./coverage-ci/pipe.txt -covermode=atomic ./pkg/pipe
-          go test -v -race -cover -tags=debug -coverpkg=./... -coverprofile=./coverage-ci/rpc.txt -covermode=atomic ./pkg/rpc
-          go test -v -race -cover -tags=debug -coverpkg=./... -coverprofile=./coverage-ci/socket.txt -covermode=atomic ./pkg/socket
-          go test -v -race -cover -tags=debug -coverpkg=./... -coverprofile=./coverage-ci/internal.txt -covermode=atomic ./internal
+          go test -v -race -cover -tags=debug -coverpkg=./... -coverprofile=./coverage-ci/frame.out -covermode=atomic ./pkg/frame
+          go test -v -race -cover -tags=debug -coverpkg=./... -coverprofile=./coverage-ci/pipe.out -covermode=atomic ./pkg/pipe
+          go test -v -race -cover -tags=debug -coverpkg=./... -coverprofile=./coverage-ci/rpc.out -covermode=atomic ./pkg/rpc
+          go test -v -race -cover -tags=debug -coverpkg=./... -coverprofile=./coverage-ci/socket.out -covermode=atomic ./pkg/socket
+          go test -v -race -cover -tags=debug -coverpkg=./... -coverprofile=./coverage-ci/internal.out -covermode=atomic ./internal
       - name: Run fuzz tests
         run: |
           go test -tags=debug -fuzz=FuzzReadFrame -fuzztime=30s ./pkg/frame
@@ -40,26 +40,39 @@ jobs:
           go test -tags=debug -fuzz=FuzzVerifyCRC -fuzztime=30s ./pkg/frame
           go test -tags=debug -fuzz=FuzzFrameRoundTrip -fuzztime=30s ./pkg/frame
           go test -tags=debug -fuzz=FuzzReceiveFrame -fuzztime=30s ./internal
-      - name: Upload coverage artifacts
+      - name: Archive code coverage results
         uses: actions/upload-artifact@v4
         with:
-          name: coverage
+          name: coverage-testing
           path: ./coverage-ci
   codecov:
-    name: Upload coverage to Codecov
-    needs: [testing]
+    name: Upload codecov
+    needs:
+      - testing
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 60
     steps:
-      - name: Download coverage artifacts
+      - name: Check out code
+        uses: actions/checkout@v6
+      - name: Download code coverage results
         uses: actions/download-artifact@v8
         with:
-          name: coverage
-      - name: Merge coverage profiles
-        run: |
-          awk 'FNR==1 && /^mode:/ { if (!seen) { seen=1; print } next } { gsub(/github.com\/roadrunner-server\/goridge\/v4\//, ""); print }' *.txt > coverage.txt
-      - name: Upload to Codecov
+          pattern: coverage-*
+          path: coverage
+          merge-multiple: true
+      - run: |
+          echo 'mode: atomic' > summary.txt
+          tail -q -n +2 coverage/*.out >> summary.txt
+          awk '
+            NR == 1 { print; next }
+            /^github\.com\/roadrunner-server\/goridge\/v4\// {
+              sub(/^github\.com\/roadrunner-server\/goridge\/v4\//, "", $0)
+              print
+            }
+          ' summary.txt > summary.filtered.txt
+          mv summary.filtered.txt summary.txt
+      - name: upload to codecov
         uses: codecov/codecov-action@v5
         with:
-          files: ./coverage.txt
+          files: summary.txt
           fail_ci_if_error: false

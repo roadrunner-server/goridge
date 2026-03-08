@@ -22,7 +22,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Init Go modules Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/go/pkg/mod
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
