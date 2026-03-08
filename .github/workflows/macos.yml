@@ -16,7 +16,7 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
       - name: Check out code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Init Go modules Cache
         uses: actions/cache@v4
         with:
