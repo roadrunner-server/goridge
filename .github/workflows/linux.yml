@@ -41,7 +41,7 @@ jobs:
           go test -tags=debug -fuzz=FuzzFrameRoundTrip -fuzztime=30s ./pkg/frame
           go test -tags=debug -fuzz=FuzzReceiveFrame -fuzztime=30s ./internal
       - name: Archive code coverage results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: coverage-testing
           path: ./coverage-ci
