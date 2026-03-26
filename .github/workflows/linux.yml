@@ -72,7 +72,7 @@ jobs:
           ' summary.txt > summary.filtered.txt
           mv summary.filtered.txt summary.txt
       - name: upload to codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           files: summary.txt
           fail_ci_if_error: false
