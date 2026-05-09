@@ -30,7 +30,6 @@ jobs:
           mkdir ./coverage-ci
           go test -v -race -cover -tags=debug -coverpkg=./... -coverprofile=./coverage-ci/frame.out -covermode=atomic ./pkg/frame
           go test -v -race -cover -tags=debug -coverpkg=./... -coverprofile=./coverage-ci/pipe.out -covermode=atomic ./pkg/pipe
-          go test -v -race -cover -tags=debug -coverpkg=./... -coverprofile=./coverage-ci/rpc.out -covermode=atomic ./pkg/rpc
           go test -v -race -cover -tags=debug -coverpkg=./... -coverprofile=./coverage-ci/socket.out -covermode=atomic ./pkg/socket
           go test -v -race -cover -tags=debug -coverpkg=./... -coverprofile=./coverage-ci/internal.out -covermode=atomic ./internal
       - name: Run fuzz tests

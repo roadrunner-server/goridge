@@ -29,6 +29,5 @@ jobs:
         run: |
           go test -v -race -cover -tags=debug -coverpkg=./... -covermode=atomic ./pkg/frame
           go test -v -race -cover -tags=debug -coverpkg=./... -covermode=atomic ./pkg/pipe
-          go test -v -race -cover -tags=debug -coverpkg=./... -covermode=atomic ./pkg/rpc
           go test -v -race -cover -tags=debug -coverpkg=./... -covermode=atomic ./pkg/socket
           go test -v -race -cover -tags=debug -coverpkg=./... -covermode=atomic ./internal

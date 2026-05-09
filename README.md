@@ -1,4 +1,4 @@
-High-performance PHP-to-Golang IPC bridge
+High-performance PHP-to-Golang IPC transport
 =================================================
 [![GoDoc](https://godoc.org/github.com/roadrunner-server/goridge/v4?status.svg)](https://godoc.org/github.com/roadrunner-server/goridge/v4)
 ![Linux](https://github.com/roadrunner-server/goridge/workflows/Linux/badge.svg)
@@ -10,8 +10,7 @@ High-performance PHP-to-Golang IPC bridge
 
 <img src="https://files.phpclasses.org/graphics/phpclasses/innovation-award-logo.png" height="90px" alt="PHPClasses Innovation Award" align="left"/>
 
-Goridge is high performance PHP-to-Golang codec library which works over native PHP sockets and Golang net/rpc package.
-The library allows you to call Go service methods from PHP with a minimal footprint, structures and `[]byte` support.  
+Goridge is a binary frame protocol with pipe and socket transports for inter-process communication between PHP and Go (or between any two processes that speak the goridge frame format). It exposes a 12-byte CRC-checked framing header, a small `Relay` interface, and ready-made pipe and TCP/Unix-socket implementations.
 PHP source code can be found in this repository: [goridge-php](https://github.com/roadrunner-php/goridge)
 
 <br/>
@@ -21,64 +20,78 @@ See https://github.com/roadrunner-server/roadrunner - High-performance PHP appli
 Features
 --------
 
-- no external dependencies or services, drop-in (64bit PHP version required)
+- no external dependencies, drop-in (64bit PHP required for the PHP side)
 - low message footprint (12 bytes over any binary payload), binary error detection
 - CRC32 header verification
-- sockets over TCP or Unix (ext-sockets is required), standard pipes
-- very fast (300k calls per second on Ryzen 1700X over 20 threads)
-- native `net/rpc` integration, ability to connect to existed application(s)
-- standalone protocol usage
-- structured data transfer using json
-- `[]byte` transfer, including big payloads
+- sockets over TCP or Unix domain, standard pipes
+- standalone protocol usage; bring your own RPC layer or none at all
+- structured data transfer (json / msgpack / proto / gob / raw via codec flags)
+- `[]byte` transfer, including large payloads
 - service, message and transport level error handling
 - hackable
-- works on Windows
-- unix sockets powered (also on Windows)
+- works on Windows (named pipes, Unix-domain sockets via AF_UNIX)
 
 Installation
 ------------
 
-```go
-GO111MODULE=on go get github.com/roadrunner-server/goridge/v4
+```bash
+go get github.com/roadrunner-server/goridge/v4
 ```
 
 ### Sample of usage
+
+A minimal echo server using the socket relay:
+
 ```go
 package main
 
 import (
-	"fmt"
+	"log"
 	"net"
-	"net/rpc"
 
-	goridgeRpc "github.com/roadrunner-server/goridge/v4/pkg/rpc"
+	"github.com/roadrunner-server/goridge/v4/pkg/frame"
+	"github.com/roadrunner-server/goridge/v4/pkg/socket"
 )
 
-type App struct{}
-
-func (s *App) Hi(name string, r *string) error {
-	*r = fmt.Sprintf("Hello, %s!", name)
-	return nil
-}
-
 func main() {
-	ln, err := net.Listen("tcp", ":6001")
+	ln, err := net.Listen("tcp", "127.0.0.1:6001")
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
-
-	_ = rpc.Register(new(App))
-
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
 			continue
 		}
-		_ = conn
-		go rpc.ServeCodec(goridgeRpc.NewCodec(conn))
+		go serve(conn)
+	}
+}
+
+func serve(conn net.Conn) {
+	relay := socket.NewSocketRelay(conn)
+	defer func() { _ = relay.Close() }()
+
+	for {
+		in := frame.NewFrame()
+		if err := relay.Receive(in); err != nil {
+			return
+		}
+
+		out := frame.NewFrame()
+		out.WriteVersion(out.Header(), frame.Version1)
+		out.WriteFlags(out.Header(), frame.CodecRaw)
+		out.WritePayload(in.Payload())
+		out.WritePayloadLen(out.Header(), uint32(len(in.Payload())))
+		out.WriteCRC(out.Header())
+
+		if err := relay.Send(out); err != nil {
+			return
+		}
 	}
 }
 ```
+
+For the pipe-based variant, swap `socket.NewSocketRelay(conn)` for `pipe.NewPipeRelay(in, out)` where `in` is an `io.ReadCloser` and `out` is an `io.WriteCloser` — typically `os.Stdin`/`os.Stdout` on a child process.
 
 License
 -------
