@@ -20,7 +20,7 @@ See https://github.com/roadrunner-server/roadrunner - High-performance PHP appli
 Features
 --------
 
-- no external dependencies, drop-in (64bit PHP required for the PHP side)
+- no external dependencies, drop-in (64-bit PHP required for the PHP side)
 - low message footprint (12 bytes over any binary payload), binary error detection
 - CRC32 header verification
 - sockets over TCP or Unix domain, standard pipes
@@ -38,7 +38,8 @@ Installation
 go get github.com/roadrunner-server/goridge/v4
 ```
 
-### Sample of usage
+Sample usage
+------------
 
 A minimal echo server using the socket relay:
 
@@ -61,7 +62,8 @@ func main() {
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
-			continue
+			log.Printf("accept: %v", err)
+			return
 		}
 		go serve(conn)
 	}
@@ -77,9 +79,11 @@ func serve(conn net.Conn) {
 			return
 		}
 
+		// Mirror the incoming header so the response preserves the client's
+		// version, codec and any options/stream bits — a faithful echo.
 		out := frame.NewFrame()
-		out.WriteVersion(out.Header(), frame.Version1)
-		out.WriteFlags(out.Header(), frame.CodecRaw)
+		out.WriteVersion(out.Header(), in.ReadVersion(in.Header()))
+		out.WriteFlags(out.Header(), in.ReadFlags())
 		out.WritePayload(in.Payload())
 		out.WritePayloadLen(out.Header(), uint32(len(in.Payload())))
 		out.WriteCRC(out.Header())
