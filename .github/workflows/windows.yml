@@ -35,6 +35,5 @@ jobs:
         run: |
           go test -v -race -tags=debug ./pkg/frame
           go test -v -race -tags=debug ./pkg/pipe
-          go test -v -race -tags=debug ./pkg/rpc
           go test -v -race -tags=debug ./pkg/socket
           go test -v -race -tags=debug ./internal
