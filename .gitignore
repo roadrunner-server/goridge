@@ -18,3 +18,4 @@
 .idea
 bench
 **vendor
+.claude/settings.local.json
