@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tail:*)",
+      "Bash(go test:*)",
+      "Bash(golangci-lint run:*)",
+      "Bash(head:*)",
+      "Bash(gh api:*)",
+      "Bash(ls:*)",
+      "Bash(which yamllint:*)",
+      "Bash(go run:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(php:*)",
+      "WebFetch(domain:packagist.org)",
+      "Bash(git:*)",
+      "WebFetch(domain:api.github.com)",
+      "WebSearch"
+    ]
+  }
+}
