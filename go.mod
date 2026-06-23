@@ -2,7 +2,7 @@ module github.com/roadrunner-server/goridge/v4
 
 go 1.26
 
-toolchain go1.26.3
+toolchain go1.26.4
 
 require (
 	github.com/roadrunner-server/errors v1.5.0
