@@ -7,7 +7,7 @@ toolchain go1.26.5
 require (
 	github.com/roadrunner-server/errors v1.5.0
 	github.com/stretchr/testify v1.12.0
-	google.golang.org/protobuf v1.36.11
+	google.golang.org/protobuf v1.36.12
 )
 
 require (
