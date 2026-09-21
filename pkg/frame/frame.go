@@ -19,6 +19,7 @@ type Frame struct {
 }
 
 // ReadHeader reads only the header (first 12 bytes) from data, without payload.
+// The frame aliases data: WritePayload, WriteOptions, AppendOptions and Reset write into it.
 func ReadHeader(data []byte) *Frame { // inlined, cost 14
 	_ = data[11]
 	return &Frame{
@@ -29,6 +30,9 @@ func ReadHeader(data []byte) *Frame { // inlined, cost 14
 
 // ReadFrame produces a Frame from raw bytes.
 // The first 12 bytes (or more if options are present) form the header; the rest is the payload.
+// Without options, ReadFrame clears bytes 10 and 11 of data.
+// The frame aliases data: WritePayload, WriteOptions, AppendOptions and Reset write into it,
+// and a header extension overwrites the start of the payload.
 func ReadFrame(data []byte) *Frame { // inlined, cost 60
 	_ = data[11]
 	opt := data[0] & 0x0F
@@ -50,9 +54,10 @@ func ReadFrame(data []byte) *Frame { // inlined, cost 60
 }
 
 // NewFrame initializes a new frame with a 12-byte header and 100-byte reserved space for the payload.
+// The header has capacity for the maximum of 10 options, so WriteOptions does not allocate.
 func NewFrame() *Frame {
 	f := &Frame{
-		header:  make([]byte, 12),
+		header:  make([]byte, 12, 12+OptionsMaxSize),
 		payload: make([]byte, 0, 100),
 	}
 	// set default header len (2)
@@ -61,6 +66,7 @@ func NewFrame() *Frame {
 }
 
 // From wraps the given header and payload slices as a Frame.
+// The frame takes ownership of both slices: WritePayload, WriteOptions, AppendOptions and Reset write into them.
 func From(header []byte, payload []byte) *Frame {
 	return &Frame{
 		payload: payload,
@@ -163,7 +169,8 @@ func (*Frame) IsStop(header []byte) bool {
 }
 
 // WriteOptions writes uint32 option values into the header, extending it by 4 bytes per option.
-// At most 10 options (40 bytes) are allowed. The header pointer is required because the slice is reallocated.
+// At most 10 options (40 bytes) are allowed. The header is extended in place when its capacity is sufficient,
+// otherwise it is reallocated, so the header pointer is required.
 func (f *Frame) WriteOptions(header *[]byte, options ...uint32) {
 	if options == nil {
 		return
@@ -183,10 +190,7 @@ func (f *Frame) WriteOptions(header *[]byte, options ...uint32) {
 		panic("header len could not be equal to 15 to write options")
 	}
 
-	// make a new slice with the exact len (not doubled)
-	newSl := make([]byte, (len(options)*WORD)+len(*header))
-	// copy old data
-	copy(newSl, *header)
+	newSl := growHeader(*header, len(*header)+len(options)*WORD)
 
 	for i, j := 0, 12; i < len(options); i, j = i+1, j+WORD {
 		newSl[j] |= byte(options[i])
@@ -414,11 +418,9 @@ func (*Frame) WriteCRC(header []byte) {
 }
 
 // AppendOptions appends raw option bytes to the header.
+// The header is extended in place when its capacity is sufficient, otherwise it is reallocated.
 func (*Frame) AppendOptions(header *[]byte, options []byte) {
-	// make a new slice with the exact len (not doubled)
-	newSl := make([]byte, len(options)+len(*header))
-	// copy old data
-	copy(newSl, *header)
+	newSl := growHeader(*header, len(*header)+len(options))
 	// j = 12 - first options byte
 	for i, j := 0, 12; i < len(options); i, j = i+1, j+1 {
 		newSl[j] = options[i]
@@ -459,21 +461,35 @@ func (f *Frame) Payload() []byte {
 	return f.payload
 }
 
-// WritePayload copies data into the frame's payload.
+// WritePayload copies data into the frame's payload. The payload buffer is reused when its capacity is sufficient.
 func (f *Frame) WritePayload(data []byte) {
-	f.payload = make([]byte, len(data))
-	copy(f.payload, data)
+	f.payload = append(f.payload[:0], data...)
 }
 
 // Reset clears the frame, restoring it to its initial state with a 12-byte header and empty payload.
+// The header and payload keep their capacity, so slices returned earlier by Header or Payload are
+// overwritten by the next write. The header capacity must be at least 12 bytes.
 func (f *Frame) Reset() {
-	f.header = make([]byte, 12)
-	f.payload = make([]byte, 0, 100)
+	f.header = f.header[:12]
+	clear(f.header)
+	f.payload = f.payload[:0]
 
 	f.defaultHL(f.header)
 }
 
 // -------- PRIVATE
+
+// growHeader returns header extended to n bytes. The bytes past the old length are zero.
+// The backing array is reused when its capacity is sufficient.
+func growHeader(header []byte, n int) []byte {
+	if cap(header) >= n {
+		clear(header[len(header):n])
+		return header[:n]
+	}
+	newSl := make([]byte, n)
+	copy(newSl, header)
+	return newSl
+}
 func (f *Frame) defaultHL(header []byte) {
 	f.writeHl(header, 3)
 }
