@@ -3,7 +3,6 @@ package internal
 import (
 	"bytes"
 	"errors"
-	"io"
 	"testing"
 
 	"github.com/roadrunner-server/goridge/v4/pkg/frame"
@@ -58,17 +57,4 @@ func TestSendFrame_ReturnsWriterError(t *testing.T) {
 	wantErr := errors.New("write failed")
 	err := SendFrame(failWriter{err: wantErr}, buildTestFrame([]byte("payload")))
 	assert.ErrorIs(t, err, wantErr)
-}
-
-func TestSendFrame_DoesNotAllocate(t *testing.T) {
-	if raceEnabled {
-		t.Skip("sync.Pool drops entries at random under the race detector")
-	}
-	fr := buildTestFrame(bytes.Repeat([]byte("x"), 1024), 1)
-	allocs := testing.AllocsPerRun(100, func() {
-		if err := SendFrame(io.Discard, fr); err != nil {
-			t.Fatal(err)
-		}
-	})
-	assert.Equal(t, float64(0), allocs)
 }

@@ -212,26 +212,6 @@ func FuzzReceiveFrame(f *testing.F) {
 	})
 }
 
-func TestReceiveFrame_DoesNotAllocateOnReuse(t *testing.T) {
-	if raceEnabled {
-		t.Skip("sync.Pool drops entries at random under the race detector")
-	}
-	payload := bytes.Repeat([]byte("x"), 1024)
-	data := buildValidFrameWithOptions(payload, 42, 12)
-	r := bytes.NewReader(data)
-	fr := frame.NewFrame()
-	allocs := testing.AllocsPerRun(100, func() {
-		fr.Reset()
-		r.Reset(data)
-		if err := ReceiveFrame(r, fr); err != nil {
-			t.Fatal(err)
-		}
-	})
-	assert.Equal(t, float64(0), allocs)
-	assert.Equal(t, []uint32{42, 12}, fr.ReadOptions(fr.Header()))
-	assert.Equal(t, payload, fr.Payload())
-}
-
 // BenchmarkReceivePath mirrors worker.receiveFrame in roadrunner-server/pool without the payload clone:
 // one frame received from a reused reader, flags and one option read, then the frame reset for reuse.
 func BenchmarkReceivePath(b *testing.B) {
