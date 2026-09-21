@@ -19,7 +19,7 @@ type Frame struct {
 }
 
 // ReadHeader reads only the header (first 12 bytes) from data, without payload.
-// The frame aliases data: WritePayload, WriteOptions, AppendOptions and Reset write into it.
+// The frame aliases data: WriteOptions, AppendOptions and Reset write into it.
 func ReadHeader(data []byte) *Frame { // inlined, cost 14
 	_ = data[11]
 	return &Frame{
@@ -490,6 +490,7 @@ func growHeader(header []byte, n int) []byte {
 	copy(newSl, header)
 	return newSl
 }
+
 func (f *Frame) defaultHL(header []byte) {
 	f.writeHl(header, 3)
 }
