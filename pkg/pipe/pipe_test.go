@@ -1,7 +1,9 @@
 package pipe
 
 import (
+	"bytes"
 	"io"
+	"sync"
 	"testing"
 
 	"github.com/roadrunner-server/goridge/v4/pkg/frame"
@@ -111,4 +113,49 @@ func TestPipeCRC_Failed(t *testing.T) {
 	assert.False(t, fr.VerifyCRC(fr.Header()))
 
 	assert.Empty(t, fr.Payload())
+}
+
+type discardCloser struct{ io.Writer }
+
+func (discardCloser) Close() error { return nil }
+
+// BenchmarkSendPath mirrors worker.sendFrame in roadrunner-server/pool: a pooled frame and a pooled
+// bytes.Buffer, one option, the payload copied into the frame, one Send, then the frame goes back to the pool.
+func BenchmarkSendPath(b *testing.B) {
+	cases := []struct {
+		name string
+		size int
+	}{
+		{name: "1KB", size: 1 << 10},
+		{name: "64KB", size: 64 << 10},
+		{name: "1MB", size: 1 << 20},
+	}
+	relay := NewPipeRelay(io.NopCloser(bytes.NewReader(nil)), discardCloser{io.Discard})
+	fPool := sync.Pool{New: func() any { return frame.NewFrame() }}
+	bPool := sync.Pool{New: func() any { return new(bytes.Buffer) }}
+	for _, tc := range cases {
+		body := bytes.Repeat([]byte("x"), tc.size)
+		b.Run(tc.name, func(b *testing.B) {
+			b.ReportAllocs()
+			b.SetBytes(int64(tc.size))
+			for b.Loop() {
+				fr := fPool.Get().(*frame.Frame)
+				buf := bPool.Get().(*bytes.Buffer)
+				fr.WriteVersion(fr.Header(), frame.Version1)
+				fr.WriteFlags(fr.Header(), frame.CodecRaw)
+				buf.Write(body)
+				fr.WriteOptions(fr.HeaderPtr(), 0)
+				fr.WritePayloadLen(fr.Header(), uint32(buf.Len()))
+				fr.WritePayload(buf.Bytes())
+				fr.WriteCRC(fr.Header())
+				buf.Reset()
+				bPool.Put(buf)
+				if err := relay.Send(fr); err != nil {
+					b.Fatal(err)
+				}
+				fr.Reset()
+				fPool.Put(fr)
+			}
+		})
+	}
 }
