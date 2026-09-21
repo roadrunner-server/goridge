@@ -211,3 +211,34 @@ func FuzzReceiveFrame(f *testing.F) {
 		_ = ReceiveFrame(bytes.NewReader(data), fr)
 	})
 }
+
+// BenchmarkReceivePath mirrors worker.receiveFrame in roadrunner-server/pool without the payload clone:
+// one frame received from a reused reader, flags and one option read, then the frame reset for reuse.
+func BenchmarkReceivePath(b *testing.B) {
+	cases := []struct {
+		name string
+		size int
+	}{
+		{name: "1KB", size: 1 << 10},
+		{name: "64KB", size: 64 << 10},
+		{name: "1MB", size: 1 << 20},
+	}
+	for _, tc := range cases {
+		data := buildValidFrameWithOptions(bytes.Repeat([]byte("x"), tc.size), 0)
+		b.Run(tc.name, func(b *testing.B) {
+			r := bytes.NewReader(data)
+			fr := frame.NewFrame()
+			b.ReportAllocs()
+			b.SetBytes(int64(tc.size))
+			for b.Loop() {
+				r.Reset(data)
+				if err := ReceiveFrame(r, fr); err != nil {
+					b.Fatal(err)
+				}
+				_ = fr.ReadFlags()
+				_ = fr.ReadOptions(fr.Header())
+				fr.Reset()
+			}
+		})
+	}
+}

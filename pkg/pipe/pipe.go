@@ -24,7 +24,7 @@ func NewPipeRelay(in io.ReadCloser, out io.WriteCloser) *Relay {
 // Send signed (prefixed) data to underlying process.
 func (rl *Relay) Send(frame *frame.Frame) error {
 	const op = errors.Op("pipes frame send")
-	_, err := rl.out.Write(frame.Bytes())
+	err := internal.SendFrame(rl.out, frame)
 	if err != nil {
 		return errors.E(op, err)
 	}

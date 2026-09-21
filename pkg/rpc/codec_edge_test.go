@@ -136,3 +136,35 @@ func TestStoreCodec_AllCodecs(t *testing.T) {
 		})
 	}
 }
+
+// responseFrame returns the wire bytes of a response frame with the given payload and options.
+func responseFrame(payload []byte, opts ...uint32) []byte {
+	fr := frame.NewFrame()
+	fr.WriteVersion(fr.Header(), frame.Version1)
+	fr.WriteFlags(fr.Header(), frame.CodecRaw)
+	fr.WriteOptions(fr.HeaderPtr(), opts...)
+	fr.WritePayloadLen(fr.Header(), uint32(len(payload))) //nolint:gosec
+	fr.WritePayload(payload)
+	fr.WriteCRC(fr.Header())
+	return fr.Bytes()
+}
+
+func TestReadResponseHeader_ErrorLeavesNoFrame(t *testing.T) {
+	cases := []struct {
+		name    string
+		data    []byte
+		wantErr string
+	}{
+		{name: "truncated_frame", data: responseFrame([]byte("abc"), 1, 3)[:12], wantErr: "EOF"},
+		{name: "one_option", data: responseFrame([]byte("abc"), 1), wantErr: errOpts},
+		{name: "offset_exceeds_payload", data: responseFrame([]byte("abc"), 1, 100), wantErr: "method length offset exceeds payload bounds"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			c := NewClientCodec(nopCloserRWC{bytes.NewBuffer(tc.data)})
+			err := c.ReadResponseHeader(&rpc.Response{})
+			assert.ErrorContains(t, err, tc.wantErr)
+			assert.Nil(t, c.frame)
+		})
+	}
+}

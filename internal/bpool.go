@@ -13,7 +13,7 @@ const (
 	TenMB  uint32 = 1024 * 1024 * 10
 )
 
-// Preallocate initializes the tiered buffer pools. Must be called before ReceiveFrame.
+// Preallocate initializes the tiered buffer pools. Must be called before SendFrame and ReceiveFrame.
 func Preallocate() {
 	preallocate.Do(internalAllocate)
 }

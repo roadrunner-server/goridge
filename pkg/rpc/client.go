@@ -121,21 +121,18 @@ func (c *ClientCodec) ReadResponseHeader(r *rpc.Response) error {
 
 	err := c.relay.Receive(fr)
 	if err != nil {
+		c.putFrame(fr)
 		return errors.E(op, err)
 	}
-	if !fr.VerifyCRC(fr.Header()) {
-		return errors.E(op, errors.Str("CRC verification failed"))
-	}
-
-	// save the frame after CRC verification
-	c.frame = fr
 
 	opts := fr.ReadOptions(fr.Header())
 	if len(opts) != 2 {
+		c.putFrame(fr)
 		return errors.E(op, errors.Str(errOpts))
 	}
 
 	if int(opts[1]) > len(fr.Payload()) {
+		c.putFrame(fr)
 		return errors.E(op, errors.Str("method length offset exceeds payload bounds"))
 	}
 
@@ -146,6 +143,9 @@ func (c *ClientCodec) ReadResponseHeader(r *rpc.Response) error {
 
 	r.Seq = uint64(opts[0])
 	r.ServiceMethod = string(fr.Payload()[:opts[1]])
+
+	// ReadResponseBody reads the payload and returns the frame to the pool
+	c.frame = fr
 
 	return nil
 }
