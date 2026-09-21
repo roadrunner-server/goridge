@@ -37,21 +37,20 @@ func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 	// we have options
 	hl := fr.ReadHL(fr.Header())
 	if hl > 3 {
-		// we should read the options
-		optsLen := (hl - 3) * frame.WORD
-		opts := make([]byte, optsLen)
-
 		// read the next part of the frame - options
-		_, err = io.ReadFull(relay, opts)
+		optsLen := uint32(hl-3) * frame.WORD
+		pb := get(optsLen)
+		_, err = io.ReadFull(relay, (*pb)[:optsLen])
 		if err != nil {
+			put(optsLen, pb)
 			if stderr.Is(err, io.EOF) {
 				return err
 			}
 			return errors.E(op, err)
 		}
 
-		// we should append frame's
-		fr.AppendOptions(fr.HeaderPtr(), opts)
+		fr.AppendOptions(fr.HeaderPtr(), (*pb)[:optsLen])
+		put(optsLen, pb)
 	}
 
 	// verify header CRC
