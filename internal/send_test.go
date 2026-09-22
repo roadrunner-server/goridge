@@ -91,10 +91,34 @@ func TestSendFrame_HeaderOnlyFrameIsOneWrite(t *testing.T) {
 	assert.Equal(t, len(fr.Header()), w.bytes)
 }
 
-func TestSendFrame_LargeFrameOnPlainWriterIsHeaderThenPayload(t *testing.T) {
+// aliasedCopy rebuilds fr over caller-owned slices, the way From does, so the frame has no headroom.
+func aliasedCopy(fr *frame.Frame) *frame.Frame {
+	return frame.From(bytes.Clone(fr.Header()), bytes.Clone(fr.Payload()))
+}
+
+func TestSendFrame_PooledPayloadIsOneWriteAtAnySize(t *testing.T) {
+	for _, size := range []int{1 << 10, assembleLimit, 1 << 20} {
+		w := &countingWriter{}
+		fr := buildTestFrame(bytes.Repeat([]byte("s"), size), 1)
+		require.NoError(t, SendFrame(w, fr))
+		assert.Equal(t, 1, w.writes, "size %d", size)
+		assert.Equal(t, len(fr.Bytes()), w.bytes, "size %d", size)
+	}
+}
+
+func TestSendFrame_AliasedFrameWritesFrameBytes(t *testing.T) {
+	for _, size := range []int{0, 7, assembleLimit - 12, assembleLimit - 12 + 1, 1 << 20} {
+		fr := aliasedCopy(buildTestFrame(bytes.Repeat([]byte("a"), size), 3))
+		var out bytes.Buffer
+		require.NoError(t, SendFrame(&out, fr))
+		assert.Equal(t, fr.Bytes(), out.Bytes(), "size %d", size)
+	}
+}
+
+func TestSendFrame_AliasedLargeFrameOnPlainWriterIsHeaderThenPayload(t *testing.T) {
 	// a writer without writev support gets the header and the payload as two writes, nothing copied
 	w := &countingWriter{}
-	fr := buildTestFrame(bytes.Repeat([]byte("s"), 1<<20), 1)
+	fr := aliasedCopy(buildTestFrame(bytes.Repeat([]byte("s"), 1<<20), 1))
 	require.NoError(t, SendFrame(w, fr))
 	assert.Equal(t, 2, w.writes)
 	assert.Equal(t, len(fr.Bytes()), w.bytes)
@@ -117,7 +141,7 @@ func (w *failAfterWriter) Write(p []byte) (int, error) {
 
 func TestSendFrame_ReturnsWriterErrorOnTheLargePath(t *testing.T) {
 	wantErr := errors.New("write failed")
-	fr := buildTestFrame(bytes.Repeat([]byte("s"), 1<<20), 1)
+	fr := aliasedCopy(buildTestFrame(bytes.Repeat([]byte("s"), 1<<20), 1))
 	err := SendFrame(&failAfterWriter{failOn: 2, err: wantErr}, fr)
 	assert.ErrorIs(t, err, wantErr)
 }

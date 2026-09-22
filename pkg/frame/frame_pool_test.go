@@ -49,21 +49,21 @@ func TestAllocPayload_GrowthReturnsTheOldBufferToItsTier(t *testing.T) {
 
 	got := bpool.Get(100)
 	defer bpool.Put(got)
-	assert.Same(t, old, first(*got), "the 4 KB buffer is back in the 4 KB tier")
-	assert.Equal(t, int(bpool.SixteenKB), cap(f.Payload()))
+	assert.Same(t, old, &(*got)[Headroom], "the 4 KB buffer is back in the 4 KB tier")
+	assert.Equal(t, int(bpool.SixteenKB)-Headroom, cap(f.Payload()))
 }
 
 func TestReset_ReturnsTheBufferToItsTier(t *testing.T) {
 	singleP(t)
 	f := NewFrame()
-	f.WritePayload(bytes.Repeat([]byte("a"), int(bpool.FiveMB)))
+	f.WritePayload(bytes.Repeat([]byte("a"), int(bpool.FiveMB)-Headroom))
 	addr := first(f.Payload())
 
 	f.Reset()
 
 	got := bpool.Get(bpool.FiveMB)
 	defer bpool.Put(got)
-	assert.Same(t, addr, first(*got), "the 5 MB buffer is back in the 5 MB tier")
+	assert.Same(t, addr, &(*got)[Headroom], "the 5 MB buffer is back in the 5 MB tier")
 	assert.Nil(t, f.Payload())
 }
 
@@ -99,5 +99,5 @@ func TestReset_KeepsTheSmallestTierBuffer(t *testing.T) {
 
 	assert.Equal(t, float64(0), allocs)
 	assert.Same(t, addr, first(f.Payload()), "a 4 KB buffer stays on the frame across Reset")
-	assert.Equal(t, int(bpool.FourKB), cap(f.Payload()))
+	assert.Equal(t, int(bpool.FourKB)-Headroom, cap(f.Payload()))
 }

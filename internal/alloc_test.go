@@ -69,26 +69,26 @@ func TestReceiveFrame_OptionsDoNotTouchThePool(t *testing.T) {
 
 func TestReceiveFrame_PayloadLivesInThePooledBuffer(t *testing.T) {
 	singleP(t)
-	payload := bytes.Repeat([]byte("p"), int(bpool.FiveMB))
+	payload := bytes.Repeat([]byte("p"), int(bpool.FiveMB)-frame.Headroom)
 	data := buildValidFrameWithOptions(payload, 0)
 	fr := frame.NewFrame()
 	if err := ReceiveFrame(bytes.NewReader(data), fr); err != nil {
 		t.Fatal(err)
 	}
 	addr := &fr.Payload()[0]
-	assert.Equal(t, int(bpool.FiveMB), cap(fr.Payload()), "the body was read into a 5 MB tier buffer")
+	assert.Equal(t, int(bpool.FiveMB)-frame.Headroom, cap(fr.Payload()), "the body was read into a 5 MB tier buffer, behind the headroom")
 
 	fr.Reset()
 
 	got := bpool.Get(bpool.FiveMB)
 	defer bpool.Put(got)
-	assert.Same(t, addr, &(*got)[0], "after Reset the buffer is back in its tier, not stuck on the frame")
+	assert.Same(t, addr, &(*got)[frame.Headroom], "after Reset the buffer is back in its tier, not stuck on the frame")
 	assert.Nil(t, fr.Payload())
 }
 
 func TestReceiveFrame_PartialBodyIsReleasedByReset(t *testing.T) {
 	singleP(t)
-	payload := bytes.Repeat([]byte("p"), int(bpool.SixtyFourKB))
+	payload := bytes.Repeat([]byte("p"), int(bpool.SixtyFourKB)-frame.Headroom)
 	data := buildValidFrameWithOptions(payload, 0)
 	fr := frame.NewFrame()
 
@@ -100,11 +100,21 @@ func TestReceiveFrame_PartialBodyIsReleasedByReset(t *testing.T) {
 
 	got := bpool.Get(bpool.SixtyFourKB)
 	defer bpool.Put(got)
-	assert.Same(t, addr, &(*got)[0], "the buffer of the failed read went back to its tier")
+	assert.Same(t, addr, &(*got)[frame.Headroom], "the buffer of the failed read went back to its tier")
 }
 
 func TestSendFrame_LargeFrameDoesNotAllocate(t *testing.T) {
 	fr := buildTestFrame(bytes.Repeat([]byte("x"), 1<<20), 1)
+	allocs := testing.AllocsPerRun(100, func() {
+		if err := SendFrame(io.Discard, fr); err != nil {
+			t.Fatal(err)
+		}
+	})
+	assert.Equal(t, float64(0), allocs)
+}
+
+func TestSendFrame_AliasedLargeFrameDoesNotAllocate(t *testing.T) {
+	fr := aliasedCopy(buildTestFrame(bytes.Repeat([]byte("x"), 1<<20), 1))
 	allocs := testing.AllocsPerRun(100, func() {
 		if err := SendFrame(io.Discard, fr); err != nil {
 			t.Fatal(err)

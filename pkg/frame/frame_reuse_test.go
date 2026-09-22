@@ -168,3 +168,56 @@ func TestAppendOptions_ReusesHeaderCapacity(t *testing.T) {
 	assert.Equal(t, 20, len(f.Header()))
 	assert.Equal(t, opts, f.Header()[12:])
 }
+
+func TestWire_IsHeaderThenPayload(t *testing.T) {
+	cases := []struct {
+		name    string
+		opts    []uint32
+		payload []byte
+	}{
+		{name: "no_options", payload: []byte("payload")},
+		{name: "one_option", opts: []uint32{42}, payload: bytes.Repeat([]byte("p"), 3000)},
+		{name: "ten_options", opts: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, payload: bytes.Repeat([]byte("q"), 70000)},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			f := NewFrame()
+			f.WriteVersion(f.Header(), Version1)
+			f.WriteOptions(f.HeaderPtr(), tc.opts...)
+			f.WritePayloadLen(f.Header(), uint32(len(tc.payload))) //nolint:gosec
+			f.WritePayload(tc.payload)
+			f.WriteCRC(f.Header())
+
+			wire, ok := f.Wire()
+
+			assert.True(t, ok)
+			assert.Equal(t, f.Bytes(), wire)
+			assert.Equal(t, tc.payload, f.Payload(), "the payload is untouched")
+		})
+	}
+}
+
+func TestWire_FalseWithoutAPooledPayload(t *testing.T) {
+	empty := NewFrame()
+	_, ok := empty.Wire()
+	assert.False(t, ok, "nothing to send as one slice without a payload")
+
+	aliased := From(make([]byte, 12), []byte("caller memory"))
+	_, ok = aliased.Wire()
+	assert.False(t, ok, "caller memory has no headroom in front of it")
+}
+
+func TestWire_DoesNotAllocate(t *testing.T) {
+	f := NewFrame()
+	sink = f
+	f.WriteOptions(f.HeaderPtr(), 7)
+	f.WritePayload(bytes.Repeat([]byte("w"), 1000))
+	allocs := testing.AllocsPerRun(10, func() { _, _ = f.Wire() })
+	assert.Equal(t, float64(0), allocs)
+}
+
+func TestAllocPayload_LeavesHeadroomInThePooledBuffer(t *testing.T) {
+	f := NewFrame()
+	f.WritePayload([]byte("x"))
+	assert.Equal(t, Headroom, cap(*f.pb)-cap(f.Payload()), "the payload starts Headroom bytes into the buffer")
+}

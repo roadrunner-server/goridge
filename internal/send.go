@@ -24,15 +24,22 @@ var buffersPool = sync.Pool{
 
 // SendFrame writes the header and the payload of fr to w.
 //
-// A frame without a payload is one Write of the header. A frame up to assembleLimit is
-// assembled in a buffer from the tiered pool and written once. A larger frame is written
-// as net.Buffers: one writev on a net.Conn, the header and then the payload elsewhere.
-// Nothing is copied on that path and the frame is left untouched.
+// A frame without a payload is one Write of the header. A frame whose payload is borrowed
+// from the pool is one Write of the contiguous slice that Wire returns, at any size. A frame
+// over caller memory, as built by From or ReadFrame, is assembled in a pooled buffer up to
+// assembleLimit and written once, and above that written as net.Buffers: one writev on a
+// net.Conn, the header and then the payload elsewhere. Nothing is copied on that path.
 func SendFrame(w io.Writer, fr *frame.Frame) error {
 	h, p := fr.Header(), fr.Payload()
 
 	if len(p) == 0 {
 		_, err := w.Write(h)
+		return err
+	}
+
+	// a pooled payload has the header's room in front of it: one write, nothing copied
+	if wire, ok := fr.Wire(); ok {
+		_, err := w.Write(wire)
 		return err
 	}
 

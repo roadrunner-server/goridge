@@ -471,10 +471,11 @@ func (f *Frame) Payload() []byte {
 // AllocPayload sets the payload length to n and returns it for the caller to fill.
 // The contents are undefined. The pooled buffer is reused when it fits, a payload that
 // aliases caller memory is written in place when it fits, and otherwise a buffer of the
-// right tier is taken from the pool. n == 0 never takes a buffer.
+// right tier is taken from the pool. n == 0 never takes a buffer. A pooled payload starts
+// Headroom bytes into its buffer, see Wire.
 func (f *Frame) AllocPayload(n int) []byte {
-	if f.pb != nil && cap(*f.pb) >= n {
-		f.payload = (*f.pb)[:n]
+	if f.pb != nil && cap(*f.pb)-Headroom >= n {
+		f.payload = (*f.pb)[Headroom : Headroom+n]
 		return f.payload
 	}
 
@@ -494,11 +495,30 @@ func (f *Frame) allocPayloadSlow(n int) []byte {
 		if f.pb != nil {
 			bpool.Put(f.pb)
 		}
-		f.pb = bpool.Get(uint32(n))
-		f.payload = (*f.pb)[:n]
+		f.pb = bpool.Get(uint32(n + Headroom))
+		f.payload = (*f.pb)[Headroom : Headroom+n]
 	}
 
 	return f.payload
+}
+
+// Headroom is the space kept in front of a pooled payload for the header, so that Wire can
+// hand the whole frame to a single Write without copying the payload.
+const Headroom = 12 + OptionsMaxSize
+
+// Wire writes the header into the headroom in front of a pooled payload and returns the
+// contiguous header-plus-payload slice, valid until the next write or Reset. ok is false when
+// the frame has no pooled payload, an empty payload, or a header longer than Headroom; the
+// caller then sends the header and the payload separately.
+func (f *Frame) Wire() (wire []byte, ok bool) {
+	if f.pb == nil || len(f.payload) == 0 || len(f.header) > Headroom {
+		return nil, false
+	}
+
+	start := Headroom - len(f.header)
+	copy((*f.pb)[start:Headroom], f.header)
+
+	return (*f.pb)[start : Headroom+len(f.payload)], true
 }
 
 // WritePayload copies data into the frame's payload. See AllocPayload for where the buffer comes from.
