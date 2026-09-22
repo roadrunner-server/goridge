@@ -102,3 +102,13 @@ func TestReceiveFrame_PartialBodyIsReleasedByReset(t *testing.T) {
 	defer bpool.Put(got)
 	assert.Same(t, addr, &(*got)[0], "the buffer of the failed read went back to its tier")
 }
+
+func TestSendFrame_LargeFrameDoesNotAllocate(t *testing.T) {
+	fr := buildTestFrame(bytes.Repeat([]byte("x"), 1<<20), 1)
+	allocs := testing.AllocsPerRun(100, func() {
+		if err := SendFrame(io.Discard, fr); err != nil {
+			t.Fatal(err)
+		}
+	})
+	assert.Equal(t, float64(0), allocs)
+}

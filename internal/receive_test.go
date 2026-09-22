@@ -177,6 +177,9 @@ func FuzzReceiveFrame(f *testing.F) {
 	})
 }
 
+// oneMB names the 1 MB benchmark case shared by the benchmarks in this package.
+const oneMB = "1MB"
+
 // BenchmarkReceivePath mirrors worker.receiveFrame in roadrunner-server/pool without the payload clone:
 // one frame received from a reused reader, flags and one option read, then the frame reset for reuse.
 func BenchmarkReceivePath(b *testing.B) {
@@ -186,7 +189,7 @@ func BenchmarkReceivePath(b *testing.B) {
 	}{
 		{name: "1KB", size: 1 << 10},
 		{name: "64KB", size: 64 << 10},
-		{name: "1MB", size: 1 << 20},
+		{name: oneMB, size: 1 << 20},
 	}
 	for _, tc := range cases {
 		data := buildValidFrameWithOptions(bytes.Repeat([]byte("x"), tc.size), 0)
@@ -250,7 +253,7 @@ func BenchmarkReceivePathWithClone(b *testing.B) {
 		{name: "200B", size: 200},
 		{name: "4KB", size: 4 << 10},
 		{name: "64KB", size: 64 << 10},
-		{name: "1MB", size: 1 << 20},
+		{name: oneMB, size: 1 << 20},
 	}
 	for _, tc := range cases {
 		body := bytes.Repeat([]byte("x"), tc.size)
