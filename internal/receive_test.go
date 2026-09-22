@@ -207,3 +207,73 @@ func BenchmarkReceivePath(b *testing.B) {
 		})
 	}
 }
+
+func TestReceiveFrame_EmptyPayloadClearsPreviousBody(t *testing.T) {
+	fr := frame.NewFrame()
+	err := ReceiveFrame(bytes.NewReader(buildValidFrame([]byte("previous body"))), fr)
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("previous body"), fr.Payload())
+
+	// no Reset in between: a payload-less frame must still leave the payload empty
+	err = ReceiveFrame(bytes.NewReader(buildValidFrame(nil)), fr)
+	assert.NoError(t, err)
+	assert.Empty(t, fr.Payload())
+}
+
+func TestReceiveFrame_MaxOptionsAndBody(t *testing.T) {
+	payload := bytes.Repeat([]byte("q"), 3000)
+	data := buildValidFrameWithOptions(payload, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100)
+	fr := frame.NewFrame()
+	assert.NoError(t, ReceiveFrame(bytes.NewReader(data), fr))
+	assert.Equal(t, []uint32{10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, fr.ReadOptions(fr.Header()))
+	assert.Equal(t, payload, fr.Payload())
+	assert.True(t, fr.VerifyCRC(fr.Header()))
+}
+
+func TestReceiveFrame_OptionsReadError(t *testing.T) {
+	data := buildValidFrameWithOptions([]byte("body"), 1, 2)
+	fr := frame.NewFrame()
+	// cut inside the options: 12 header bytes plus 3 of the 8 option bytes
+	err := ReceiveFrame(bytes.NewReader(data[:15]), fr)
+	// the relay wraps the read error with errors.E, which has no Unwrap, so match the text
+	assert.ErrorContains(t, err, io.ErrUnexpectedEOF.Error())
+}
+
+// BenchmarkReceivePathWithClone mirrors worker.receiveFrame in roadrunner-server/pool exactly:
+// one frame received from a reused reader, flags and the context offset read, body and context
+// cloned out because the frame goes back to the pool, then the frame reset.
+func BenchmarkReceivePathWithClone(b *testing.B) {
+	cases := []struct {
+		name string
+		size int
+	}{
+		{name: "200B", size: 200},
+		{name: "4KB", size: 4 << 10},
+		{name: "64KB", size: 64 << 10},
+		{name: "1MB", size: 1 << 20},
+	}
+	for _, tc := range cases {
+		body := bytes.Repeat([]byte("x"), tc.size)
+		ctx := []byte(`{"rr":"context"}`)
+		data := buildValidFrameWithOptions(append(append([]byte{}, ctx...), body...), uint32(len(ctx))) //nolint:gosec
+		b.Run(tc.name, func(b *testing.B) {
+			r := bytes.NewReader(data)
+			fr := frame.NewFrame()
+			var sinkBody, sinkCtx []byte
+			b.ReportAllocs()
+			b.SetBytes(int64(tc.size))
+			for b.Loop() {
+				r.Reset(data)
+				if err := ReceiveFrame(r, fr); err != nil {
+					b.Fatal(err)
+				}
+				_ = fr.ReadFlags()
+				off := fr.ReadOptions(fr.Header())[0]
+				sinkBody = bytes.Clone(fr.Payload()[off:])
+				sinkCtx = bytes.Clone(fr.Payload()[:off])
+				fr.Reset()
+			}
+			_, _ = sinkBody, sinkCtx
+		})
+	}
+}
