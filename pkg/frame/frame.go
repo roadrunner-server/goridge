@@ -473,15 +473,21 @@ func (f *Frame) Payload() []byte {
 // aliases caller memory is written in place when it fits, and otherwise a buffer of the
 // right tier is taken from the pool. n == 0 never takes a buffer.
 func (f *Frame) AllocPayload(n int) []byte {
+	if f.pb != nil && cap(*f.pb) >= n {
+		f.payload = (*f.pb)[:n]
+		return f.payload
+	}
+
+	return f.allocPayloadSlow(n)
+}
+
+// allocPayloadSlow handles the cases AllocPayload keeps out of its inlined fast path.
+func (f *Frame) allocPayloadSlow(n int) []byte {
 	switch {
 	case n == 0:
-		if f.pb != nil {
-			f.payload = (*f.pb)[:0]
-		} else if f.payload != nil {
+		if f.payload != nil {
 			f.payload = f.payload[:0]
 		}
-	case f.pb != nil && cap(*f.pb) >= n:
-		f.payload = (*f.pb)[:n]
 	case f.pb == nil && cap(f.payload) >= n:
 		f.payload = f.payload[:n]
 	default:
@@ -500,16 +506,17 @@ func (f *Frame) WritePayload(data []byte) {
 	copy(f.AllocPayload(len(data)), data)
 }
 
-// Reset clears the frame, restoring it to its initial state with a 12-byte header and no payload.
-// The header keeps its capacity. A payload borrowed from the pool goes back to the pool, so
-// slices returned earlier by Payload are invalid after Reset. A payload that aliases caller
+// Reset clears the frame, restoring it to its initial state with a 12-byte header and an empty payload.
+// The header keeps its capacity. A payload buffer of the smallest pool tier stays on the frame, so
+// small frames do not pay a pool round trip per cycle; a larger one goes back to the pool. Either
+// way slices returned earlier by Payload are invalid after Reset. A payload that aliases caller
 // memory is only truncated. The header capacity must be at least 12 bytes.
 func (f *Frame) Reset() {
 	f.header = f.header[:12]
 	clear(f.header)
 	f.defaultHL(f.header)
 
-	if f.pb != nil {
+	if f.pb != nil && cap(*f.pb) > int(bpool.FourKB) {
 		bpool.Put(f.pb)
 		f.pb = nil
 		f.payload = nil

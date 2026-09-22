@@ -84,3 +84,20 @@ func TestReset_NeverPoolsCallerMemory(t *testing.T) {
 	}
 	assert.Equal(t, 0, len(f.Payload()))
 }
+
+func TestReset_KeepsTheSmallestTierBuffer(t *testing.T) {
+	f := NewFrame()
+	sink = f
+	f.WritePayload(bytes.Repeat([]byte("a"), 1000))
+	addr := first(f.Payload())
+
+	next := bytes.Repeat([]byte("b"), 1000)
+	allocs := testing.AllocsPerRun(10, func() {
+		f.Reset()
+		f.WritePayload(next)
+	})
+
+	assert.Equal(t, float64(0), allocs)
+	assert.Same(t, addr, first(f.Payload()), "a 4 KB buffer stays on the frame across Reset")
+	assert.Equal(t, int(bpool.FourKB), cap(f.Payload()))
+}

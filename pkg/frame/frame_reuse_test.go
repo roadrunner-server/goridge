@@ -60,8 +60,15 @@ func TestReset_ReleasesPayload(t *testing.T) {
 	assert.Equal(t, byte(0), f.ReadFlags())
 	assert.Equal(t, uint32(0), f.ReadPayloadLen(f.Header()))
 	assert.False(t, f.IsStream(f.Header()))
-	assert.Nil(t, f.Payload(), "a reset frame holds no payload buffer")
+	assert.Empty(t, f.Payload(), "a reset frame has an empty payload")
 	assert.NotPanics(t, f.Reset, "a second Reset has nothing to release")
+}
+
+func TestReset_ReleasesBuffersAboveTheSmallestTier(t *testing.T) {
+	f := NewFrame()
+	f.WritePayload(bytes.Repeat([]byte("x"), 5000)) // 16 KB tier
+	f.Reset()
+	assert.Nil(t, f.Payload(), "a buffer above the smallest tier goes back to the pool")
 }
 
 func TestNewFrame_HasNoPayloadBuffer(t *testing.T) {
@@ -102,7 +109,7 @@ func TestWritePayload_FromFrameGrowsIntoAPooledBuffer(t *testing.T) {
 	assert.Equal(t, data, f.Payload())
 	assert.Equal(t, 0, len(backing), "the caller's memory is untouched once the payload outgrows it")
 	f.Reset()
-	assert.Nil(t, f.Payload())
+	assert.Empty(t, f.Payload())
 }
 
 func TestWriteOptions_ReusesHeaderCapacity(t *testing.T) {
