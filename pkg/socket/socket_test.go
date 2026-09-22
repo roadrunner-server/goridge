@@ -132,7 +132,7 @@ func TestSocketRelayNoPayload(t *testing.T) {
 	assert.Equal(t, fr.ReadFlags(), nf.ReadFlags())
 	assert.Equal(t, fr.ReadPayloadLen(fr.Header()), nf.ReadPayloadLen(nf.Header()))
 	assert.Equal(t, true, fr.VerifyCRC(fr.Header()))
-	assert.Equal(t, []byte{}, fr.Payload()) // empty
+	assert.Empty(t, fr.Payload()) // empty
 	assert.Equal(t, []uint32{100, 10000, 100000}, fr.ReadOptions(fr.Header()))
 }
 

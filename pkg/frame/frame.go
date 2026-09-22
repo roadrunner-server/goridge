@@ -2,6 +2,8 @@ package frame
 
 import (
 	"hash/crc32"
+
+	"github.com/roadrunner-server/goridge/v4/internal/bpool"
 )
 
 // OptionsMaxSize represents header's options maximum size
@@ -16,6 +18,10 @@ type Frame struct {
 	payload []byte
 	// Header
 	header []byte
+	// pb is the pooled buffer that backs payload. It is nil when the payload is empty
+	// or aliases memory the frame did not take from the pool, and it is the only thing
+	// Reset returns to the pool.
+	pb *[]byte
 }
 
 // ReadHeader reads only the header (first 12 bytes) from data, without payload.
@@ -53,12 +59,13 @@ func ReadFrame(data []byte) *Frame { // inlined, cost 60
 	return f
 }
 
-// NewFrame initializes a new frame with a 12-byte header and 100-byte reserved space for the payload.
+// NewFrame initializes a new frame with a 12-byte header and no payload.
 // The header has capacity for the maximum of 10 options, so WriteOptions does not allocate.
+// The payload is borrowed from the buffer pool on the first AllocPayload or WritePayload
+// and returned by Reset.
 func NewFrame() *Frame {
 	f := &Frame{
-		header:  make([]byte, 12, 12+OptionsMaxSize),
-		payload: make([]byte, 0, 100),
+		header: make([]byte, 12, 12+OptionsMaxSize),
 	}
 	// set default header len (2)
 	f.defaultHL(f.header)
@@ -456,25 +463,61 @@ func (f *Frame) HeaderPtr() *[]byte {
 }
 
 // Payload returns the frame payload without the header.
+// The slice is valid until the next AllocPayload, WritePayload or Reset on the frame.
 func (f *Frame) Payload() []byte {
-	// start from the 1st (staring from 0) byte
 	return f.payload
 }
 
-// WritePayload copies data into the frame's payload. The payload buffer is reused when its capacity is sufficient.
-func (f *Frame) WritePayload(data []byte) {
-	f.payload = append(f.payload[:0], data...)
+// AllocPayload sets the payload length to n and returns it for the caller to fill.
+// The contents are undefined. The pooled buffer is reused when it fits, a payload that
+// aliases caller memory is written in place when it fits, and otherwise a buffer of the
+// right tier is taken from the pool. n == 0 never takes a buffer.
+func (f *Frame) AllocPayload(n int) []byte {
+	switch {
+	case n == 0:
+		if f.pb != nil {
+			f.payload = (*f.pb)[:0]
+		} else if f.payload != nil {
+			f.payload = f.payload[:0]
+		}
+	case f.pb != nil && cap(*f.pb) >= n:
+		f.payload = (*f.pb)[:n]
+	case f.pb == nil && cap(f.payload) >= n:
+		f.payload = f.payload[:n]
+	default:
+		if f.pb != nil {
+			bpool.Put(f.pb)
+		}
+		f.pb = bpool.Get(uint32(n))
+		f.payload = (*f.pb)[:n]
+	}
+
+	return f.payload
 }
 
-// Reset clears the frame, restoring it to its initial state with a 12-byte header and empty payload.
-// The header and payload keep their capacity, so slices returned earlier by Header or Payload are
-// overwritten by the next write. The header capacity must be at least 12 bytes.
+// WritePayload copies data into the frame's payload. See AllocPayload for where the buffer comes from.
+func (f *Frame) WritePayload(data []byte) {
+	copy(f.AllocPayload(len(data)), data)
+}
+
+// Reset clears the frame, restoring it to its initial state with a 12-byte header and no payload.
+// The header keeps its capacity. A payload borrowed from the pool goes back to the pool, so
+// slices returned earlier by Payload are invalid after Reset. A payload that aliases caller
+// memory is only truncated. The header capacity must be at least 12 bytes.
 func (f *Frame) Reset() {
 	f.header = f.header[:12]
 	clear(f.header)
-	f.payload = f.payload[:0]
-
 	f.defaultHL(f.header)
+
+	if f.pb != nil {
+		bpool.Put(f.pb)
+		f.pb = nil
+		f.payload = nil
+
+		return
+	}
+
+	f.payload = f.payload[:0]
 }
 
 // -------- PRIVATE

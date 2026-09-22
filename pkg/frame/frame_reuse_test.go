@@ -40,7 +40,7 @@ func TestWritePayload_GrowsBeyondCapacity(t *testing.T) {
 	assert.Equal(t, data, f.Payload())
 }
 
-func TestReset_KeepsCapacity(t *testing.T) {
+func TestReset_ReleasesPayload(t *testing.T) {
 	f := NewFrame()
 	sink = f
 	f.WriteVersion(f.Header(), Version1)
@@ -50,7 +50,6 @@ func TestReset_KeepsCapacity(t *testing.T) {
 	f.WritePayload(bytes.Repeat([]byte("x"), 512))
 	f.SetStreamFlag(f.Header())
 	f.WriteCRC(f.Header())
-	payloadCap := cap(f.Payload())
 
 	allocs := testing.AllocsPerRun(1, f.Reset)
 
@@ -61,8 +60,49 @@ func TestReset_KeepsCapacity(t *testing.T) {
 	assert.Equal(t, byte(0), f.ReadFlags())
 	assert.Equal(t, uint32(0), f.ReadPayloadLen(f.Header()))
 	assert.False(t, f.IsStream(f.Header()))
-	assert.Equal(t, 0, len(f.Payload()))
-	assert.Equal(t, payloadCap, cap(f.Payload()))
+	assert.Nil(t, f.Payload(), "a reset frame holds no payload buffer")
+	assert.NotPanics(t, f.Reset, "a second Reset has nothing to release")
+}
+
+func TestNewFrame_HasNoPayloadBuffer(t *testing.T) {
+	f := NewFrame()
+	assert.Nil(t, f.Payload())
+	assert.Equal(t, 0, cap(f.Payload()))
+}
+
+func TestAllocPayload_ZeroNeverTakesABuffer(t *testing.T) {
+	f := NewFrame()
+	sink = f
+	allocs := testing.AllocsPerRun(1, func() { f.AllocPayload(0) })
+	assert.Equal(t, float64(0), allocs)
+	assert.Nil(t, f.Payload())
+}
+
+func TestAllocPayload_ReturnsWritableSliceOfRequestedLength(t *testing.T) {
+	f := NewFrame()
+	buf := f.AllocPayload(300)
+	assert.Equal(t, 300, len(buf))
+	copy(buf, bytes.Repeat([]byte("y"), 300))
+	assert.Equal(t, bytes.Repeat([]byte("y"), 300), f.Payload())
+}
+
+func TestWritePayload_FromFrameWritesInPlaceWhenItFits(t *testing.T) {
+	backing := make([]byte, 0, 64)
+	f := From(make([]byte, 12), backing)
+	f.WritePayload([]byte("hello"))
+	assert.Equal(t, []byte("hello"), backing[:5], "a fitting write goes into the caller's memory, as before")
+	assert.Equal(t, []byte("hello"), f.Payload())
+}
+
+func TestWritePayload_FromFrameGrowsIntoAPooledBuffer(t *testing.T) {
+	backing := make([]byte, 0, 4)
+	f := From(make([]byte, 12), backing)
+	data := bytes.Repeat([]byte("z"), 100)
+	f.WritePayload(data)
+	assert.Equal(t, data, f.Payload())
+	assert.Equal(t, 0, len(backing), "the caller's memory is untouched once the payload outgrows it")
+	f.Reset()
+	assert.Nil(t, f.Payload())
 }
 
 func TestWriteOptions_ReusesHeaderCapacity(t *testing.T) {
