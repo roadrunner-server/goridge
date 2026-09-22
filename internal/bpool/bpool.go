@@ -18,50 +18,67 @@ const (
 	TenMB         uint32 = 10 << 20
 )
 
-// tierSizes lists the tiers in ascending order. Every pooled buffer has exactly one of these capacities.
-var tierSizes = [...]uint32{FourKB, SixteenKB, SixtyFourKB, TwoFiftySixKB, OneMB, FiveMB, TenMB}
+// One pool per tier, initialized here so the package needs no setup call before Get.
+var (
+	pool4K   = newTier(FourKB)
+	pool16K  = newTier(SixteenKB)
+	pool64K  = newTier(SixtyFourKB)
+	pool256K = newTier(TwoFiftySixKB)
+	pool1M   = newTier(OneMB)
+	pool5M   = newTier(FiveMB)
+	pool10M  = newTier(TenMB)
+)
 
-// tiers is indexed in parallel with tierSizes. The pools are initialized here, so the package
-// needs no setup call before Get.
-var tiers = [len(tierSizes)]sync.Pool{
-	{New: newTier(FourKB)},
-	{New: newTier(SixteenKB)},
-	{New: newTier(SixtyFourKB)},
-	{New: newTier(TwoFiftySixKB)},
-	{New: newTier(OneMB)},
-	{New: newTier(FiveMB)},
-	{New: newTier(TenMB)},
-}
-
-func newTier(size uint32) func() any {
-	return func() any {
-		data := make([]byte, size)
-		return &data
+func newTier(size uint32) *sync.Pool {
+	return &sync.Pool{
+		New: func() any {
+			data := make([]byte, size)
+			return &data
+		},
 	}
 }
 
 // Get returns a buffer whose length is at least size. A size above the largest tier is allocated directly.
 func Get(size int) *[]byte {
-	for i, tier := range tierSizes {
-		if size <= int(tier) {
-			return tiers[i].Get().(*[]byte)
-		}
+	switch {
+	case size <= int(FourKB):
+		return pool4K.Get().(*[]byte)
+	case size <= int(SixteenKB):
+		return pool16K.Get().(*[]byte)
+	case size <= int(SixtyFourKB):
+		return pool64K.Get().(*[]byte)
+	case size <= int(TwoFiftySixKB):
+		return pool256K.Get().(*[]byte)
+	case size <= int(OneMB):
+		return pool1M.Get().(*[]byte)
+	case size <= int(FiveMB):
+		return pool5M.Get().(*[]byte)
+	case size <= int(TenMB):
+		return pool10M.Get().(*[]byte)
+	default:
+		data := make([]byte, size)
+		return &data
 	}
-
-	data := make([]byte, size)
-
-	return &data
 }
 
 // Put returns data to the tier its capacity came from. A buffer whose capacity is not a tier size,
 // such as one allocated by Get for a size above the largest tier, is dropped so it cannot
 // be handed out for a request it does not fit or retained beyond its single use.
 func Put(data *[]byte) {
-	c := cap(*data)
-	for i, tier := range tierSizes {
-		if c == int(tier) {
-			tiers[i].Put(data)
-			return
-		}
+	switch cap(*data) {
+	case int(FourKB):
+		pool4K.Put(data)
+	case int(SixteenKB):
+		pool16K.Put(data)
+	case int(SixtyFourKB):
+		pool64K.Put(data)
+	case int(TwoFiftySixKB):
+		pool256K.Put(data)
+	case int(OneMB):
+		pool1M.Put(data)
+	case int(FiveMB):
+		pool5M.Put(data)
+	case int(TenMB):
+		pool10M.Put(data)
 	}
 }
