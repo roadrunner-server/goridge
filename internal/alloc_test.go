@@ -50,7 +50,7 @@ func singleP(t *testing.T) {
 	t.Cleanup(func() { runtime.GOMAXPROCS(prev) })
 }
 
-func TestReceiveFrame_OptionsDoNotTouchThePool(t *testing.T) {
+func TestReceiveFrame_OptionsDoNotAllocate(t *testing.T) {
 	// ten options, the maximum, and no payload: nothing here may allocate or take a buffer
 	data := buildValidFrameWithOptions(nil, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
 	r := bytes.NewReader(data)
@@ -80,7 +80,7 @@ func TestReceiveFrame_PayloadLivesInThePooledBuffer(t *testing.T) {
 
 	fr.Reset()
 
-	got := bpool.Get(bpool.FiveMB)
+	got := bpool.Get(int(bpool.FiveMB))
 	defer bpool.Put(got)
 	assert.Same(t, addr, &(*got)[frame.Headroom], "after Reset the buffer is back in its tier, not stuck on the frame")
 	assert.Nil(t, fr.Payload())
@@ -98,7 +98,7 @@ func TestReceiveFrame_PartialBodyIsReleasedByReset(t *testing.T) {
 
 	fr.Reset()
 
-	got := bpool.Get(bpool.SixtyFourKB)
+	got := bpool.Get(int(bpool.SixtyFourKB))
 	defer bpool.Put(got)
 	assert.Same(t, addr, &(*got)[frame.Headroom], "the buffer of the failed read went back to its tier")
 }

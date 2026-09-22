@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"runtime"
 	"testing"
 
 	"github.com/roadrunner-server/goridge/v4/pkg/frame"
@@ -282,4 +283,22 @@ func BenchmarkReceivePathWithClone(b *testing.B) {
 			_, _ = sinkBody, sinkCtx
 		})
 	}
+}
+
+func TestReceiveFrame_MaxPayloadLenIsAnErrorNotAPanic(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("reserves 4 GB of commit charge for the announced payload")
+	}
+	// a header that announces the largest payload the wire allows, with a valid CRC and no body:
+	// the length must survive the arithmetic in AllocPayload and end in a read error
+	nf := frame.NewFrame()
+	nf.WriteVersion(nf.Header(), frame.Version1)
+	nf.WritePayloadLen(nf.Header(), 0xFFFFFFFF)
+	nf.WriteCRC(nf.Header())
+
+	fr := frame.NewFrame()
+	var err error
+	assert.NotPanics(t, func() { err = ReceiveFrame(bytes.NewReader(nf.Bytes()), fr) })
+	assert.Error(t, err)
+	fr.Reset()
 }

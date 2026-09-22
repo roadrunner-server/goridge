@@ -61,7 +61,7 @@ func TestReset_ReturnsTheBufferToItsTier(t *testing.T) {
 
 	f.Reset()
 
-	got := bpool.Get(bpool.FiveMB)
+	got := bpool.Get(int(bpool.FiveMB))
 	defer bpool.Put(got)
 	assert.Same(t, addr, &(*got)[Headroom], "the 5 MB buffer is back in the 5 MB tier")
 	assert.Nil(t, f.Payload())
@@ -100,4 +100,17 @@ func TestReset_KeepsTheSmallestTierBuffer(t *testing.T) {
 	assert.Equal(t, float64(0), allocs)
 	assert.Same(t, addr, first(f.Payload()), "a 4 KB buffer stays on the frame across Reset")
 	assert.Equal(t, int(bpool.FourKB)-Headroom, cap(f.Payload()))
+}
+
+func TestReset_ReturnsTheBufferAFromFrameGrewInto(t *testing.T) {
+	singleP(t)
+	f := From(make([]byte, 12), make([]byte, 0, 4))
+	f.WritePayload(bytes.Repeat([]byte("g"), 5000)) // outgrows the caller's memory into the 16 KB tier
+	addr := first(f.Payload())
+
+	f.Reset()
+
+	got := bpool.Get(5000)
+	defer bpool.Put(got)
+	assert.Same(t, addr, &(*got)[Headroom], "the pooled buffer, not the caller's memory, went back to its tier")
 }

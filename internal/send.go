@@ -48,7 +48,7 @@ func SendFrame(w io.Writer, fr *frame.Frame) error {
 		return writeVector(w, h, p)
 	}
 
-	pb := bpool.Get(uint32(n))
+	pb := bpool.Get(n)
 	buf := (*pb)[:0]
 	buf = append(buf, h...)
 	buf = append(buf, p...)

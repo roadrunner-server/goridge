@@ -61,8 +61,8 @@ func ReadFrame(data []byte) *Frame { // inlined, cost 60
 
 // NewFrame initializes a new frame with a 12-byte header and no payload.
 // The header has capacity for the maximum of 10 options, so WriteOptions does not allocate.
-// The payload is borrowed from the buffer pool on the first AllocPayload or WritePayload
-// and returned by Reset.
+// The payload is borrowed from the buffer pool on the first AllocPayload or WritePayload;
+// Reset returns it when it is larger than the smallest pool tier.
 func NewFrame() *Frame {
 	f := &Frame{
 		header: make([]byte, 12, 12+OptionsMaxSize),
@@ -482,7 +482,7 @@ func (f *Frame) AllocPayload(n int) []byte {
 	return f.allocPayloadSlow(n)
 }
 
-// allocPayloadSlow handles the cases AllocPayload keeps out of its inlined fast path.
+// allocPayloadSlow handles the cases AllocPayload keeps out of its reuse check.
 func (f *Frame) allocPayloadSlow(n int) []byte {
 	switch {
 	case n == 0:
@@ -495,7 +495,7 @@ func (f *Frame) allocPayloadSlow(n int) []byte {
 		if f.pb != nil {
 			bpool.Put(f.pb)
 		}
-		f.pb = bpool.Get(uint32(n + Headroom))
+		f.pb = bpool.Get(n + Headroom)
 		f.payload = (*f.pb)[Headroom : Headroom+n]
 	}
 

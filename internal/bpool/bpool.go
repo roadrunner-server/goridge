@@ -41,9 +41,9 @@ func newTier(size uint32) func() any {
 }
 
 // Get returns a buffer whose length is at least size. A size above the largest tier is allocated directly.
-func Get(size uint32) *[]byte {
+func Get(size int) *[]byte {
 	for i, tier := range tierSizes {
-		if size <= tier {
+		if size <= int(tier) {
 			return tiers[i].Get().(*[]byte)
 		}
 	}
@@ -57,9 +57,9 @@ func Get(size uint32) *[]byte {
 // such as one allocated by Get for a size above the largest tier, is dropped so it cannot
 // be handed out for a request it does not fit or retained beyond its single use.
 func Put(data *[]byte) {
-	c := uint32(cap(*data)) //nolint:gosec // G115: capacity is bounded by the uint32 size given to Get
+	c := cap(*data)
 	for i, tier := range tierSizes {
-		if c == tier {
+		if c == int(tier) {
 			tiers[i].Put(data)
 			return
 		}

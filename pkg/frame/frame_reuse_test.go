@@ -205,6 +205,13 @@ func TestWire_FalseWithoutAPooledPayload(t *testing.T) {
 	aliased := From(make([]byte, 12), []byte("caller memory"))
 	_, ok = aliased.Wire()
 	assert.False(t, ok, "caller memory has no headroom in front of it")
+
+	// hl 15 describes a 60-byte header, longer than the headroom
+	long := NewFrame()
+	long.AppendOptions(long.HeaderPtr(), make([]byte, 48))
+	long.WritePayload([]byte("body"))
+	_, ok = long.Wire()
+	assert.False(t, ok, "a header longer than Headroom cannot be written in front of the payload")
 }
 
 func TestWire_DoesNotAllocate(t *testing.T) {

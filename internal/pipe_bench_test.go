@@ -17,7 +17,7 @@ import (
 func sendAssembled(w io.Writer, fr *frame.Frame) error {
 	h, p := fr.Header(), fr.Payload()
 	n := len(h) + len(p)
-	pb := bpool.Get(uint32(n)) //nolint:gosec
+	pb := bpool.Get(n)
 	buf := (*pb)[:0]
 	buf = append(buf, h...)
 	buf = append(buf, p...)
