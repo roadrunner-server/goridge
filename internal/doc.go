@@ -1,6 +1,6 @@
-// Package internal contains shared utilities used by the relay
-// implementations: tiered buffer pooling (4 KB to 10 MB) and the
-// common frame routines [SendFrame] and [ReceiveFrame].
+// Package internal contains the frame routines shared by the relay
+// implementations, [SendFrame] and [ReceiveFrame]. Buffers come from
+// the tiered pool in the bpool subpackage.
 //
 // This package is not part of the public API.
 package internal

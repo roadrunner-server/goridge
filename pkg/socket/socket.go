@@ -15,7 +15,6 @@ type Relay struct {
 
 // NewSocketRelay creates new socket based data relay.
 func NewSocketRelay(rwc io.ReadWriteCloser) *Relay {
-	internal.Preallocate()
 	return &Relay{rwc: rwc}
 }
 

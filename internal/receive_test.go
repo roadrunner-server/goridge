@@ -11,10 +11,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func init() { //nolint:gochecknoinits
-	Preallocate()
-}
-
 // failReader delivers data[:failAt] normally, then returns err on subsequent reads.
 type failReader struct {
 	data   []byte

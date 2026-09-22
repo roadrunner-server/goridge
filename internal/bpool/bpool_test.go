@@ -1,4 +1,4 @@
-package internal
+package bpool
 
 import (
 	"runtime"
@@ -7,8 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestBufferPool_GetReturnsSmallestFittingTier(t *testing.T) {
-	Preallocate()
+func TestGet_ReturnsSmallestFittingTier(t *testing.T) {
 	cases := []struct {
 		name string
 		size uint32
@@ -32,10 +31,10 @@ func TestBufferPool_GetReturnsSmallestFittingTier(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			buf := get(tc.size)
+			buf := Get(tc.size)
 			assert.Equal(t, int(tc.tier), cap(*buf), "capacity must be the tier size")
 			assert.GreaterOrEqual(t, len(*buf), int(tc.size), "length must cover the request")
-			put(buf)
+			Put(buf)
 		})
 	}
 }
@@ -53,56 +52,53 @@ func singleP(t *testing.T) {
 func drainTier(size uint32, n int) []*[]byte {
 	bufs := make([]*[]byte, 0, n)
 	for range n {
-		bufs = append(bufs, get(size))
+		bufs = append(bufs, Get(size))
 	}
 	return bufs
 }
 
-func TestBufferPool_OversizedBufferIsNotPooled(t *testing.T) {
-	Preallocate()
+func TestPut_OversizedBufferIsNotPooled(t *testing.T) {
 	singleP(t)
 
 	size := TenMB + 1
-	buf := get(size)
+	buf := Get(size)
 	assert.Equal(t, int(size), len(*buf))
-	put(buf)
+	Put(buf)
 
 	bufs := drainTier(TenMB, 4)
 	for _, b := range bufs {
 		assert.Equal(t, int(TenMB), cap(*b), "the 10 MB tier must only hand out 10 MB buffers")
 	}
 	for _, b := range bufs {
-		put(b)
+		Put(b)
 	}
 }
 
-func TestBufferPool_ForeignBufferIsNotPooled(t *testing.T) {
-	Preallocate()
+func TestPut_ForeignBufferIsNotPooled(t *testing.T) {
 	singleP(t)
 
 	foreign := make([]byte, 100)
-	put(&foreign)
+	Put(&foreign)
 
 	bufs := drainTier(1, 4)
 	for _, b := range bufs {
 		assert.Equal(t, int(FourKB), cap(*b), "the 4 KB tier must only hand out 4 KB buffers")
 	}
 	for _, b := range bufs {
-		put(b)
+		Put(b)
 	}
 }
 
-func TestBufferPool_PutReturnsBufferToItsOwnTier(t *testing.T) {
-	Preallocate()
+func TestPut_ReturnsBufferToItsOwnTier(t *testing.T) {
 	singleP(t)
 
 	// routing put by the requested size would send this 4 KB buffer to the 1 MB tier,
 	// and the next 1 MB request would get a buffer it does not fit into
-	small := get(200)
-	put(small)
+	small := Get(200)
+	Put(small)
 
 	for _, b := range drainTier(OneMB, 4) {
 		assert.Equal(t, int(OneMB), cap(*b), "the 1 MB tier must only hand out 1 MB buffers")
-		put(b)
+		Put(b)
 	}
 }

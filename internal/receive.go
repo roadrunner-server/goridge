@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/roadrunner-server/errors"
+	"github.com/roadrunner-server/goridge/v4/internal/bpool"
 	"github.com/roadrunner-server/goridge/v4/pkg/frame"
 )
 
@@ -39,10 +40,10 @@ func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 	if hl > 3 {
 		// read the next part of the frame - options
 		optsLen := uint32(hl-3) * frame.WORD
-		pb := get(optsLen)
+		pb := bpool.Get(optsLen)
 		_, err = io.ReadFull(relay, (*pb)[:optsLen])
 		if err != nil {
-			put(pb)
+			bpool.Put(pb)
 			if stderr.Is(err, io.EOF) {
 				return err
 			}
@@ -50,7 +51,7 @@ func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 		}
 
 		fr.AppendOptions(fr.HeaderPtr(), (*pb)[:optsLen])
-		put(pb)
+		bpool.Put(pb)
 	}
 
 	// verify header CRC
@@ -82,18 +83,18 @@ func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 		return nil
 	}
 
-	pb := get(pl)
+	pb := bpool.Get(pl)
 	_, err2 := io.ReadFull(relay, (*pb)[:pl])
 	if err2 != nil {
 		if stderr.Is(err2, io.EOF) {
-			put(pb)
+			bpool.Put(pb)
 			return err2
 		}
-		put(pb)
+		bpool.Put(pb)
 		return errors.E(op, err2)
 	}
 
 	fr.WritePayload((*pb)[:pl])
-	put(pb)
+	bpool.Put(pb)
 	return nil
 }

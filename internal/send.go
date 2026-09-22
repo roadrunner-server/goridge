@@ -3,6 +3,7 @@ package internal
 import (
 	"io"
 
+	"github.com/roadrunner-server/goridge/v4/internal/bpool"
 	"github.com/roadrunner-server/goridge/v4/pkg/frame"
 )
 
@@ -11,11 +12,11 @@ import (
 func SendFrame(w io.Writer, fr *frame.Frame) error {
 	h, p := fr.Header(), fr.Payload()
 	n := uint32(len(h) + len(p)) //nolint:gosec
-	pb := get(n)
+	pb := bpool.Get(n)
 	buf := (*pb)[:0]
 	buf = append(buf, h...)
 	buf = append(buf, p...)
 	_, err := w.Write(buf)
-	put(pb)
+	bpool.Put(pb)
 	return err
 }
