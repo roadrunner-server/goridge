@@ -16,6 +16,6 @@ func SendFrame(w io.Writer, fr *frame.Frame) error {
 	buf = append(buf, h...)
 	buf = append(buf, p...)
 	_, err := w.Write(buf)
-	put(n, pb)
+	put(pb)
 	return err
 }

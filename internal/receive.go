@@ -42,7 +42,7 @@ func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 		pb := get(optsLen)
 		_, err = io.ReadFull(relay, (*pb)[:optsLen])
 		if err != nil {
-			put(optsLen, pb)
+			put(pb)
 			if stderr.Is(err, io.EOF) {
 				return err
 			}
@@ -50,7 +50,7 @@ func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 		}
 
 		fr.AppendOptions(fr.HeaderPtr(), (*pb)[:optsLen])
-		put(optsLen, pb)
+		put(pb)
 	}
 
 	// verify header CRC
@@ -86,14 +86,14 @@ func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 	_, err2 := io.ReadFull(relay, (*pb)[:pl])
 	if err2 != nil {
 		if stderr.Is(err2, io.EOF) {
-			put(pl, pb)
+			put(pb)
 			return err2
 		}
-		put(pl, pb)
+		put(pb)
 		return errors.E(op, err2)
 	}
 
 	fr.WritePayload((*pb)[:pl])
-	put(pl, pb)
+	put(pb)
 	return nil
 }

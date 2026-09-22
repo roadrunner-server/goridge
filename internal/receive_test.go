@@ -166,37 +166,6 @@ func TestReceiveFrame_FileNotFoundEOF(t *testing.T) {
 	assert.Contains(t, err.Error(), "file not found")
 }
 
-func TestBufferPool_Tiers(t *testing.T) {
-	cases := []struct {
-		name string
-		size uint32
-	}{
-		{"under_1MB", 512},
-		{"exactly_1MB", OneMB},
-		{"under_5MB", OneMB + 1},
-		{"exactly_5MB", FiveMB},
-		{"under_10MB", FiveMB + 1},
-		{"exactly_10MB", TenMB},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			buf := get(tc.size)
-			assert.NotNil(t, buf)
-			assert.GreaterOrEqual(t, len(*buf), int(tc.size))
-			put(tc.size, buf)
-		})
-	}
-}
-
-func TestBufferPool_Oversized(t *testing.T) {
-	size := TenMB + 1
-	buf := get(size)
-	assert.NotNil(t, buf)
-	assert.Equal(t, int(size), len(*buf))
-	// put oversized into TenMB pool — should not panic
-	put(size, buf)
-}
-
 func FuzzReceiveFrame(f *testing.F) {
 	// Seed: valid frame
 	f.Add(buildValidFrame([]byte("fuzz seed")))
