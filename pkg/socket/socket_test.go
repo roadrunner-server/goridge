@@ -1,6 +1,7 @@
 package socket
 
 import (
+	"bytes"
 	"context"
 	"net"
 	"testing"
@@ -132,7 +133,7 @@ func TestSocketRelayNoPayload(t *testing.T) {
 	assert.Equal(t, fr.ReadFlags(), nf.ReadFlags())
 	assert.Equal(t, fr.ReadPayloadLen(fr.Header()), nf.ReadPayloadLen(nf.Header()))
 	assert.Equal(t, true, fr.VerifyCRC(fr.Header()))
-	assert.Equal(t, []byte{}, fr.Payload()) // empty
+	assert.Empty(t, fr.Payload()) // empty
 	assert.Equal(t, []uint32{100, 10000, 100000}, fr.ReadOptions(fr.Header()))
 }
 
@@ -168,4 +169,45 @@ func TestSocketRelayWrongCRC(t *testing.T) {
 	assert.False(t, fr.VerifyCRC(fr.Header()))
 
 	assert.Empty(t, fr.Payload())
+}
+
+func TestSocketRelay_LargeFrameRoundTrip(t *testing.T) {
+	ln, err := (&net.ListenConfig{}).Listen(context.Background(), "tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer ln.Close()
+
+	payload := bytes.Repeat([]byte("L"), 1<<20)
+	nf := frame.NewFrame()
+	nf.WriteVersion(nf.Header(), frame.Version1)
+	nf.WriteFlags(nf.Header(), frame.CodecRaw)
+	nf.WriteOptions(nf.HeaderPtr(), 16)
+	nf.WritePayloadLen(nf.Header(), uint32(len(payload))) //nolint:gosec
+	nf.WritePayload(payload)
+	nf.WriteCRC(nf.Header())
+
+	errCh := make(chan error, 1)
+	go func() {
+		conn, dErr := (&net.Dialer{}).DialContext(context.Background(), "tcp", ln.Addr().String())
+		if dErr != nil {
+			errCh <- dErr
+			return
+		}
+		defer conn.Close()
+		errCh <- NewSocketRelay(conn).Send(nf)
+	}()
+
+	accept, err := ln.Accept()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer accept.Close()
+
+	fr := frame.NewFrame()
+	assert.NoError(t, NewSocketRelay(accept).Receive(fr))
+	assert.NoError(t, <-errCh)
+	assert.Equal(t, []uint32{16}, fr.ReadOptions(fr.Header()))
+	assert.Equal(t, payload, fr.Payload())
+	assert.True(t, fr.VerifyCRC(fr.Header()))
 }

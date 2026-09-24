@@ -4,16 +4,13 @@ import (
 	"bytes"
 	"errors"
 	"io"
+	"runtime"
 	"testing"
 
 	"github.com/roadrunner-server/goridge/v4/pkg/frame"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
-
-func init() { //nolint:gochecknoinits
-	Preallocate()
-}
 
 // failReader delivers data[:failAt] normally, then returns err on subsequent reads.
 type failReader struct {
@@ -166,37 +163,6 @@ func TestReceiveFrame_FileNotFoundEOF(t *testing.T) {
 	assert.Contains(t, err.Error(), "file not found")
 }
 
-func TestBufferPool_Tiers(t *testing.T) {
-	cases := []struct {
-		name string
-		size uint32
-	}{
-		{"under_1MB", 512},
-		{"exactly_1MB", OneMB},
-		{"under_5MB", OneMB + 1},
-		{"exactly_5MB", FiveMB},
-		{"under_10MB", FiveMB + 1},
-		{"exactly_10MB", TenMB},
-	}
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			buf := get(tc.size)
-			assert.NotNil(t, buf)
-			assert.GreaterOrEqual(t, len(*buf), int(tc.size))
-			put(tc.size, buf)
-		})
-	}
-}
-
-func TestBufferPool_Oversized(t *testing.T) {
-	size := TenMB + 1
-	buf := get(size)
-	assert.NotNil(t, buf)
-	assert.Equal(t, int(size), len(*buf))
-	// put oversized into TenMB pool — should not panic
-	put(size, buf)
-}
-
 func FuzzReceiveFrame(f *testing.F) {
 	// Seed: valid frame
 	f.Add(buildValidFrame([]byte("fuzz seed")))
@@ -212,6 +178,12 @@ func FuzzReceiveFrame(f *testing.F) {
 	})
 }
 
+// Names of the benchmark cases shared by the benchmarks in this package.
+const (
+	sixtyFourKB = "64KB"
+	oneMB       = "1MB"
+)
+
 // BenchmarkReceivePath mirrors worker.receiveFrame in roadrunner-server/pool without the payload clone:
 // one frame received from a reused reader, flags and one option read, then the frame reset for reuse.
 func BenchmarkReceivePath(b *testing.B) {
@@ -220,8 +192,8 @@ func BenchmarkReceivePath(b *testing.B) {
 		size int
 	}{
 		{name: "1KB", size: 1 << 10},
-		{name: "64KB", size: 64 << 10},
-		{name: "1MB", size: 1 << 20},
+		{name: sixtyFourKB, size: 64 << 10},
+		{name: oneMB, size: 1 << 20},
 	}
 	for _, tc := range cases {
 		data := buildValidFrameWithOptions(bytes.Repeat([]byte("x"), tc.size), 0)
@@ -241,4 +213,92 @@ func BenchmarkReceivePath(b *testing.B) {
 			}
 		})
 	}
+}
+
+func TestReceiveFrame_EmptyPayloadClearsPreviousBody(t *testing.T) {
+	fr := frame.NewFrame()
+	err := ReceiveFrame(bytes.NewReader(buildValidFrame([]byte("previous body"))), fr)
+	assert.NoError(t, err)
+	assert.Equal(t, []byte("previous body"), fr.Payload())
+
+	// no Reset in between: a payload-less frame must still leave the payload empty
+	err = ReceiveFrame(bytes.NewReader(buildValidFrame(nil)), fr)
+	assert.NoError(t, err)
+	assert.Empty(t, fr.Payload())
+}
+
+func TestReceiveFrame_MaxOptionsAndBody(t *testing.T) {
+	payload := bytes.Repeat([]byte("q"), 3000)
+	data := buildValidFrameWithOptions(payload, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100)
+	fr := frame.NewFrame()
+	assert.NoError(t, ReceiveFrame(bytes.NewReader(data), fr))
+	assert.Equal(t, []uint32{10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, fr.ReadOptions(fr.Header()))
+	assert.Equal(t, payload, fr.Payload())
+	assert.True(t, fr.VerifyCRC(fr.Header()))
+}
+
+func TestReceiveFrame_OptionsReadError(t *testing.T) {
+	data := buildValidFrameWithOptions([]byte("body"), 1, 2)
+	fr := frame.NewFrame()
+	// cut inside the options: 12 header bytes plus 3 of the 8 option bytes
+	err := ReceiveFrame(bytes.NewReader(data[:15]), fr)
+	// the relay wraps the read error with errors.E, which has no Unwrap, so match the text
+	assert.ErrorContains(t, err, io.ErrUnexpectedEOF.Error())
+}
+
+// BenchmarkReceivePathWithClone mirrors worker.receiveFrame in roadrunner-server/pool exactly:
+// one frame received from a reused reader, flags and the context offset read, body and context
+// cloned out because the frame goes back to the pool, then the frame reset.
+func BenchmarkReceivePathWithClone(b *testing.B) {
+	cases := []struct {
+		name string
+		size int
+	}{
+		{name: "200B", size: 200},
+		{name: "4KB", size: 4 << 10},
+		{name: sixtyFourKB, size: 64 << 10},
+		{name: oneMB, size: 1 << 20},
+	}
+	for _, tc := range cases {
+		body := bytes.Repeat([]byte("x"), tc.size)
+		ctx := []byte(`{"rr":"context"}`)
+		data := buildValidFrameWithOptions(append(append([]byte{}, ctx...), body...), uint32(len(ctx))) //nolint:gosec
+		b.Run(tc.name, func(b *testing.B) {
+			r := bytes.NewReader(data)
+			fr := frame.NewFrame()
+			var sinkBody, sinkCtx []byte
+			b.ReportAllocs()
+			b.SetBytes(int64(tc.size))
+			for b.Loop() {
+				r.Reset(data)
+				if err := ReceiveFrame(r, fr); err != nil {
+					b.Fatal(err)
+				}
+				_ = fr.ReadFlags()
+				off := fr.ReadOptions(fr.Header())[0]
+				sinkBody = bytes.Clone(fr.Payload()[off:])
+				sinkCtx = bytes.Clone(fr.Payload()[:off])
+				fr.Reset()
+			}
+			_, _ = sinkBody, sinkCtx
+		})
+	}
+}
+
+func TestReceiveFrame_MaxPayloadLenIsAnErrorNotAPanic(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("reserves 4 GB of commit charge for the announced payload")
+	}
+	// a header that announces the largest payload the wire allows, with a valid CRC and no body:
+	// the length must survive the arithmetic in AllocPayload and end in a read error
+	nf := frame.NewFrame()
+	nf.WriteVersion(nf.Header(), frame.Version1)
+	nf.WritePayloadLen(nf.Header(), 0xFFFFFFFF)
+	nf.WriteCRC(nf.Header())
+
+	fr := frame.NewFrame()
+	var err error
+	assert.NotPanics(t, func() { err = ReceiveFrame(bytes.NewReader(nf.Bytes()), fr) })
+	assert.Error(t, err)
+	fr.Reset()
 }

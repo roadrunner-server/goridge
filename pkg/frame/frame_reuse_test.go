@@ -40,7 +40,7 @@ func TestWritePayload_GrowsBeyondCapacity(t *testing.T) {
 	assert.Equal(t, data, f.Payload())
 }
 
-func TestReset_KeepsCapacity(t *testing.T) {
+func TestReset_ReleasesPayload(t *testing.T) {
 	f := NewFrame()
 	sink = f
 	f.WriteVersion(f.Header(), Version1)
@@ -50,7 +50,6 @@ func TestReset_KeepsCapacity(t *testing.T) {
 	f.WritePayload(bytes.Repeat([]byte("x"), 512))
 	f.SetStreamFlag(f.Header())
 	f.WriteCRC(f.Header())
-	payloadCap := cap(f.Payload())
 
 	allocs := testing.AllocsPerRun(1, f.Reset)
 
@@ -61,8 +60,56 @@ func TestReset_KeepsCapacity(t *testing.T) {
 	assert.Equal(t, byte(0), f.ReadFlags())
 	assert.Equal(t, uint32(0), f.ReadPayloadLen(f.Header()))
 	assert.False(t, f.IsStream(f.Header()))
-	assert.Equal(t, 0, len(f.Payload()))
-	assert.Equal(t, payloadCap, cap(f.Payload()))
+	assert.Empty(t, f.Payload(), "a reset frame has an empty payload")
+	assert.NotPanics(t, f.Reset, "a second Reset has nothing to release")
+}
+
+func TestReset_ReleasesBuffersAboveTheSmallestTier(t *testing.T) {
+	f := NewFrame()
+	f.WritePayload(bytes.Repeat([]byte("x"), 5000)) // 16 KB tier
+	f.Reset()
+	assert.Nil(t, f.Payload(), "a buffer above the smallest tier goes back to the pool")
+}
+
+func TestNewFrame_HasNoPayloadBuffer(t *testing.T) {
+	f := NewFrame()
+	assert.Nil(t, f.Payload())
+	assert.Equal(t, 0, cap(f.Payload()))
+}
+
+func TestAllocPayload_ZeroNeverTakesABuffer(t *testing.T) {
+	f := NewFrame()
+	sink = f
+	allocs := testing.AllocsPerRun(1, func() { f.AllocPayload(0) })
+	assert.Equal(t, float64(0), allocs)
+	assert.Nil(t, f.Payload())
+}
+
+func TestAllocPayload_ReturnsWritableSliceOfRequestedLength(t *testing.T) {
+	f := NewFrame()
+	buf := f.AllocPayload(300)
+	assert.Equal(t, 300, len(buf))
+	copy(buf, bytes.Repeat([]byte("y"), 300))
+	assert.Equal(t, bytes.Repeat([]byte("y"), 300), f.Payload())
+}
+
+func TestWritePayload_FromFrameWritesInPlaceWhenItFits(t *testing.T) {
+	backing := make([]byte, 0, 64)
+	f := From(make([]byte, 12), backing)
+	f.WritePayload([]byte("hello"))
+	assert.Equal(t, []byte("hello"), backing[:5], "a fitting write goes into the caller's memory, as before")
+	assert.Equal(t, []byte("hello"), f.Payload())
+}
+
+func TestWritePayload_FromFrameGrowsIntoAPooledBuffer(t *testing.T) {
+	backing := make([]byte, 0, 4)
+	f := From(make([]byte, 12), backing)
+	data := bytes.Repeat([]byte("z"), 100)
+	f.WritePayload(data)
+	assert.Equal(t, data, f.Payload())
+	assert.Equal(t, 0, len(backing), "the caller's memory is untouched once the payload outgrows it")
+	f.Reset()
+	assert.Empty(t, f.Payload())
 }
 
 func TestWriteOptions_ReusesHeaderCapacity(t *testing.T) {
@@ -120,4 +167,64 @@ func TestAppendOptions_ReusesHeaderCapacity(t *testing.T) {
 	assert.Equal(t, float64(0), allocs)
 	assert.Equal(t, 20, len(f.Header()))
 	assert.Equal(t, opts, f.Header()[12:])
+}
+
+func TestWire_IsHeaderThenPayload(t *testing.T) {
+	cases := []struct {
+		name    string
+		opts    []uint32
+		payload []byte
+	}{
+		{name: "no_options", payload: []byte("payload")},
+		{name: "one_option", opts: []uint32{42}, payload: bytes.Repeat([]byte("p"), 3000)},
+		{name: "ten_options", opts: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}, payload: bytes.Repeat([]byte("q"), 70000)},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			f := NewFrame()
+			f.WriteVersion(f.Header(), Version1)
+			f.WriteOptions(f.HeaderPtr(), tc.opts...)
+			f.WritePayloadLen(f.Header(), uint32(len(tc.payload))) //nolint:gosec
+			f.WritePayload(tc.payload)
+			f.WriteCRC(f.Header())
+
+			wire, ok := f.Wire()
+
+			assert.True(t, ok)
+			assert.Equal(t, f.Bytes(), wire)
+			assert.Equal(t, tc.payload, f.Payload(), "the payload is untouched")
+		})
+	}
+}
+
+func TestWire_FalseWithoutAPooledPayload(t *testing.T) {
+	empty := NewFrame()
+	_, ok := empty.Wire()
+	assert.False(t, ok, "nothing to send as one slice without a payload")
+
+	aliased := From(make([]byte, 12), []byte("caller memory"))
+	_, ok = aliased.Wire()
+	assert.False(t, ok, "caller memory has no headroom in front of it")
+
+	// hl 15 describes a 60-byte header, longer than the headroom
+	long := NewFrame()
+	long.AppendOptions(long.HeaderPtr(), make([]byte, 48))
+	long.WritePayload([]byte("body"))
+	_, ok = long.Wire()
+	assert.False(t, ok, "a header longer than Headroom cannot be written in front of the payload")
+}
+
+func TestWire_DoesNotAllocate(t *testing.T) {
+	f := NewFrame()
+	sink = f
+	f.WriteOptions(f.HeaderPtr(), 7)
+	f.WritePayload(bytes.Repeat([]byte("w"), 1000))
+	allocs := testing.AllocsPerRun(10, func() { _, _ = f.Wire() })
+	assert.Equal(t, float64(0), allocs)
+}
+
+func TestAllocPayload_LeavesHeadroomInThePooledBuffer(t *testing.T) {
+	f := NewFrame()
+	f.WritePayload([]byte("x"))
+	assert.Equal(t, Headroom, cap(*f.pb)-cap(f.Payload()), "the payload starts Headroom bytes into the buffer")
 }
