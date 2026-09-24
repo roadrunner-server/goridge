@@ -36,9 +36,7 @@ func TestSendFrame_WritesFrameBytes(t *testing.T) {
 		{name: "header_and_options", opts: []uint32{42, 12}},
 		{name: "header_and_payload", payload: []byte("payload")},
 		{name: "header_options_and_payload", opts: []uint32{42, 12}, payload: []byte("payload")},
-		{name: "exactly_at_limit", payload: bytes.Repeat([]byte("l"), assembleLimit-12)},
-		{name: "one_over_limit", payload: bytes.Repeat([]byte("m"), assembleLimit-12+1)},
-		{name: "one_over_limit_with_options", opts: []uint32{7}, payload: bytes.Repeat([]byte("n"), assembleLimit-16+1)},
+		{name: sixtyFourKB, opts: []uint32{7}, payload: bytes.Repeat([]byte("n"), 64<<10)},
 		{name: oneMB, payload: bytes.Repeat([]byte("o"), 1<<20)},
 	}
 	for _, tc := range cases {
@@ -97,7 +95,7 @@ func aliasedCopy(fr *frame.Frame) *frame.Frame {
 }
 
 func TestSendFrame_PooledPayloadIsOneWriteAtAnySize(t *testing.T) {
-	for _, size := range []int{1 << 10, assembleLimit, 1 << 20} {
+	for _, size := range []int{1 << 10, 64 << 10, 1 << 20} {
 		w := &countingWriter{}
 		fr := buildTestFrame(bytes.Repeat([]byte("s"), size), 1)
 		require.NoError(t, SendFrame(w, fr))
@@ -107,7 +105,7 @@ func TestSendFrame_PooledPayloadIsOneWriteAtAnySize(t *testing.T) {
 }
 
 func TestSendFrame_AliasedFrameWritesFrameBytes(t *testing.T) {
-	for _, size := range []int{0, 7, assembleLimit - 12, assembleLimit - 12 + 1, 1 << 20} {
+	for _, size := range []int{0, 7, 64 << 10, 1 << 20} {
 		fr := aliasedCopy(buildTestFrame(bytes.Repeat([]byte("a"), size), 3))
 		var out bytes.Buffer
 		require.NoError(t, SendFrame(&out, fr))
@@ -115,7 +113,7 @@ func TestSendFrame_AliasedFrameWritesFrameBytes(t *testing.T) {
 	}
 }
 
-func TestSendFrame_AliasedLargeFrameOnPlainWriterIsHeaderThenPayload(t *testing.T) {
+func TestSendFrame_AliasedFrameOnPlainWriterIsHeaderThenPayload(t *testing.T) {
 	// a writer without writev support gets the header and the payload as two writes, nothing copied
 	w := &countingWriter{}
 	fr := aliasedCopy(buildTestFrame(bytes.Repeat([]byte("s"), 1<<20), 1))
@@ -139,7 +137,7 @@ func (w *failAfterWriter) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
-func TestSendFrame_ReturnsWriterErrorOnTheLargePath(t *testing.T) {
+func TestSendFrame_ReturnsWriterErrorOnTheVectorPath(t *testing.T) {
 	wantErr := errors.New("write failed")
 	fr := aliasedCopy(buildTestFrame(bytes.Repeat([]byte("s"), 1<<20), 1))
 	err := SendFrame(&failAfterWriter{failOn: 2, err: wantErr}, fr)

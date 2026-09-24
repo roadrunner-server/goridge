@@ -2,8 +2,6 @@ package frame
 
 import (
 	"hash/crc32"
-
-	"github.com/roadrunner-server/goridge/v4/internal/bpool"
 )
 
 // OptionsMaxSize represents header's options maximum size
@@ -493,9 +491,9 @@ func (f *Frame) allocPayloadSlow(n int) []byte {
 		f.payload = f.payload[:n]
 	default:
 		if f.pb != nil {
-			bpool.Put(f.pb)
+			putBuf(f.pb)
 		}
-		f.pb = bpool.Get(n + Headroom)
+		f.pb = getBuf(n + Headroom)
 		f.payload = (*f.pb)[Headroom : Headroom+n]
 	}
 
@@ -536,8 +534,8 @@ func (f *Frame) Reset() {
 	clear(f.header)
 	f.defaultHL(f.header)
 
-	if f.pb != nil && cap(*f.pb) > int(bpool.FourKB) {
-		bpool.Put(f.pb)
+	if f.pb != nil && cap(*f.pb) > tier4K {
+		putBuf(f.pb)
 		f.pb = nil
 		f.payload = nil
 
