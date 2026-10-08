@@ -34,6 +34,7 @@ jobs:
           go test -v -race -cover -tags=debug -coverpkg=./... -coverprofile=./coverage-ci/socket.out -covermode=atomic ./pkg/socket
           go test -v -race -cover -tags=debug -coverpkg=./... -coverprofile=./coverage-ci/internal.out -covermode=atomic ./internal
           go test -v -tags=debug ./internal
+          go test -v -tags=debug ./pkg/frame
       - name: Run fuzz tests
         run: |
           go test -tags=debug -fuzz=FuzzReadFrame -fuzztime=30s ./pkg/frame

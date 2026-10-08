@@ -3,6 +3,7 @@ package pipe
 import (
 	"bytes"
 	"io"
+	"os"
 	"sync"
 	"testing"
 
@@ -158,4 +159,35 @@ func BenchmarkSendPath(b *testing.B) {
 			}
 		})
 	}
+}
+
+func TestPipeRelay_LargeFrameRoundTrip(t *testing.T) {
+	pr, pw, err := os.Pipe()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer pr.Close()
+	defer pw.Close()
+
+	payload := bytes.Repeat([]byte("L"), 1<<20)
+	nf := frame.NewFrame()
+	nf.WriteVersion(nf.Header(), frame.Version1)
+	nf.WriteFlags(nf.Header(), frame.CodecRaw)
+	nf.WriteOptions(nf.HeaderPtr(), 16)
+	nf.WritePayloadLen(nf.Header(), uint32(len(payload))) //nolint:gosec
+	nf.WritePayload(payload)
+	nf.WriteCRC(nf.Header())
+
+	sender := NewPipeRelay(pr, pw)
+	receiver := NewPipeRelay(pr, pw)
+
+	errCh := make(chan error, 1)
+	go func() { errCh <- sender.Send(nf) }()
+
+	fr := frame.NewFrame()
+	assert.NoError(t, receiver.Receive(fr))
+	assert.NoError(t, <-errCh)
+	assert.Equal(t, []uint32{16}, fr.ReadOptions(fr.Header()))
+	assert.Equal(t, payload, fr.Payload())
+	assert.True(t, fr.VerifyCRC(fr.Header()))
 }
