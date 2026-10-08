@@ -467,36 +467,27 @@ func (f *Frame) Payload() []byte {
 }
 
 // AllocPayload sets the payload length to n and returns it for the caller to fill.
-// The contents are undefined. The pooled buffer is reused when it fits, a payload that
-// aliases caller memory is written in place when it fits, and otherwise a buffer of the
-// right tier is taken from the pool. n == 0 never takes a buffer. A pooled payload starts
-// Headroom bytes into its buffer, see Wire.
+// The contents are undefined. The payload is resliced in place when its capacity fits,
+// both for a pooled buffer and for caller memory; otherwise a buffer of the right tier is
+// taken from the pool. n == 0 never takes a buffer. A pooled payload starts Headroom bytes
+// into its buffer, see Wire.
 func (f *Frame) AllocPayload(n int) []byte {
-	if f.pb != nil && cap(*f.pb)-Headroom >= n {
-		f.payload = (*f.pb)[Headroom : Headroom+n]
+	if cap(f.payload) >= n {
+		f.payload = f.payload[:n]
 		return f.payload
 	}
 
-	return f.allocPayloadSlow(n)
+	return f.growPayload(n)
 }
 
-// allocPayloadSlow handles the cases AllocPayload keeps out of its reuse check.
-func (f *Frame) allocPayloadSlow(n int) []byte {
-	switch {
-	case n == 0:
-		if f.payload != nil {
-			f.payload = f.payload[:0]
-		}
-	case f.pb == nil && cap(f.payload) >= n:
-		f.payload = f.payload[:n]
-	default:
-		if f.pb != nil {
-			putBuf(f.pb)
-		}
-		f.pb = getBuf(n + Headroom)
-		f.payload = (*f.pb)[Headroom : Headroom+n]
+// growPayload is the AllocPayload path that takes a new buffer. It is a separate function so
+// that AllocPayload stays within the inline budget.
+func (f *Frame) growPayload(n int) []byte {
+	if f.pb != nil {
+		putBuf(f.pb)
 	}
-
+	f.pb = getBuf(n + Headroom)
+	f.payload = (*f.pb)[Headroom : Headroom+n]
 	return f.payload
 }
 
