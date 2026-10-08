@@ -3,18 +3,9 @@ package internal
 import (
 	"io"
 	"net"
-	"sync"
 
 	"github.com/roadrunner-server/goridge/v4/pkg/frame"
 )
-
-// buffersPool holds two-element net.Buffers so that the vector path does not allocate.
-var buffersPool = sync.Pool{
-	New: func() any {
-		b := make(net.Buffers, 0, 2)
-		return &b
-	},
-}
 
 // SendFrame writes the header and the payload of fr to w.
 //
@@ -35,23 +26,7 @@ func SendFrame(w io.Writer, fr *frame.Frame) error {
 		return err
 	}
 
-	return writeVector(w, h, p)
-}
-
-// writeVector writes h then p through a pooled net.Buffers. WriteTo consumes the vector by
-// re-slicing it, so the full-capacity view is restored and the element references dropped
-// before the vector goes back to the pool.
-func writeVector(w io.Writer, h, p []byte) error {
-	bp := buffersPool.Get().(*net.Buffers)
-	v := (*bp)[:0]
-	v = append(v, h, p)
-	*bp = v
-
-	_, err := bp.WriteTo(w)
-
-	clear(v)
-	*bp = v[:0]
-	buffersPool.Put(bp)
-
+	bufs := net.Buffers{h, p}
+	_, err := bufs.WriteTo(w)
 	return err
 }
