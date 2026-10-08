@@ -129,6 +129,29 @@ func TestReceiveFrame_PayloadEOF(t *testing.T) {
 	assert.ErrorIs(t, err, io.EOF)
 }
 
+func TestReceiveFrame_PayloadReadErrorKeepsTheBytesRead(t *testing.T) {
+	data := buildValidFrame(bytes.Repeat([]byte("a"), 100))
+	cases := []struct {
+		name    string
+		failAt  int
+		err     error
+		wantLen int
+	}{
+		{name: "eof_before_payload", failAt: 12, err: io.EOF, wantLen: 0},
+		{name: "eof_mid_payload", failAt: 12 + 40, err: io.EOF, wantLen: 40},
+		{name: "conn_error_mid_payload", failAt: 12 + 20, err: errors.New("conn reset"), wantLen: 20},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			fr := frame.NewFrame()
+			err := ReceiveFrame(&failReader{data: data, failAt: tc.failAt, err: tc.err}, fr)
+			require.Error(t, err)
+			assert.Equal(t, bytes.Repeat([]byte("a"), tc.wantLen), fr.Payload())
+		})
+	}
+}
+
 func TestReceiveFrame_PayloadNonEOFError(t *testing.T) {
 	payload := make([]byte, 50)
 	data := buildValidFrame(payload)

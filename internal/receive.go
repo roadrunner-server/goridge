@@ -78,11 +78,12 @@ func ReceiveFrame(relay io.Reader, fr *frame.Frame) error {
 		return errors.E(op, errors.Errorf(validationError, fr.Header()))
 	}
 
-	// read the payload straight into the frame's buffer; on error the buffer stays
-	// on the frame and the caller's Reset returns it to the pool
+	// read the payload straight into the frame's buffer; on error the payload is cut to the
+	// bytes read, the buffer stays on the frame and the caller's Reset returns it to the pool
 	pl := fr.ReadPayloadLen(fr.Header())
-	_, err = io.ReadFull(relay, fr.AllocPayload(int(pl)))
+	n, err := io.ReadFull(relay, fr.AllocPayload(int(pl)))
 	if err != nil {
+		fr.AllocPayload(n)
 		if stderr.Is(err, io.EOF) {
 			return err
 		}
