@@ -5,6 +5,7 @@ import (
 )
 
 // Buffer tier sizes. A payload is served from the smallest tier that fits it with its headroom.
+// The largest tier includes the headroom, so that a 10 MB payload is still pooled.
 const (
 	tier4K   = 4 << 10
 	tier16K  = 16 << 10
@@ -12,7 +13,7 @@ const (
 	tier256K = 256 << 10
 	tier1M   = 1 << 20
 	tier5M   = 5 << 20
-	tier10M  = 10 << 20
+	tier10M  = 10<<20 + Headroom
 )
 
 // One pool per tier, initialized here so that nothing needs a setup call.

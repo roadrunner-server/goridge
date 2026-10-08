@@ -228,3 +228,9 @@ func TestAllocPayload_LeavesHeadroomInThePooledBuffer(t *testing.T) {
 	f.WritePayload([]byte("x"))
 	assert.Equal(t, Headroom, cap(*f.pb)-cap(f.Payload()), "the payload starts Headroom bytes into the buffer")
 }
+
+func TestAllocPayload_TenMBPayloadUsesTheLargestTier(t *testing.T) {
+	f := NewFrame()
+	f.AllocPayload(10 << 20)
+	assert.Equal(t, tier10M, cap(*f.pb), "a 10 MB payload with its headroom fits the largest tier, so putBuf keeps it")
+}
