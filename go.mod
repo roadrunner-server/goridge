@@ -5,7 +5,7 @@ go 1.27
 toolchain go1.27.0
 
 require (
-	github.com/roadrunner-server/errors v1.5.0
+	github.com/roadrunner-server/errors v1.6.0
 	github.com/stretchr/testify v1.12.1
 	google.golang.org/protobuf v1.36.12
 )
