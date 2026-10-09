@@ -1,0 +1,10 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "release-type": "go",
+  "include-component-in-tag": false,
+  "signoff": "RoadRunner Bot <bot@roadrunner.dev>",
+  "pull-request-header": "Release pull request. Merge it to create the tag and the GitHub release.",
+  "packages": {
+    ".": {}
+  }
+}
