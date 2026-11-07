@@ -8,6 +8,7 @@ import (
 
 	"github.com/roadrunner-server/goridge/v4/pkg/frame"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 // nopCloserRWC wraps an io.ReadWriter with a no-op Close method.
@@ -165,6 +166,46 @@ func TestReadResponseHeader_ErrorLeavesNoFrame(t *testing.T) {
 			err := c.ReadResponseHeader(&rpc.Response{})
 			assert.ErrorContains(t, err, tc.wantErr)
 			assert.Nil(t, c.frame)
+		})
+	}
+}
+
+func TestReadJSONBody(t *testing.T) {
+	tests := []struct {
+		name    string
+		client  bool
+		body    string
+		wantErr bool
+	}{
+		{name: "request", body: `{"value":1}`},
+		{name: "duplicate request member", body: `{"value":1,"value":2}`, wantErr: true},
+		{name: "response", client: true, body: `{"value":1}`},
+		{name: "duplicate response member", client: true, body: `{"value":1,"value":2}`, wantErr: true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fr := frame.NewFrame()
+			fr.WriteFlags(fr.Header(), frame.CodecJSON)
+			fr.WriteOptions(fr.HeaderPtr(), 1, 0)
+			fr.WritePayload([]byte(tt.body))
+			var out map[string]int
+			var err error
+			if tt.client {
+				c := NewClientCodec(nopCloserRWC{new(bytes.Buffer)})
+				c.frame = fr
+				err = c.ReadResponseBody(&out)
+			} else {
+				c := NewCodec(nopCloserRWC{new(bytes.Buffer)})
+				c.frame = fr
+				err = c.ReadRequestBody(&out)
+			}
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			require.Equal(t, map[string]int{"value": 1}, out)
 		})
 	}
 }
