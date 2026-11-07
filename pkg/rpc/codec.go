@@ -3,7 +3,7 @@ package rpc
 import (
 	"bytes"
 	"encoding/gob"
-	"encoding/json"
+	"encoding/json/v2"
 	"io"
 	"net/rpc"
 	"sync"
